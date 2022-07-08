@@ -11,11 +11,8 @@ include Unicorn
 class RequestTest < Test::Unit::TestCase
 
   class MockRequest < StringIO
-    alias_method :readpartial, :sysread
-    alias_method :kgio_read!, :sysread
-    alias_method :read_nonblock, :sysread
-    def kgio_addr
-      '127.0.0.1'
+    def remote_address
+      Addrinfo.tcp('127.0.0.1', 55608)
     end
   end
 
@@ -152,14 +149,7 @@ class RequestTest < Test::Unit::TestCase
     buf = (' ' * bs).freeze
     length = bs * count
     client = Tempfile.new('big_put')
-    def client.kgio_addr; '127.0.0.1'; end
-    def client.kgio_read(*args)
-      readpartial(*args)
-    rescue EOFError
-    end
-    def client.kgio_read!(*args)
-      readpartial(*args)
-    end
+    def client.remote_address; Addrinfo.tcp('127.0.0.1', 55608); end
     client.syswrite(
       "PUT / HTTP/1.1\r\n" \
       "Host: foo\r\n" \

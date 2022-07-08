@@ -33,7 +33,6 @@ Gem::Specification.new do |s|
 
   s.add_dependency(%q<rack>, '< 3') # TODO: rack 3.0 compat
 
-  s.add_dependency(%q<kgio>, '~> 2.6')
   s.add_dependency(%q<raindrops>, '~> 0.7')
 
   # Note: To avoid ambiguity, we intentionally avoid the SPDX-compatible

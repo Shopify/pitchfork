@@ -63,27 +63,37 @@ class Unicorn::Worker
       signum = Signal.list[sig.to_s] or
           raise ArgumentError, "BUG: bad signal: #{sig.inspect}"
     end
+
     # writing and reading 4 bytes on a pipe is atomic on all POSIX platforms
     # Do not care in the odd case the buffer is full, here.
-    @master.kgio_trywrite([signum].pack('l'))
-  rescue Errno::EPIPE
-    # worker will be reaped soon
+    begin
+      @master.write_nonblock([signum].pack('l'), exception: false)
+    rescue Errno::EPIPE
+      # worker will be reaped soon
+    end
   end
 
   # this only runs when the Rack app.call is not running
   # act like a listener
-  def kgio_tryaccept # :nodoc:
-    case buf = @to_io.kgio_tryread(4)
-    when String
-      # unpack the buffer and trigger the signal handler
-      signum = buf.unpack('l')
-      fake_sig(signum[0])
-      # keep looping, more signals may be queued
-    when nil # EOF: master died, but we are at a safe place to exit
-      fake_sig(:QUIT)
-    when :wait_readable # keep waiting
-      return false
-    end while true # loop, as multiple signals may be sent
+  def accept_nonblock(exception: nil) # :nodoc:
+    loop do
+      case buf = @to_io.read_nonblock(4, exception: false)
+      when :wait_readable # keep waiting
+        return false
+      when nil # EOF master died, but we are at a safe place to exit
+        fake_sig(:QUIT)
+      end
+
+      case buf
+      when String
+        # unpack the buffer and trigger the signal handler
+        signum = buf.unpack('l')
+        fake_sig(signum[0])
+        # keep looping, more signals may be queued
+      else
+        raise TypeError, "Unexpected read_nonblock returns: #{buf.inspect}"
+      end
+    end # loop, as multiple signals may be sent
   end
 
   # worker objects may be compared to just plain Integers

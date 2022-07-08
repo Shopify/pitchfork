@@ -111,7 +111,7 @@ class Unicorn::HttpServer
     @worker_data = if worker_data = ENV['UNICORN_WORKER']
       worker_data = worker_data.split(',').map!(&:to_i)
       worker_data[1] = worker_data.slice!(1..2).map do |i|
-        Kgio::Pipe.for_fd(i)
+        IO.for_fd(i)
       end
       worker_data
     end
@@ -240,7 +240,7 @@ class Unicorn::HttpServer
     tries = opt[:tries] || 5
     begin
       io = bind_listen(address, opt)
-      unless Kgio::TCPServer === io || Kgio::UNIXServer === io
+      unless TCPServer === io || UNIXServer === io
         io.autoclose = false
         io = server_cast(io)
       end
@@ -386,12 +386,12 @@ class Unicorn::HttpServer
     # the Ruby itself and not require a separate malloc (on 32-bit MRI 1.9+).
     # Most reads are only one byte here and uncommon, so it's not worth a
     # persistent buffer, either:
-    @self_pipe[0].kgio_tryread(11)
+    @self_pipe[0].read_nonblock(11, exception: false)
   end
 
   def awaken_master
     return if $$ != @master_pid
-    @self_pipe[1].kgio_trywrite('.') # wakeup master process from select
+    @self_pipe[1].write_nonblock('.', exception: false) # wakeup master process from select
   end
 
   # reaps all unreaped workers
@@ -581,7 +581,7 @@ class Unicorn::HttpServer
       500
     end
     if code
-      client.kgio_trywrite(err_response(code, @request.response_start_sent))
+      client.write_nonblock(err_response(code, @request.response_start_sent), exception: false)
     end
     client.close
   rescue
@@ -733,9 +733,11 @@ class Unicorn::HttpServer
       reopen = reopen_worker_logs(worker.nr) if reopen
       worker.tick = time_now.to_i
       while sock = ready.shift
-        # Unicorn::Worker#kgio_tryaccept is not like accept(2) at all,
+        # Unicorn::Worker#accept_nonblock is not like accept(2) at all,
         # but that will return false
-        if client = sock.kgio_tryaccept
+        client = sock.accept_nonblock(exception: false)
+        client = false if client == :wait_readable
+        if client
           process_client(client)
           worker.tick = time_now.to_i
         end
@@ -834,7 +836,7 @@ class Unicorn::HttpServer
 
   def inherit_listeners!
     # inherit sockets from parents, they need to be plain Socket objects
-    # before they become Kgio::UNIXServer or Kgio::TCPServer
+    # before they become UNIXServer or TCPServer
     inherited = ENV['UNICORN_FD'].to_s.split(',')
 
     # emulate sd_listen_fds() for systemd
@@ -858,7 +860,7 @@ class Unicorn::HttpServer
     LISTENERS.replace(inherited)
 
     # we start out with generic Socket objects that get cast to either
-    # Kgio::TCPServer or Kgio::UNIXServer objects; but since the Socket
+    # TCPServer or UNIXServer objects; but since the Socket
     # objects share the same OS-level file descriptor as the higher-level
     # *Server objects; we need to prevent Socket objects from being
     # garbage-collected

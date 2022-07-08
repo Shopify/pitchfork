@@ -3,18 +3,6 @@
 require 'socket'
 
 module Unicorn
-
-  # Instead of using a generic Kgio::Socket for everything,
-  # tag TCP sockets so we can use TCP_INFO under Linux without
-  # incurring extra syscalls for Unix domain sockets.
-  # TODO: remove these when we remove kgio
-  TCPClient = Class.new(Kgio::Socket) # :nodoc:
-  class TCPSrv < Kgio::TCPServer # :nodoc:
-    def kgio_tryaccept # :nodoc:
-      super(TCPClient)
-    end
-  end
-
   module SocketHelper
 
     # internal interface
@@ -135,7 +123,7 @@ module Unicorn
         end
         old_umask = File.umask(opt[:umask] || 0)
         begin
-          Kgio::UNIXServer.new(address)
+          UNIXServer.new(address)
         ensure
           File.umask(old_umask)
         end
@@ -164,7 +152,7 @@ module Unicorn
       end
       sock.bind(Socket.pack_sockaddr_in(port, addr))
       sock.autoclose = false
-      TCPSrv.for_fd(sock.fileno)
+      TCPServer.for_fd(sock.fileno)
     end
 
     # returns rfc2732-style (e.g. "[::1]:666") addresses for IPv6
@@ -201,9 +189,9 @@ module Unicorn
     def server_cast(sock)
       begin
         Socket.unpack_sockaddr_in(sock.getsockname)
-        TCPSrv.for_fd(sock.fileno)
+        TCPServer.for_fd(sock.fileno)
       rescue ArgumentError
-        Kgio::UNIXServer.for_fd(sock.fileno)
+        UNIXServer.for_fd(sock.fileno)
       end
     end
 

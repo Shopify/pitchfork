@@ -2,14 +2,12 @@ PATH
   remote: .
   specs:
     unicorn (6.1.0)
-      kgio (~> 2.6)
       rack (< 3)
       raindrops (~> 0.7)
 
 GEM
   remote: https://rubygems.org/
   specs:
-    kgio (2.11.4)
     power_assert (2.0.1)
     rack (2.2.4)
     raindrops (0.20.0)

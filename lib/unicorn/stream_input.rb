@@ -1,3 +1,4 @@
+
 # -*- encoding: binary -*-
 
 # When processing uploads, unicorn may expose a StreamInput object under
@@ -49,7 +50,11 @@ class Unicorn::StreamInput
         to_read = length - @rbuf.size
         rv.replace(@rbuf.slice!(0, @rbuf.size))
         until to_read == 0 || eof? || (rv.size > 0 && @chunked)
-          @socket.kgio_read(to_read, @buf) or eof!
+          begin
+            @socket.readpartial(to_read, @buf)
+          rescue EOFError
+            eof!
+          end
           filter_body(@rbuf, @buf)
           rv << @rbuf
           to_read -= @rbuf.size
@@ -72,8 +77,7 @@ class Unicorn::StreamInput
   # Returns nil if called at the end of file.
   # This takes zero arguments for strict Rack::Lint compatibility,
   # unlike IO#gets.
-  def gets
-    sep = $/
+  def gets(sep = $/)
     if sep.nil?
       read_all(rv = '')
       return rv.empty? ? nil : rv
@@ -83,7 +87,7 @@ class Unicorn::StreamInput
     begin
       @rbuf.sub!(re, '') and return $1
       return @rbuf.empty? ? nil : @rbuf.slice!(0, @rbuf.size) if eof?
-      @socket.kgio_read(@@io_chunk_size, @buf) or eof!
+      @socket.readpartial(@@io_chunk_size, @buf) or eof!
       filter_body(once = '', @buf)
       @rbuf << once
     end while true
@@ -107,7 +111,7 @@ private
   def eof?
     if @parser.body_eof?
       while @chunked && ! @parser.parse
-        once = @socket.kgio_read(@@io_chunk_size) or eof!
+        once = @socket.readpartial(@@io_chunk_size) or eof!
         @buf << once
       end
       @socket = nil
@@ -127,7 +131,7 @@ private
     dst.replace(@rbuf)
     @socket or return
     until eof?
-      @socket.kgio_read(@@io_chunk_size, @buf) or eof!
+      @socket.readpartial(@@io_chunk_size, @buf) or eof!
       filter_body(@rbuf, @buf)
       dst << @rbuf
     end

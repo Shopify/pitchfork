@@ -71,14 +71,19 @@ class Unicorn::HttpParser
     #  identify the client for the immediate request to the server;
     #  that client may be a proxy, gateway, or other intermediary
     #  acting on behalf of the actual source client."
-    e['REMOTE_ADDR'] = socket.kgio_addr
+    address = socket.remote_address
+    e['REMOTE_ADDR'] = if address.unix?
+      "127.0.0.1"
+    else
+      address.ip_address
+    end
 
     # short circuit the common case with small GET requests first
-    socket.kgio_read!(16384, buf)
+    socket.readpartial(16384, buf)
     if parse.nil?
       # Parser is not done, queue up more data to read and continue parsing
       # an Exception thrown from the parser will throw us out of the loop
-      false until add_parse(socket.kgio_read!(16384))
+      false until add_parse(socket.readpartial(16384))
     end
 
     check_client_connection(socket) if @@check_client_connection
@@ -108,7 +113,7 @@ class Unicorn::HttpParser
     TCPI = Raindrops::TCP_Info.allocate
 
     def check_client_connection(socket) # :nodoc:
-      if Unicorn::TCPClient === socket
+      if TCPSocket === socket
         # Raindrops::TCP_Info#get!, #state (reads struct tcp_info#tcpi_state)
         raise Errno::EPIPE, "client closed connection".freeze,
               EMPTY_ARRAY if closed_state?(TCPI.get!(socket).state)
@@ -153,7 +158,7 @@ class Unicorn::HttpParser
     # Not that efficient, but probably still better than doing unnecessary
     # work after a client gives up.
     def check_client_connection(socket) # :nodoc:
-      if Unicorn::TCPClient === socket && @@tcpi_inspect_ok
+      if TCPSocket === socket && @@tcpi_inspect_ok
         opt = socket.getsockopt(Socket::IPPROTO_TCP, Socket::TCP_INFO).inspect
         if opt =~ /\bstate=(\S+)/
           raise Errno::EPIPE, "client closed connection".freeze,

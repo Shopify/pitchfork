@@ -6,16 +6,14 @@ require 'unicorn'
 
 class TestStreamInput < Test::Unit::TestCase
   def setup
-    @rs = $/
     @env = {}
-    @rd, @wr = Kgio::UNIXSocket.pair
+    @rd, @wr = UNIXSocket.pair
     @rd.sync = @wr.sync = true
     @start_pid = $$
   end
 
   def teardown
     return if $$ != @start_pid
-    $/ = @rs
     @rd.close rescue nil
     @wr.close rescue nil
     Process.waitall
@@ -54,10 +52,9 @@ class TestStreamInput < Test::Unit::TestCase
   end
 
   def test_gets_empty_rs
-    $/ = nil
     r = init_request("a\nb\n\n")
     si = Unicorn::StreamInput.new(@rd, r)
-    assert_equal "a\nb\n\n", si.gets
+    assert_equal "a\nb\n\n", si.gets(nil)
     assert_nil si.gets
   end
 
