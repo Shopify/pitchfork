@@ -29,7 +29,7 @@ Gem::Specification.new do |s|
   # a maximum version to make it easier to test pre-releases,
   # but we do warn users if they install unicorn on an untested
   # version in extconf.rb
-  s.required_ruby_version = ">= 2.0.0"
+  s.required_ruby_version = ">= 2.5.0"
 
   s.add_dependency(%q<rack>, '< 3') # TODO: rack 3.0 compat
 
