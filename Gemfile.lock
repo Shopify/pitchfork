@@ -1,0 +1,27 @@
+PATH
+  remote: .
+  specs:
+    unicorn (6.1.0)
+      kgio (~> 2.6)
+      rack (< 3)
+      raindrops (~> 0.7)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    kgio (2.11.4)
+    power_assert (2.0.1)
+    rack (2.2.4)
+    raindrops (0.20.0)
+    test-unit (3.5.3)
+      power_assert
+
+PLATFORMS
+  arm64-darwin-21
+
+DEPENDENCIES
+  test-unit (~> 3.0)
+  unicorn!
+
+BUNDLED WITH
+   2.3.22

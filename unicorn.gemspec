@@ -31,15 +31,10 @@ Gem::Specification.new do |s|
   # version in extconf.rb
   s.required_ruby_version = ">= 2.0.0"
 
-  # We do not have a hard dependency on rack, it's possible to load
-  # things which respond to #call.  HTTP status lines in responses
-  # won't have descriptive text, only the numeric status.
-  s.add_development_dependency(%q<rack>)
+  s.add_dependency(%q<rack>, '< 3') # TODO: rack 3.0 compat
 
   s.add_dependency(%q<kgio>, '~> 2.6')
   s.add_dependency(%q<raindrops>, '~> 0.7')
-
-  s.add_development_dependency('test-unit', '~> 3.0')
 
   # Note: To avoid ambiguity, we intentionally avoid the SPDX-compatible
   # 'Ruby' here since Ruby 1.9.3 switched to BSD-2-Clause, but we
