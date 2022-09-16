@@ -4,7 +4,7 @@ t_plan 8 "simple HTTP connection tests"
 
 t_begin "setup and start" && {
 	unicorn_setup
-	unicorn -D -c $unicorn_config env.ru
+	unicorn_spawn -c $unicorn_config env.ru &
 	unicorn_wait_start
 }
 

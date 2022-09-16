@@ -288,7 +288,7 @@ def wait_for_death(pid)
 end
 
 def reset_sig_handlers
-  %w(WINCH QUIT INT TERM USR1 USR2 HUP TTIN TTOU CHLD).each do |sig|
+  %w(QUIT INT TERM USR1 USR2 HUP TTIN TTOU CHLD).each do |sig|
     trap(sig, "DEFAULT")
   end
 end

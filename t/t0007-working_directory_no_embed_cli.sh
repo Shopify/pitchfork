@@ -1,7 +1,7 @@
 #!/bin/sh
 . ./test-lib.sh
 
-t_plan 4 "config.ru inside alt working_directory (no embedded switches)"
+t_plan 3 "config.ru inside alt working_directory (no embedded switches)"
 
 t_begin "setup and start" && {
 	unicorn_setup
@@ -25,7 +25,7 @@ end
 EOF
 
 	cd /
-	unicorn -D -c $unicorn_config
+	unicorn_spawn -c $unicorn_config
 	unicorn_wait_start
 }
 
@@ -35,10 +35,6 @@ t_begin "hit with curl" && {
 
 t_begin "killing succeeds" && {
 	kill $unicorn_pid
-}
-
-t_begin "response body ppid == 1 (daemonized)" && {
-	test "$body" -eq 1
 }
 
 t_done

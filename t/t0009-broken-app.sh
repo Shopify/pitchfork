@@ -5,7 +5,7 @@ t_plan 9 "graceful handling of broken apps"
 
 t_begin "setup and start" && {
 	unicorn_setup
-	unicorn -E none -D broken-app.ru -c $unicorn_config
+	unicorn_spawn -E none broken-app.ru -c $unicorn_config
 	unicorn_wait_start
 }
 

@@ -59,10 +59,6 @@ op = OptionParser.new("", 24, '  ') do |opts|
     ENV['RAILS_ENV'] = e
   end
 
-  opts.on("-D", "--daemonize", "run daemonized in the background") do |d|
-    rackup_opts[:daemonize] = !!d
-  end
-
   # Unicorn-specific stuff
   opts.on("-l", "--listen {HOST:PORT|PATH}",
           "listen on HOST:PORT or PATH",
@@ -124,7 +120,7 @@ def rails_dispatcher
   result || abort("Unable to locate the application dispatcher class")
 end
 
-def rails_builder(ru, op, daemonize)
+def rails_builder(ru, op)
   return Unicorn.builder(ru, op) if ru
 
   # allow Configurator to parse cli switches embedded in the ru file
@@ -164,7 +160,6 @@ def rails_builder(ru, op, daemonize)
           # since all apps I've ever dealt with just use "/" ...
           warn "relative URL roots may not work for older Rails"
         end
-        warn "LogTailer not available for Rails < 2.3" unless daemonize
         warn "Debugger not available" if $DEBUG
         require 'unicorn/app/old_rails'
         map(map_path) do
@@ -172,7 +167,7 @@ def rails_builder(ru, op, daemonize)
           run Unicorn::App::OldRails.new
         end
       else
-        use Rails::Rack::LogTailer unless daemonize
+        use Rails::Rack::LogTailer
         use Rails::Rack::Debugger if $DEBUG
         map(map_path) do
           unless defined?(ActionDispatch::Static)
@@ -185,7 +180,7 @@ def rails_builder(ru, op, daemonize)
   end
 end
 
-app = rails_builder(ARGV[0], op, rackup_opts[:daemonize])
+app = rails_builder(ARGV[0], op)
 op = nil
 
 if $DEBUG
@@ -193,7 +188,6 @@ if $DEBUG
   pp({
     :unicorn_options => options,
     :app => app,
-    :daemonize => rackup_opts[:daemonize],
   })
 end
 
@@ -202,8 +196,4 @@ options[:after_reload] = lambda do
   FileUtils.mkdir_p(%w(cache pids sessions sockets).map! { |d| "tmp/#{d}" })
 end
 
-if rackup_opts[:daemonize]
-  options[:pid] = "tmp/pids/unicorn.pid"
-  Unicorn::Launcher.daemonize!(options)
-end
 Unicorn::HttpServer.new(app, options).start.join

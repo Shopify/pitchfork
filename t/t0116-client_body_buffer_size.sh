@@ -13,7 +13,7 @@ end
 EOF
 	cat $unicorn_config > $unicorn_config_tmp
 	echo client_body_buffer_size 0 >> $unicorn_config
-	unicorn -D -c $unicorn_config t0116.ru
+	unicorn_spawn -c $unicorn_config t0116.ru
 	unicorn_wait_start
 	fs_class=Unicorn::TmpIO
 	mem_class=StringIO

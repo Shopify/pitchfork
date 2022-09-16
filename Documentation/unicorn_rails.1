@@ -5,7 +5,7 @@
 unicorn_rails \- unicorn launcher for Rails 1.x and 2.x users
 .SH SYNOPSIS
 .PP
-unicorn_rails [\-c CONFIG_FILE] [\-E RAILS_ENV] [\-D] [RACKUP_FILE]
+unicorn_rails [\-c CONFIG_FILE] [\-E RAILS_ENV] [RACKUP_FILE]
 .SH DESCRIPTION
 .PP
 A rackup(1)\-like command to launch ancient Rails (2.x and earlier)
@@ -33,23 +33,6 @@ list of directives available from the DSL.
 Using an absolute path for for CONFIG_FILE is recommended as it
 makes multiple instances of Unicorn easily distinguishable when
 viewing ps(1) output.
-.RS
-.RE
-.TP
-.B \-D, \-\-daemonize
-Run daemonized in the background.  The process is detached from
-the controlling terminal and stdin is redirected to "/dev/null".
-Unlike many common UNIX daemons, we do not chdir to "/" upon
-daemonization to allow more control over the startup/upgrade
-process.
-Unless specified in the CONFIG_FILE, stderr and stdout will
-also be redirected to "/dev/null".
-Daemonization will \f[I]skip\f[] loading of the
-\f[I]Rails::Rack::LogTailer\f[]
-middleware under Rails >= 2.3.x.
-By default, unicorn_rails(1) will create a PID file in
-\f[I]"RAILS_ROOT/tmp/pids/unicorn.pid"\f[].  You may override this
-by specifying the "pid" directive to override this Unicorn config file.
 .RS
 .RE
 .TP
@@ -172,9 +155,6 @@ See Unicorn::Util.reopen_logs for what is considered a log.
 USR2 \- reexecute the running binary.  A separate QUIT
 should be sent to the original process once the child is verified to
 be up and running.
-.IP \[bu] 2
-WINCH \- gracefully stops workers but keep the master running.
-This will only work for daemonized processes.
 .IP \[bu] 2
 TTIN \- increment the number of worker processes by one
 .IP \[bu] 2

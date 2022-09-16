@@ -30,4 +30,6 @@ jobs:
         run: bundle exec make test
 
       - name: Integration Tests
-        run: bundle exec make test-integration
+        run: |
+          echo hello
+          bundle exec make test-integration

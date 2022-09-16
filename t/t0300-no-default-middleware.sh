@@ -4,7 +4,7 @@ t_plan 3 "test the -N / --no-default-middleware option"
 
 t_begin "setup and start" && {
 	unicorn_setup
-	unicorn -N -D -c $unicorn_config fails-rack-lint.ru
+	unicorn_spawn -N -c $unicorn_config fails-rack-lint.ru
 	unicorn_wait_start
 }
 

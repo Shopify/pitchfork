@@ -106,7 +106,7 @@ class Unicorn::HttpServer
     @orig_app = app
     # list of signals we care about and trap in master.
     @queue_sigs = [
-      :WINCH, :QUIT, :INT, :TERM, :USR1, :USR2, :HUP, :TTIN, :TTOU ]
+      :QUIT, :INT, :TERM, :USR1, :USR2, :HUP, :TTIN, :TTOU ]
 
     @worker_data = if worker_data = ENV['UNICORN_WORKER']
       worker_data = worker_data.split(',').map!(&:to_i)
@@ -198,13 +198,6 @@ class Unicorn::HttpServer
     if path
       if x = valid_pid?(path)
         return path if pid && path == pid && x == $$
-        if x == @reexec_pid && pid.end_with?('.oldbin')
-          logger.warn("will not set pid=#{path} while reexec-ed "\
-                      "child is running PID:#{x}")
-          return
-        end
-        raise ArgumentError, "Already running on PID:#{x} " \
-                             "(or pid=#{path} is stale)"
       end
     end
 
@@ -305,15 +298,6 @@ class Unicorn::HttpServer
         soft_kill_each_worker(:USR1)
       when :USR2 # exec binary, stay alive in case something went wrong
         reexec
-      when :WINCH
-        if $stdin.tty?
-          logger.info "SIGWINCH ignored because we're not daemonized"
-        else
-          respawn = false
-          logger.info "gracefully stopping all workers"
-          soft_kill_each_worker(:QUIT)
-          self.worker_processes = 0
-        end
       when :TTIN
         respawn = true
         self.worker_processes += 1
@@ -704,14 +688,18 @@ class Unicorn::HttpServer
     exit!(77) # EX_NOPERM in sysexits.h
   end
 
-  def prep_readers(readers)
-    wtr = Unicorn::Waiter.prep_readers(readers)
-    @timeout *= 500 # to milliseconds for epoll, but halved
-    wtr
-  rescue
+  if Unicorn.const_defined?(:Waiter)
+    def prep_readers(readers)
+      wtr = Unicorn::Waiter.prep_readers(readers)
+      @timeout *= 500 # to milliseconds for epoll, but halved
+      wtr
+    end
+  else
     require_relative 'select_waiter'
-    @timeout /= 2.0 # halved for IO.select
-    Unicorn::SelectWaiter.new
+    def prep_readers(_readers)
+      @timeout /= 2.0 # halved for IO.select
+      Unicorn::SelectWaiter.new
+    end
   end
 
   # runs inside each forked worker, this sits around and waits

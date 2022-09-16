@@ -20,7 +20,6 @@ class Unicorn::Configurator
   # config.ru after "working_directory" is bound.  Do not rely on
   # this being around later on...
   RACKUP = {
-    :daemonize => false,
     :host => Unicorn::Const::DEFAULT_HOST,
     :port => Unicorn::Const::DEFAULT_PORT,
     :set_listener => false,
@@ -137,9 +136,7 @@ class Unicorn::Configurator
   # * error
   # * fatal
   # The default Logger will log its output to the path specified
-  # by +stderr_path+.  If you're running Unicorn daemonized, then
-  # you must specify a path to prevent error messages from going
-  # to /dev/null.
+  # by +stderr_path+.
   def logger(obj)
     %w(debug info warn error fatal).each do |m|
       obj.respond_to?(m) and next
@@ -593,7 +590,6 @@ class Unicorn::Configurator
   # Same as stderr_path, except for $stdout.  Not many Rack applications
   # write to $stdout, but any that do will have their output written here.
   # It is safe to point this to the same location a stderr_path.
-  # Like stderr_path, this defaults to /dev/null when daemonized.
   def stdout_path(path)
     set_path(:stdout_path, path)
   end
@@ -727,17 +723,5 @@ private
 
     /^#\\(.*)/ =~ File.read(ru) or return
     RACKUP[:optparse].parse!($1.split(/\s+/))
-
-    if RACKUP[:daemonize]
-      # unicorn_rails wants a default pid path, (not plain 'unicorn')
-      if after_reload
-        spid = set[:pid]
-        pid('tmp/pids/unicorn.pid') if spid.nil? || spid == :unset
-      end
-      unless RACKUP[:daemonized]
-        Unicorn::Launcher.daemonize!(RACKUP[:options])
-        RACKUP[:ready_pipe] = RACKUP[:options].delete(:ready_pipe)
-      end
-    end
   end
 end

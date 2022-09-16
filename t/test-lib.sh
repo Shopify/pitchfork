@@ -119,8 +119,50 @@ stdout_path "$r_out"
 EOF
 }
 
+if command -v nc > /dev/null 2>&1; then
+  attempt_to_connect() {
+    nc -z "${1}" "${2}" -w '1' > /dev/null 2>&1
+    return $?
+  }
+elif command -v bash > /dev/null 2>&1; then
+  attempt_to_connect() {
+    # shellcheck disable=SC2086
+    timeout $TIMEOUTFLAG 1 bash -c "echo < /dev/tcp/${1}/${2}" > /dev/null 2>&1
+    return $?
+  }
+else
+  attempt_to_connect() {
+    echo "[WARNING] This container doesn't contain nc, we won't be able to check ${1}:${2} availability."
+    return 0
+  }
+fi
+
+wait_for_service() {
+	port=$(expr $listen : '[^:]*:\([0-9]*\)')
+	host=$(expr $listen : '\([^:][^:]*\):[0-9][0-9]*')
+
+	local attemps=$1
+	until attempt_to_connect "$host" "$port" > /dev/null 2>&1; do
+		sleep 0.1
+		attemps=$((attemps-1))
+		if [ "${attemps}" -le 0 ]; then
+			return 1 # UnavailableService
+		fi
+	done
+
+	return 0
+}
+
+unicorn_spawn () {
+	(
+		unicorn "$@" &
+		echo "$!" > "$pid"
+	) &
+	wait
+}
+
 unicorn_wait_start () {
-	# no need to play tricks with FIFOs since we got "ready_pipe" now
+	wait_for_service 30
 	unicorn_pid=$(cat $pid)
 }
 

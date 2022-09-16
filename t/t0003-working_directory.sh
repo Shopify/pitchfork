@@ -1,7 +1,7 @@
 #!/bin/sh
 . ./test-lib.sh
 
-t_plan 4 "config.ru inside alt working_directory"
+t_plan 3 "config.ru inside alt working_directory"
 
 t_begin "setup and start" && {
 	unicorn_setup
@@ -10,7 +10,7 @@ t_begin "setup and start" && {
 	mkdir $t_pfx.app
 
 	cat > $t_pfx.app/config.ru <<EOF
-#\--daemonize --host $host --port $port
+#\--host $host --port $port
 use Rack::ContentLength
 use Rack::ContentType, "text/plain"
 run lambda { |env| [ 200, {}, [ "#{\$master_ppid}\\n" ] ] }
@@ -31,8 +31,7 @@ EOF
 
 	mv $unicorn_config_tmp $unicorn_config
 
-	# rely on --daemonize switch, no & or -D
-	unicorn -c $unicorn_config
+	unicorn_spawn -c $unicorn_config
 	unicorn_wait_start
 }
 
@@ -42,10 +41,6 @@ t_begin "hit with curl" && {
 
 t_begin "killing succeeds" && {
 	kill $unicorn_pid
-}
-
-t_begin "response body ppid == 1 (daemonized)" && {
-	test "$body" -eq 1
 }
 
 t_done

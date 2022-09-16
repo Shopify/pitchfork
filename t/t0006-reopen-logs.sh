@@ -6,7 +6,7 @@ t_plan 15 "reopen rotated logs"
 t_begin "setup and startup" && {
 	rtmpfiles curl_out curl_err r_rot
 	unicorn_setup
-	unicorn -D t0006.ru -c $unicorn_config
+	unicorn_spawn t0006.ru -c $unicorn_config
 	unicorn_wait_start
 }
 

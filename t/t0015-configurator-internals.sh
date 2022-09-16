@@ -8,7 +8,7 @@ t_begin "setup and start" && {
 HttpRequest::DEFAULTS["rack.url_scheme"] = "https"
 Configurator::DEFAULTS[:logger].formatter = Logger::Formatter.new
 EOF
-	unicorn -D -c $unicorn_config env.ru
+	unicorn_spawn -c $unicorn_config env.ru
 	unicorn_wait_start
 }
 

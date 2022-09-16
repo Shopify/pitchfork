@@ -13,7 +13,7 @@ config = ru = { "hello" => "world" }
 run lambda { |env| [ 200, {}, [ ru.inspect << "\n" ] ] }
 EOF
 	echo 'preload_app true' >> $unicorn_config
-	unicorn -D -c $unicorn_config $ru
+	unicorn_spawn -c $unicorn_config $ru
 	unicorn_wait_start
 }
 

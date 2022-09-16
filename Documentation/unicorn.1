@@ -5,7 +5,7 @@
 unicorn \- a rackup\-like command to launch the Unicorn HTTP server
 .SH SYNOPSIS
 .PP
-unicorn [\-c CONFIG_FILE] [\-E RACK_ENV] [\-D] [RACKUP_FILE]
+unicorn [\-c CONFIG_FILE] [\-E RACK_ENV] [RACKUP_FILE]
 .SH DESCRIPTION
 .PP
 A rackup(1)\-like command to launch Rack applications using Unicorn.
@@ -34,17 +34,6 @@ list of directives available from the DSL.
 Using an absolute path for for CONFIG_FILE is recommended as it
 makes multiple instances of Unicorn easily distinguishable when
 viewing ps(1) output.
-.RS
-.RE
-.TP
-.B \-D, \-\-daemonize
-Run daemonized in the background.  The process is detached from
-the controlling terminal and stdin is redirected to "/dev/null".
-Unlike many common UNIX daemons, we do not chdir to "/"
-upon daemonization to allow more control over the startup/upgrade
-process.
-Unless specified in the CONFIG_FILE, stderr and stdout will
-also be redirected to "/dev/null".
 .RS
 .RE
 .TP
@@ -146,9 +135,6 @@ See Unicorn::Util.reopen_logs for what is considered a log.
 USR2 \- reexecute the running binary.  A separate QUIT
 should be sent to the original process once the child is verified to
 be up and running.
-.IP \[bu] 2
-WINCH \- gracefully stops workers but keep the master running.
-This will only work for daemonized processes.
 .IP \[bu] 2
 TTIN \- increment the number of worker processes by one
 .IP \[bu] 2

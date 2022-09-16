@@ -5,7 +5,7 @@ t_plan 4 "rewindable_input toggled to false"
 t_begin "setup and start" && {
 	unicorn_setup
 	echo rewindable_input false >> $unicorn_config
-	unicorn -D -c $unicorn_config t0013.ru
+	unicorn_spawn -c $unicorn_config t0013.ru
 	unicorn_wait_start
 }
 

@@ -21,7 +21,7 @@ EOF
 	# the whole point of this exercise
 	echo "working_directory '$t_pfx.app'" >> $unicorn_config
 	cd /
-	unicorn -D -c $unicorn_config -I. fooapp.rb
+	unicorn_spawn -c $unicorn_config -I. fooapp.rb
 	unicorn_wait_start
 }
 

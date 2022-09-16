@@ -5,7 +5,7 @@ t_plan 9 "PrereadInput middleware tests"
 t_begin "setup and start" && {
 	random_blob_sha1=$(rsha1 < random_blob)
 	unicorn_setup
-	unicorn  -D -c $unicorn_config preread_input.ru
+	unicorn_spawn -c $unicorn_config preread_input.ru
 	unicorn_wait_start
 }
 

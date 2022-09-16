@@ -4,7 +4,7 @@ t_plan 4 "write-on-close tests for funky response-bodies"
 
 t_begin "setup and start" && {
 	unicorn_setup
-	unicorn -D -c $unicorn_config write-on-close.ru
+	unicorn_spawn -c $unicorn_config write-on-close.ru
 	unicorn_wait_start
 }
 

@@ -14,7 +14,7 @@ after_fork do |_,_|
 end
 EOF
 
-	unicorn -D pid.ru -c $unicorn_config
+	unicorn_spawn pid.ru -c $unicorn_config
 	unicorn_wait_start
 }
 

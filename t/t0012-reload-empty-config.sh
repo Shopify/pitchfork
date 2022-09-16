@@ -28,7 +28,7 @@ before_fork { |s,w|
 }
 before_exec { |s| }
 EOF
-	unicorn -D -c $unicorn_config env.ru
+	unicorn_spawn -c $unicorn_config env.ru
 	unicorn_wait_start
 }
 

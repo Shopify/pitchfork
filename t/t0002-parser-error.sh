@@ -4,7 +4,7 @@ t_plan 11 "parser error test"
 
 t_begin "setup and startup" && {
 	unicorn_setup
-	unicorn -D env.ru -c $unicorn_config
+	unicorn_spawn env.ru -c $unicorn_config
 	unicorn_wait_start
 }
 
