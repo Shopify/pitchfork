@@ -11,7 +11,6 @@
 /test/rbx-*
 /test/ruby-*
 ext/unicorn_http/Makefile
-ext/unicorn_http/unicorn_http.c
 log/
 pkg/
 /vendor
