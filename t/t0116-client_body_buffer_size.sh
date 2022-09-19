@@ -1,6 +1,6 @@
 #!/bin/sh
 . ./test-lib.sh
-t_plan 12 "client_body_buffer_size settings"
+t_plan 16 "client_body_buffer_size settings"
 
 t_begin "setup and start" && {
 	unicorn_setup
@@ -31,9 +31,18 @@ t_begin "class for a 1 byte file should be filesystem-backed" && {
 	test x$fs_class = x"$(curl -T $tmp -sSf http://$listen/tmp_class)"
 }
 
-t_begin "reload with default client_body_buffer_size" && {
+t_begin "killing succeeds" && {
+	kill $unicorn_pid
+}
+
+t_begin "check stderr" && {
+	check_stderr
+}
+
+t_begin "restart with default client_body_buffer_size" && {
 	mv $unicorn_config_tmp $unicorn_config
-	kill -HUP $unicorn_pid
+	unicorn_spawn -c $unicorn_config t0116.ru
+	unicorn_wait_start
 	test x"$(cat $fifo)" = xSTART
 }
 
@@ -52,9 +61,18 @@ t_begin "one megabyte file should be filesystem-backed" && {
 	test x$fs_class = x"$resp"
 }
 
+t_begin "killing succeeds" && {
+	kill $unicorn_pid
+}
+
+t_begin "check stderr" && {
+	check_stderr
+}
+
 t_begin "reload with a big client_body_buffer_size" && {
 	echo "client_body_buffer_size(1024 * 1024)" >> $unicorn_config
-	kill -HUP $unicorn_pid
+	unicorn_spawn -c $unicorn_config t0116.ru
+	unicorn_wait_start
 	test x"$(cat $fifo)" = xSTART
 }
 

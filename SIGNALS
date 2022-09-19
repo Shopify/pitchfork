@@ -12,18 +12,6 @@ https://yhbt.net/unicorn/examples/init.sh
 
 === Master Process
 
-* HUP - reloads config file and gracefully restart all workers.
-  If the "preload_app" directive is false (the default), then workers
-  will also pick up any application code changes when restarted.  If
-  "preload_app" is true, then application code changes will have no
-  effect; USR2 + QUIT (see below) must be used to load newer code in
-  this case.  When reloading the application, +Gem.refresh+ will
-  be called so updated code for your application can pick up newly
-  installed RubyGems.  It is not recommended that you uninstall
-  libraries your application depends on while Unicorn is running,
-  as respawned workers may enter a spawn loop when they fail to
-  load an uninstalled dependency.
-
 * INT/TERM - quick shutdown, kills all workers immediately
 
 * QUIT - graceful shutdown, waits for workers to finish their
@@ -31,10 +19,6 @@ https://yhbt.net/unicorn/examples/init.sh
 
 * USR1 - reopen all logs owned by the master and all workers
   See Unicorn::Util.reopen_logs for what is considered a log.
-
-* USR2 - reexecute the running binary.  A separate QUIT
-  should be sent to the original process once the child is verified to
-  be up and running.
 
 * TTIN - increment the number of worker processes by one
 

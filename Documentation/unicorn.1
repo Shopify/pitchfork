@@ -122,8 +122,6 @@ they were specified on the command\-line.
 .PP
 The following UNIX signals may be sent to the master process:
 .IP \[bu] 2
-HUP \- reload config file, app, and gracefully restart all workers
-.IP \[bu] 2
 INT/TERM \- quick shutdown, kills all workers immediately
 .IP \[bu] 2
 QUIT \- graceful shutdown, waits for workers to finish their
@@ -131,10 +129,6 @@ current request before finishing.
 .IP \[bu] 2
 USR1 \- reopen all logs owned by the master and all workers
 See Unicorn::Util.reopen_logs for what is considered a log.
-.IP \[bu] 2
-USR2 \- reexecute the running binary.  A separate QUIT
-should be sent to the original process once the child is verified to
-be up and running.
 .IP \[bu] 2
 TTIN \- increment the number of worker processes by one
 .IP \[bu] 2

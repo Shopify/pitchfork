@@ -37,9 +37,6 @@ class Unicorn::Configurator
     :before_fork => lambda { |server, worker|
         server.logger.info("worker=#{worker.nr} spawning...")
       },
-    :before_exec => lambda { |server|
-        server.logger.info("forked child re-executing...")
-      },
     :after_worker_exit => lambda { |server, worker, status|
         m = "reaped #{status.inspect} worker=#{worker.nr rescue 'unknown'}"
         if status.success?
@@ -53,7 +50,6 @@ class Unicorn::Configurator
       },
     :pid => nil,
     :early_hints => false,
-    :worker_exec => false,
     :preload_app => false,
     :check_client_connection => false,
     :rewindable_input => true,
@@ -203,16 +199,6 @@ class Unicorn::Configurator
     set_hook(:before_fork, block_given? ? block : args[0])
   end
 
-  # sets the before_exec hook to a given Proc object.  This
-  # Proc object will be called by the master process right
-  # before exec()-ing the new unicorn binary.  This is useful
-  # for freeing certain OS resources that you do NOT wish to
-  # share with the reexeced child process.
-  # There is no corresponding after_exec hook (for obvious reasons).
-  def before_exec(*args, &block)
-    set_hook(:before_exec, block_given? ? block : args[0], 1)
-  end
-
   # sets the timeout of worker processes to +seconds+.  Workers
   # handling the request/app.call/response cycle taking longer than
   # this time period will be forcibly killed (via SIGKILL).  This
@@ -243,17 +229,6 @@ class Unicorn::Configurator
     # POSIX says 31 days is the smallest allowed maximum timeout for select()
     max = 30 * 60 * 60 * 24
     set[:timeout] = seconds > max ? max : seconds
-  end
-
-  # Whether to exec in each worker process after forking.  This changes the
-  # memory layout of each worker process, which is a security feature designed
-  # to defeat possible address space discovery attacks.  Note that using
-  # worker_exec only makes sense if you are not preloading the application,
-  # and will result in higher memory usage.
-  #
-  # worker_exec is only available in unicorn 5.3.0+
-  def worker_exec(bool)
-    set_bool(:worker_exec, bool)
   end
 
   # sets the current number of worker_processes to +nr+.  Each worker
@@ -398,9 +373,6 @@ class Unicorn::Configurator
   #   bind to the same port (as long as all the processes enable this).
   #
   #   This option must be used when unicorn first binds the listen socket.
-  #   It cannot be enabled when a socket is inherited via SIGUSR2
-  #   (but it will remain on if inherited), and it cannot be enabled
-  #   directly via SIGHUP.
   #
   #   Note: there is a chance of connections being dropped if
   #   one of the unicorn instances is stopped while using this.
@@ -513,13 +485,6 @@ class Unicorn::Configurator
   # have to be reopened as (unbuffered-in-userspace) files opened with
   # the File::APPEND flag are written to atomically on UNIX.
   #
-  # In addition to reloading the unicorn-specific config settings,
-  # SIGHUP will reload application code in the working
-  # directory/symlink when workers are gracefully restarted when
-  # preload_app=false (the default).  As reloading the application
-  # sometimes requires RubyGems updates, +Gem.refresh+ is always
-  # called before the application is loaded (for RubyGems users).
-  #
   # During deployments, care should _always_ be taken to ensure your
   # applications are properly deployed and running.  Using
   # preload_app=false (the default) means you _must_ check if
@@ -594,12 +559,7 @@ class Unicorn::Configurator
     set_path(:stdout_path, path)
   end
 
-  # sets the working directory for Unicorn.  This ensures SIGUSR2 will
-  # start a new instance of Unicorn in this directory.  This may be
-  # a symlink, a common scenario for Capistrano users.  Unlike
-  # all other Unicorn configuration directives, this binds immediately
-  # for error checking and cannot be undone by unsetting it in the
-  # configuration file and reloading.
+  # sets the working directory for Unicorn.
   def working_directory(path)
     # just let chdir raise errors
     path = File.expand_path(path)

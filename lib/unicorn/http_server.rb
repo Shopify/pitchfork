@@ -12,11 +12,11 @@
 class Unicorn::HttpServer
   # :stopdoc:
   attr_accessor :app, :timeout, :worker_processes,
-                :before_fork, :after_fork, :before_exec,
+                :before_fork, :after_fork,
                 :listener_opts, :preload_app,
                 :orig_app, :config, :ready_pipe, :user,
                 :default_middleware, :early_hints
-  attr_writer   :after_worker_exit, :after_worker_ready, :worker_exec
+  attr_writer   :after_worker_exit, :after_worker_ready
 
   attr_reader :pid, :logger
   include Unicorn::SocketHelper
@@ -31,8 +31,6 @@ class Unicorn::HttpServer
   NEW_LISTENERS = []
 
   # :startdoc:
-  # We populate this at startup so we can figure out how to reexecute
-  # and upgrade the currently running instance of Unicorn
   # This Hash is considered a stable interface and changing its contents
   # will allow you to switch between different installations of Unicorn
   # or even different installations of the same applications without
@@ -42,12 +40,7 @@ class Unicorn::HttpServer
   # * :argv - a deep copy of the ARGV array the executable originally saw
   # * :cwd - the working directory of the application, this is where
   # you originally started Unicorn.
-  #
-  # To change your unicorn executable to a different path without downtime,
-  # you can set the following in your Unicorn config file, HUP and then
-  # continue with the traditional USR2 + QUIT upgrade steps:
-  #
-  #   Unicorn::HttpServer::START_CTX[0] = "/home/bofh/2.3.0/bin/unicorn"
+  # TODO: Can we get rid of this?
   START_CTX = {
     :argv => ARGV.map(&:dup),
     0 => $0.dup,
@@ -69,7 +62,6 @@ class Unicorn::HttpServer
   # incoming requests on the socket.
   def initialize(app, options = {})
     @app = app
-    @reexec_pid = 0
     @default_middleware = true
     options = options.dup
     @ready_pipe = options.delete(:ready_pipe)
@@ -106,7 +98,7 @@ class Unicorn::HttpServer
     @orig_app = app
     # list of signals we care about and trap in master.
     @queue_sigs = [
-      :QUIT, :INT, :TERM, :USR1, :USR2, :HUP, :TTIN, :TTOU ]
+      :QUIT, :INT, :TERM, :USR1, :TTIN, :TTOU ]
 
     @worker_data = if worker_data = ENV['UNICORN_WORKER']
       worker_data = worker_data.split(',').map!(&:to_i)
@@ -296,21 +288,11 @@ class Unicorn::HttpServer
         Unicorn::Util.reopen_logs
         logger.info "master done reopening logs"
         soft_kill_each_worker(:USR1)
-      when :USR2 # exec binary, stay alive in case something went wrong
-        reexec
       when :TTIN
         respawn = true
         self.worker_processes += 1
       when :TTOU
         self.worker_processes -= 1 if self.worker_processes > 0
-      when :HUP
-        respawn = true
-        if config.config_file
-          load_config!
-        else # exec binary and exit if there's no config file
-          logger.info "config_file not present, reexecuting binary"
-          reexec
-        end
       end
     rescue => e
       Unicorn.log_error(@logger, "master loop error", e)
@@ -383,81 +365,11 @@ class Unicorn::HttpServer
     begin
       wpid, status = Process.waitpid2(-1, Process::WNOHANG)
       wpid or return
-      if @reexec_pid == wpid
-        logger.error "reaped #{status.inspect} exec()-ed"
-        @reexec_pid = 0
-        self.pid = pid.chomp('.oldbin') if pid
-        proc_name 'master'
-      else
-        worker = @workers.delete(wpid) and worker.close rescue nil
-        @after_worker_exit.call(self, worker, status)
-      end
+      worker = @workers.delete(wpid) and worker.close rescue nil
+      @after_worker_exit.call(self, worker, status)
     rescue Errno::ECHILD
       break
     end while true
-  end
-
-  # reexecutes the START_CTX with a new binary
-  def reexec
-    if @reexec_pid > 0
-      begin
-        Process.kill(0, @reexec_pid)
-        logger.error "reexec-ed child already running PID:#@reexec_pid"
-        return
-      rescue Errno::ESRCH
-        @reexec_pid = 0
-      end
-    end
-
-    if pid
-      old_pid = "#{pid}.oldbin"
-      begin
-        self.pid = old_pid  # clear the path for a new pid file
-      rescue ArgumentError
-        logger.error "old PID:#{valid_pid?(old_pid)} running with " \
-                     "existing pid=#{old_pid}, refusing rexec"
-        return
-      rescue => e
-        logger.error "error writing pid=#{old_pid} #{e.class} #{e.message}"
-        return
-      end
-    end
-
-    @reexec_pid = fork do
-      listener_fds = listener_sockets
-      ENV['UNICORN_FD'] = listener_fds.keys.join(',')
-      Dir.chdir(START_CTX[:cwd])
-      cmd = [ START_CTX[0] ].concat(START_CTX[:argv])
-
-      # avoid leaking FDs we don't know about, but let before_exec
-      # unset FD_CLOEXEC, if anything else in the app eventually
-      # relies on FD inheritence.
-      close_sockets_on_exec(listener_fds)
-
-      # exec(command, hash) works in at least 1.9.1+, but will only be
-      # required in 1.9.4/2.0.0 at earliest.
-      cmd << listener_fds
-      logger.info "executing #{cmd.inspect} (in #{Dir.pwd})"
-      before_exec.call(self)
-      exec(*cmd)
-    end
-    proc_name 'master (old)'
-  end
-
-  def worker_spawn(worker)
-    listener_fds = listener_sockets
-    env = {}
-    env['UNICORN_FD'] = listener_fds.keys.join(',')
-
-    listener_fds[worker.to_io.fileno] = worker.to_io
-    listener_fds[worker.master.fileno] = worker.master
-
-    worker_info = [worker.nr, worker.to_io.fileno, worker.master.fileno]
-    env['UNICORN_WORKER'] = worker_info.join(',')
-
-    close_sockets_on_exec(listener_fds)
-
-    Process.spawn(env, START_CTX[0], *START_CTX[:argv], listener_fds)
   end
 
   def listener_sockets
@@ -503,7 +415,7 @@ class Unicorn::HttpServer
     @self_pipe.each(&:close).clear # this is master-only, now
     @ready_pipe.close if @ready_pipe
     Unicorn::Configurator::RACKUP.clear
-    @ready_pipe = @init_listeners = @before_exec = @before_fork = nil
+    @ready_pipe = @init_listeners = @before_fork = nil
 
     # The OpenSSL PRNG is seeded with only the pid, and apps with frequently
     # dying workers can recycle pids
@@ -524,9 +436,7 @@ class Unicorn::HttpServer
       worker = Unicorn::Worker.new(worker_nr)
       before_fork.call(self, worker)
 
-      pid = @worker_exec ? worker_spawn(worker) : fork
-
-      unless pid
+      pid = fork do
         after_fork_internal
         worker_loop(worker)
         exit

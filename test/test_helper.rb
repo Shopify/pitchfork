@@ -209,49 +209,6 @@ def wait_master_ready(master_log)
   raise "master process never became ready"
 end
 
-def reexec_usr2_quit_test(pid, pid_file)
-  assert File.exist?(pid_file), "pid file OK"
-  assert ! File.exist?("#{pid_file}.oldbin"), "oldbin pid file"
-  Process.kill(:USR2, pid)
-  retry_hit(["http://#{@addr}:#{@port}/"])
-  wait_for_file("#{pid_file}.oldbin")
-  wait_for_file(pid_file)
-
-  old_pid = File.read("#{pid_file}.oldbin").to_i
-  new_pid = File.read(pid_file).to_i
-
-  # kill old master process
-  assert_not_equal pid, new_pid
-  assert_equal pid, old_pid
-  Process.kill(:QUIT, old_pid)
-  retry_hit(["http://#{@addr}:#{@port}/"])
-  wait_for_death(old_pid)
-  assert_equal new_pid, File.read(pid_file).to_i
-  retry_hit(["http://#{@addr}:#{@port}/"])
-  Process.kill(:QUIT, new_pid)
-end
-
-def reexec_basic_test(pid, pid_file)
-  results = retry_hit(["http://#{@addr}:#{@port}/"])
-  assert_equal String, results[0].class
-  Process.kill(0, pid)
-  master_log = "#{@tmpdir}/test_stderr.#{pid}.log"
-  wait_master_ready(master_log)
-  File.truncate(master_log, 0)
-  nr = 50
-  kill_point = 2
-  nr.times do |i|
-    hit(["http://#{@addr}:#{@port}/#{i}"])
-    i == kill_point and Process.kill(:HUP, pid)
-  end
-  wait_master_ready(master_log)
-  assert File.exist?(pid_file), "pid=#{pid_file} exists"
-  new_pid = File.read(pid_file).to_i
-  assert_not_equal pid, new_pid
-  Process.kill(0, new_pid)
-  Process.kill(:QUIT, new_pid)
-end
-
 def wait_for_file(path)
   tries = DEFAULT_TRIES
   while (tries -= 1) > 0 && ! File.exist?(path)
@@ -288,7 +245,7 @@ def wait_for_death(pid)
 end
 
 def reset_sig_handlers
-  %w(QUIT INT TERM USR1 USR2 HUP TTIN TTOU CHLD).each do |sig|
+  %w(QUIT INT TERM USR1 USR2 WINCH HUP TTIN TTOU CHLD).each do |sig|
     trap(sig, "DEFAULT")
   end
 end

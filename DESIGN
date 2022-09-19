@@ -21,7 +21,7 @@
 
 * Configuration is purely in Ruby and eval().  Ruby is less
   ambiguous than YAML and lets lambdas for
-  before_fork/after_fork/before_exec hooks be defined inline.  An
+  before_fork/after_fork hooks be defined inline.  An
   optional, separate config_file may be used to modify supported
   configuration changes (and also gives you plenty of rope if you RTFS
   :>)
