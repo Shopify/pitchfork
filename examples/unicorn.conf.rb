@@ -31,9 +31,6 @@ listen 8080, :tcp_nopush => true
 # nuke workers after 30 seconds instead of 60 seconds (the default)
 timeout 30
 
-# feel free to point this anywhere accessible on the filesystem
-pid "/path/to/app/shared/pids/unicorn.pid"
-
 # By default, the Unicorn logger will write to stderr.
 # Additionally, ome applications/frameworks log to stderr or stdout.
 stderr_path "/path/to/app/shared/log/unicorn.stderr.log"

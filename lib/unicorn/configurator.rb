@@ -48,7 +48,6 @@ class Unicorn::Configurator
     :after_worker_ready => lambda { |server, worker|
         server.logger.info("worker=#{worker.nr} ready")
       },
-    :pid => nil,
     :early_hints => false,
     :preload_app => false,
     :check_client_connection => false,
@@ -92,7 +91,7 @@ class Unicorn::Configurator
 
     # working_directory binds immediately (easier error checking that way),
     # now ensure any paths we changed are correctly set.
-    [ :pid, :stderr_path, :stdout_path ].each do |var|
+    [ :stderr_path, :stdout_path ].each do |var|
       String === (path = set[var]) or next
       path = File.expand_path(path)
       File.writable?(path) || File.writable?(File.dirname(path)) or \
@@ -471,9 +470,6 @@ class Unicorn::Configurator
 
     set[:listeners] << address
   end
-
-  # sets the +path+ for the PID file of the unicorn master process
-  def pid(path); set_path(:pid, path); end
 
   # Enabling this preloads an application before forking worker
   # processes.  This allows memory savings when using a

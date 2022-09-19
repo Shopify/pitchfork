@@ -18,7 +18,7 @@ class Unicorn::HttpServer
                 :default_middleware, :early_hints
   attr_writer   :after_worker_exit, :after_worker_ready
 
-  attr_reader :pid, :logger
+  attr_reader :logger
   include Unicorn::SocketHelper
   include Unicorn::HttpResponse
 
@@ -123,12 +123,6 @@ class Unicorn::HttpServer
     @queue_sigs.each { |sig| trap(sig) { @sig_queue << sig; awaken_master } }
     trap(:CHLD) { awaken_master }
 
-    # write pid early for Mongrel compatibility if we're not inheriting sockets
-    # This is needed for compatibility some Monit setups at least.
-    # This unfortunately has the side effect of clobbering valid PID if
-    # we upgrade and the upgrade breaks during preload_app==true && build_app!
-    self.pid = config[:pid]
-
     build_app! if preload_app
     bind_new_listeners!
 
@@ -168,44 +162,6 @@ class Unicorn::HttpServer
 
   def logger=(obj)
     Unicorn::HttpRequest::DEFAULTS["rack.logger"] = @logger = obj
-  end
-
-  def clobber_pid(path)
-    unlink_pid_safe(@pid) if @pid
-    if path
-      fp = begin
-        tmp = "#{File.dirname(path)}/#{rand}.#$$"
-        File.open(tmp, File::RDWR|File::CREAT|File::EXCL, 0644)
-      rescue Errno::EEXIST
-        retry
-      end
-      fp.syswrite("#$$\n")
-      File.rename(fp.path, path)
-      fp.close
-    end
-  end
-
-  # sets the path for the PID file of the master process
-  def pid=(path)
-    if path
-      if x = valid_pid?(path)
-        return path if pid && path == pid && x == $$
-      end
-    end
-
-    # rename the old pid if possible
-    if @pid && path
-      begin
-        File.rename(@pid, path)
-      rescue Errno::ENOENT, Errno::EXDEV
-        # a user may have accidentally removed the original,
-        # obviously cross-FS renames don't work, either.
-        clobber_pid(path)
-      end
-    else
-      clobber_pid(path)
-    end
-    @pid = path
   end
 
   # add a given address to the +listeners+ set, idempotently
@@ -299,7 +255,6 @@ class Unicorn::HttpServer
     end while true
     stop # gracefully shutdown all workers on our way out
     logger.info "master complete"
-    unlink_pid_safe(pid) if pid
   end
 
   # Terminates all workers, but does not exit master process
@@ -666,28 +621,6 @@ class Unicorn::HttpServer
 
   def soft_kill_each_worker(signal)
     @workers.each_value { |worker| worker.soft_kill(signal) }
-  end
-
-  # unlinks a PID file at given +path+ if it contains the current PID
-  # still potentially racy without locking the directory (which is
-  # non-portable and may interact badly with other programs), but the
-  # window for hitting the race condition is small
-  def unlink_pid_safe(path)
-    (File.read(path).to_i == $$ and File.unlink(path)) rescue nil
-  end
-
-  # returns a PID if a given path contains a non-stale PID file,
-  # nil otherwise.
-  def valid_pid?(path)
-    wpid = File.read(path).to_i
-    wpid <= 0 and return
-    Process.kill(0, wpid)
-    wpid
-  rescue Errno::EPERM
-    logger.info "pid=#{path} possibly stale, got EPERM signalling PID:#{wpid}"
-    nil
-  rescue Errno::ESRCH, Errno::ENOENT
-    # don't unlink stale pid files, racy without non-portable locking...
   end
 
   def load_config!

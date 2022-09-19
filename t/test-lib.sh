@@ -113,7 +113,6 @@ unicorn_setup () {
 	rtmpfiles unicorn_config pid r_err r_out fifo tmp ok
 	cat > $unicorn_config <<EOF
 listen "$listen"
-pid "$pid"
 stderr_path "$r_err"
 stdout_path "$r_out"
 EOF

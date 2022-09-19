@@ -7,7 +7,7 @@ t_begin "setup and start" && {
 	cat >> $unicorn_config <<EOF
 after_fork { |s,w| File.open('$fifo','w') { |f| f.write '.' } }
 EOF
-	unicorn -c $unicorn_config pid.ru &
+	unicorn_spawn -c $unicorn_config pid.ru
 	test '.' = $(cat $fifo)
 	unicorn_wait_start
 }
@@ -43,9 +43,8 @@ t_begin "ensure log of 2nd reap is a INFO" && {
 }
 
 t_begin "killing succeeds" && {
-	kill $unicorn_pid
+	kill "$unicorn_pid"
 	wait
-	kill -0 $unicorn_pid && false
 }
 
 t_begin "check stderr" && {
