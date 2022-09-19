@@ -71,7 +71,7 @@ module Unicorn
       self.config = Unicorn::Configurator.new(options)
       self.listener_opts = {}
 
-      # We use @self_pipe differently in the master and worker processes:
+      # We use @control_socket differently in the master and worker processes:
       #
       # * The master process never closes or reinitializes this once
       # initialized.  Signal handlers in the master process will write to
@@ -80,7 +80,7 @@ module Unicorn
       #
       # * The workers immediately close the pipe they inherit.  See the
       # Unicorn::Worker class for the pipe workers use.
-      @self_pipe = []
+      @control_socket = []
       @workers = {} # hash maps PIDs to Workers
       @sig_queue = [] # signal queue used for self-piping
       @pid = nil
@@ -105,9 +105,13 @@ module Unicorn
     # Runs the thing.  Returns self so you can run join on it
     def start
       inherit_listeners!
-      # this pipe is used to wake us up from select(2) in #join when signals
+      # This socketpair is used to wake us up from select(2) in #join when signals
       # are trapped.  See trap_deferred.
-      @self_pipe.replace(Unicorn.pipe)
+      # It's also used by newly spawned children to send their soft_signal pipe
+      # to the master when they are spawned.
+      @control_socket.replace(Unicorn.socketpair)
+      @control_socket[0].close_write
+      @control_socket[1].close_read
       @master_pid = $$
 
       # setup signal handlers before writing pid file in case people get
@@ -295,17 +299,17 @@ module Unicorn
 
     # wait for a signal hander to wake us up and then consume the pipe
     def master_sleep(sec)
-      @self_pipe[0].wait(sec) or return
+      @control_socket[0].wait(sec) or return
       # 11 bytes is the maximum string length which can be embedded within
       # the Ruby itself and not require a separate malloc (on 32-bit MRI 1.9+).
       # Most reads are only one byte here and uncommon, so it's not worth a
       # persistent buffer, either:
-      @self_pipe[0].read_nonblock(11, exception: false)
+      @control_socket[0].read_nonblock(11, exception: false)
     end
 
     def awaken_master
       return if $$ != @master_pid
-      @self_pipe[1].write_nonblock('.', exception: false) # wakeup master process from select
+      @control_socket[1].write_nonblock('.', exception: false) # wakeup master process from select
     end
 
     # reaps all unreaped workers
@@ -360,7 +364,7 @@ module Unicorn
     end
 
     def after_fork_internal
-      @self_pipe.each(&:close).clear # this is master-only, now
+      @control_socket[0].close_write # this is master-only, now
       @ready_pipe.close if @ready_pipe
       Unicorn::Configurator::RACKUP.clear
       @ready_pipe = @init_listeners = @before_fork = nil

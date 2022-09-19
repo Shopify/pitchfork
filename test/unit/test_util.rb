@@ -104,6 +104,15 @@ class TestUtil < Test::Unit::TestCase
     tmp.close!
   end
 
+  def test_socketpair
+    child, parent = Unicorn.socketpair
+    assert child
+    assert parent
+  ensure
+    child.close
+    parent.close
+  end
+
   def test_pipe
     r, w = Unicorn.pipe
     assert r
