@@ -626,7 +626,7 @@ class Unicorn::HttpServer
     loaded_app = app
     logger.info "reloading config_file=#{config.config_file}"
     config[:listeners].replace(@init_listeners)
-    config.reload
+    config.load
     config.commit!(self)
     soft_kill_each_worker(:QUIT)
     Unicorn::Util.reopen_logs

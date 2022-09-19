@@ -14,7 +14,7 @@ class Unicorn::Configurator
   include Unicorn
 
   # :stopdoc:
-  attr_accessor :set, :config_file, :after_reload
+  attr_accessor :set, :config_file, :after_load
 
   # used to stash stuff for deferred processing of cli options in
   # config.ru.  Do not rely on
@@ -60,18 +60,18 @@ class Unicorn::Configurator
     @use_defaults = defaults.delete(:use_defaults)
     self.config_file = defaults.delete(:config_file)
 
-    # after_reload is only used by unicorn_rails, unsupported otherwise
-    self.after_reload = defaults.delete(:after_reload)
+    # after_load is only used by unicorn_rails, unsupported otherwise
+    self.after_load = defaults.delete(:after_load)
 
     set.merge!(DEFAULTS) if @use_defaults
     defaults.each { |key, value| self.__send__(key, value) }
     Hash === set[:listener_opts] or
         set[:listener_opts] = Hash.new { |hash,key| hash[key] = {} }
     Array === set[:listeners] or set[:listeners] = []
-    reload(false)
+    load(false)
   end
 
-  def reload(merge_defaults = true) #:nodoc:
+  def load(merge_defaults = true) #:nodoc:
     if merge_defaults && @use_defaults
       set.merge!(DEFAULTS) if @use_defaults
     end
@@ -86,7 +86,7 @@ class Unicorn::Configurator
       set[:default_middleware] = false
 
     # unicorn_rails creates dirs here.
-    after_reload.call if after_reload
+    after_load.call if after_load
 
     # ensure paths are correctly set.
     [ :stderr_path, :stdout_path ].each do |var|

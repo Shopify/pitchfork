@@ -189,7 +189,7 @@ if $DEBUG
 end
 
 # ensure Rails standard tmp paths exist
-options[:after_reload] = lambda do
+options[:after_load] = lambda do
   FileUtils.mkdir_p(%w(cache pids sessions sockets).map! { |d| "tmp/#{d}" })
 end
 
