@@ -13,7 +13,7 @@ class Unicorn::HttpServer
   # :stopdoc:
   attr_accessor :app, :timeout, :worker_processes,
                 :before_fork, :after_fork,
-                :listener_opts, :preload_app,
+                :listener_opts,
                 :orig_app, :config, :ready_pipe, :user,
                 :default_middleware, :early_hints
   attr_writer   :after_worker_exit, :after_worker_ready
@@ -123,7 +123,7 @@ class Unicorn::HttpServer
     @queue_sigs.each { |sig| trap(sig) { @sig_queue << sig; awaken_master } }
     trap(:CHLD) { awaken_master }
 
-    build_app! if preload_app
+    build_app!
     bind_new_listeners!
 
     spawn_missing_workers
@@ -535,7 +535,6 @@ class Unicorn::HttpServer
 
     worker.user(*user) if user.kind_of?(Array) && ! worker.switched
     @config = nil
-    build_app! unless preload_app
     @after_fork = @listener_opts = @orig_app = nil
     readers = LISTENERS.dup
     readers << worker
@@ -632,7 +631,7 @@ class Unicorn::HttpServer
     soft_kill_each_worker(:QUIT)
     Unicorn::Util.reopen_logs
     self.app = @orig_app
-    build_app! if preload_app
+    build_app!
     logger.info "done reloading config_file=#{config.config_file}"
   rescue StandardError, LoadError, SyntaxError => e
     Unicorn.log_error(@logger,

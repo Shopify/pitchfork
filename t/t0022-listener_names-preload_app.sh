@@ -2,13 +2,12 @@
 . ./test-lib.sh
 
 # Raindrops::Middleware depends on Unicorn.listener_names,
-# ensure we don't break Raindrops::Middleware when preload_app is true
+# ensure we don't break Raindrops::Middleware.
 
-t_plan 4 "Unicorn.listener_names available with preload_app=true"
+t_plan 4 "Unicorn.listener_names available"
 
 t_begin "setup and startup" && {
 	unicorn_setup
-	echo preload_app true >> $unicorn_config
 	unicorn_spawn -E none listener_names.ru -c $unicorn_config
 	unicorn_wait_start
 }

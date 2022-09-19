@@ -60,13 +60,6 @@ See Unicorn::Configurator for details on the config file format.
 
 == Other unicorn settings
 
-* Setting "preload_app true" can allow copy-on-write-friendly GC to
-  be used to save memory.  It will probably not work out of the box with
-  applications that open sockets or perform random I/O on files.
-  Databases like TokyoCabinet use concurrency-safe pread()/pwrite()
-  functions for safe sharing of database file descriptors across
-  processes.
-
 * On POSIX-compliant filesystems, it is safe for multiple threads or
   processes to append to one log file as long as all the processes are
   have them unbuffered (File#sync = true) or they are
@@ -75,24 +68,6 @@ See Unicorn::Configurator for details on the config file format.
 == Kernel Parameters (Linux sysctl and sysfs)
 
 WARNING: Do not change system parameters unless you know what you're doing!
-
-* Transparent hugepages (THP) improves performance in many cases,
-  but can also increase memory use when relying on a
-  copy-on-write(CoW)-friendly GC (Ruby 2.0+) with "preload_app true".
-  CoW operates at the page level, so writing to a huge page would
-  trigger a 2 MB copy (x86-64), as opposed to a 4 KB copy on a
-  regular (non-huge) page.
-
-  Consider only allowing THP to be used when it is requested via the
-  madvise(2) syscall:
-
-	echo madvise >/sys/kernel/mm/transparent_hugepage/enabled
-
-  Or disabling it system-wide, via "never".
-
-  n.b. "page" in this context only applies to the OS kernel,
-  Ruby GC implementations also use this term for the same concept
-  in a way that is agnostic to the OS.
 
 * net.core.rmem_max and net.core.wmem_max can increase the allowed
   size of :rcvbuf and :sndbuf respectively. This is mostly only useful

@@ -83,22 +83,9 @@ class WebServerTest < Test::Unit::TestCase
       tmp.syswrite($$)
       lambda { |env| [ 200, { 'Content-Type' => 'text/plain' }, [ "#$$\n" ] ] }
     }
-    redirect_test_io do
-      @server = HttpServer.new(app, :listeners => [ "127.0.0.1:#@port"] )
-      @server.start
-    end
-    results = hit(["http://localhost:#@port/"])
-    worker_pid = results[0].to_i
-    assert worker_pid != 0
-    tmp.sysseek(0)
-    loader_pid = tmp.sysread(4096).to_i
-    assert loader_pid != 0
-    assert_equal worker_pid, loader_pid
-    teardown
 
     redirect_test_io do
-      @server = HttpServer.new(app, :listeners => [ "127.0.0.1:#@port"],
-                               :preload_app => true)
+      @server = HttpServer.new(app, :listeners => [ "127.0.0.1:#@port"])
       @server.start
     end
     results = hit(["http://localhost:#@port/"])

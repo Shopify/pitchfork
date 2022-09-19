@@ -36,9 +36,6 @@ timeout 30
 stderr_path "/path/to/app/shared/log/unicorn.stderr.log"
 stdout_path "/path/to/app/shared/log/unicorn.stdout.log"
 
-# combine Ruby 2.0.0+ with "preload_app true" for memory savings
-preload_app true
-
 # Enable this flag to have unicorn test client connections by writing the
 # beginning of the HTTP headers before calling the application.  This
 # prevents calling the application for connections that have disconnected
@@ -51,7 +48,7 @@ check_client_connection false
 run_once = true
 
 before_fork do |server, worker|
-  # the following is highly recomended for Rails + "preload_app true"
+  # the following is highly recomended for Rails
   # as there's no need for the master process to hold a connection
   defined?(ActiveRecord::Base) and
     ActiveRecord::Base.connection.disconnect!
@@ -70,7 +67,7 @@ before_fork do |server, worker|
   #
   # # This allows a new master process to incrementally
   # # phase out the old master process with SIGTTOU to avoid a
-  # # thundering herd (especially in the "preload_app false" case)
+  # # thundering herd
   # # when doing a transparent upgrade.  The last worker spawned
   # # will then kill off the old master process with a SIGQUIT.
   # old_pid = "#{server.config[:pid]}.oldbin"
@@ -94,13 +91,11 @@ after_fork do |server, worker|
   # addr = "127.0.0.1:#{9293 + worker.nr}"
   # server.listen(addr, :tries => -1, :delay => 5, :tcp_nopush => true)
 
-  # the following is *required* for Rails + "preload_app true",
+  # the following is *required* for Rails
   defined?(ActiveRecord::Base) and
     ActiveRecord::Base.establish_connection
 
-  # if preload_app is true, then you may also want to check and
+  # You may also want to check and
   # restart any other shared sockets/descriptors such as Memcached,
-  # and Redis.  TokyoCabinet file handles are safe to reuse
-  # between any number of forked children (assuming your kernel
-  # correctly implements pread()/pwrite() system calls)
+  # and Redis.
 end

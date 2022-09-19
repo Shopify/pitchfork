@@ -6,7 +6,6 @@ t_plan 11 "heartbeat/timeout test"
 t_begin "setup and startup" && {
 	unicorn_setup
 	echo timeout 3 >> $unicorn_config
-	echo preload_app true >> $unicorn_config
 	unicorn_spawn heartbeat-timeout.ru -c $unicorn_config
 	unicorn_wait_start
 }

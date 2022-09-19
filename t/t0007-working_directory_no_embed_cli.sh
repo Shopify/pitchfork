@@ -17,7 +17,6 @@ EOF
 	echo "working_directory '$t_pfx.app'" >> $unicorn_config
 
 	# allows ppid to be 1 in before_fork
-	echo "preload_app true" >> $unicorn_config
 	cat >> $unicorn_config <<\EOF
 before_fork do |server,worker|
   $master_ppid = Process.ppid # should be zero to detect daemonization

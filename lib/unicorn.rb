@@ -34,8 +34,7 @@ module Unicorn
   # :stopdoc:
 
   # This returns a lambda to pass in as the app, this does not "build" the
-  # app (which we defer based on the outcome of "preload_app" in the
-  # Unicorn config).  The returned lambda will be called when it is
+  # app The returned lambda will be called when it is
   # time to build the app.
   def self.builder(ru, op)
     # allow Configurator to parse cli switches embedded in the ru file

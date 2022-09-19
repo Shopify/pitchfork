@@ -40,12 +40,10 @@ both the the request and response in between unicorn and slow clients.
   supported since unicorn 5.0
 
 * before_fork and after_fork hooks in case your application
-  has special needs when dealing with forked processes.  These
-  should not be needed when the "preload_app" directive is
-  false (the default).
+  has special needs when dealing with forked processes.
 
 * Can be used with copy-on-write-friendly GC in Ruby 2.0+
-  to save memory (by setting "preload_app" to true).
+  to save memory.
 
 * Able to listen on multiple interfaces including UNIX sockets,
   each worker process can also bind to a private port via the

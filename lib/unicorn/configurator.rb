@@ -49,7 +49,6 @@ class Unicorn::Configurator
         server.logger.info("worker=#{worker.nr} ready")
       },
     :early_hints => false,
-    :preload_app => false,
     :check_client_connection => false,
     :rewindable_input => true,
     :client_body_buffer_size => Unicorn::Const::MAX_BODY,
@@ -469,31 +468,6 @@ class Unicorn::Configurator
     end
 
     set[:listeners] << address
-  end
-
-  # Enabling this preloads an application before forking worker
-  # processes.  This allows memory savings when using a
-  # copy-on-write-friendly GC but can cause bad things to happen when
-  # resources like sockets are opened at load time by the master
-  # process and shared by multiple children.  People enabling this are
-  # highly encouraged to look at the before_fork/after_fork hooks to
-  # properly close/reopen sockets.  Files opened for logging do not
-  # have to be reopened as (unbuffered-in-userspace) files opened with
-  # the File::APPEND flag are written to atomically on UNIX.
-  #
-  # During deployments, care should _always_ be taken to ensure your
-  # applications are properly deployed and running.  Using
-  # preload_app=false (the default) means you _must_ check if
-  # your application is responding properly after a deployment.
-  # Improperly deployed applications can go into a spawn loop
-  # if the application fails to load.  While your children are
-  # in a spawn loop, it is is possible to fix an application
-  # by properly deploying all required code and dependencies.
-  # Using preload_app=true means any application load error will
-  # cause the master process to exit with an error.
-
-  def preload_app(bool)
-    set_bool(:preload_app, bool)
   end
 
   # Toggles making \env[\"rack.input\"] rewindable.
