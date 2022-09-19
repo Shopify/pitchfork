@@ -127,8 +127,7 @@ def rails_builder(ru, op)
   Unicorn::Configurator::RACKUP.update(:file => :rails, :optparse => op)
 
   lambda do |x, server|
-    # Rails 3 includes a config.ru, use it if we find it after
-    # working_directory is bound.
+    # Rails 3 includes a config.ru, use it if we find it.
     ::File.exist?('config.ru') and
       return Unicorn.builder('config.ru', op).call(x, server)
 

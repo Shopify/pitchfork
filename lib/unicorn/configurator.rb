@@ -17,7 +17,7 @@ class Unicorn::Configurator
   attr_accessor :set, :config_file, :after_reload
 
   # used to stash stuff for deferred processing of cli options in
-  # config.ru after "working_directory" is bound.  Do not rely on
+  # config.ru.  Do not rely on
   # this being around later on...
   RACKUP = {
     :host => Unicorn::Const::DEFAULT_HOST,
@@ -85,11 +85,10 @@ class Unicorn::Configurator
     RACKUP[:no_default_middleware] and
       set[:default_middleware] = false
 
-    # unicorn_rails creates dirs here after working_directory is bound
+    # unicorn_rails creates dirs here.
     after_reload.call if after_reload
 
-    # working_directory binds immediately (easier error checking that way),
-    # now ensure any paths we changed are correctly set.
+    # ensure paths are correctly set.
     [ :stderr_path, :stdout_path ].each do |var|
       String === (path = set[var]) or next
       path = File.expand_path(path)
@@ -529,21 +528,6 @@ class Unicorn::Configurator
     set_path(:stdout_path, path)
   end
 
-  # sets the working directory for Unicorn.
-  def working_directory(path)
-    # just let chdir raise errors
-    path = File.expand_path(path)
-    if config_file &&
-       ! config_file.start_with?('/') &&
-       ! File.readable?("#{path}/#{config_file}")
-      raise ArgumentError,
-            "config_file=#{config_file} would not be accessible in" \
-            " working_directory=#{path}"
-    end
-    Dir.chdir(path)
-    Unicorn::HttpServer::START_CTX[:cwd] = ENV["PWD"] = path
-  end
-
   # Runs worker processes as the specified +user+ and +group+.
   # The master process always stays running as the user who started it.
   # This switch will occur after calling the after_fork hook, and only
@@ -633,8 +617,7 @@ private
     set[var] = my_proc
   end
 
-  # this is called _after_ working_directory is bound.  This only
-  # parses the embedded switches in .ru files
+  # This only parses the embedded switches in .ru files
   # (for "rackup" compatibility)
   def parse_rackup_file # :nodoc:
     ru = RACKUP[:file] or return # we only return here in unit tests
