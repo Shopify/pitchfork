@@ -176,13 +176,9 @@ class Unicorn::Configurator
   # by a worker process after it has been fully loaded, directly before it
   # starts responding to requests:
   #
-  #  after_worker_ready do |server,worker|
-  #    server.logger.info("worker #{worker.nr} ready, dropping privileges")
-  #    worker.user('username', 'groupname')
+  #  after_worker_ready do |server, worker|
+  #    server.logger.info("worker #{worker.nr} ready")
   #  end
-  #
-  # Do not use Configurator#user if you rely on changing users in the
-  # after_worker_ready hook.
   #
   # after_worker_ready is only available in unicorn 5.3.0+
   def after_worker_ready(*args, &block)
@@ -526,22 +522,6 @@ class Unicorn::Configurator
   # It is safe to point this to the same location a stderr_path.
   def stdout_path(path)
     set_path(:stdout_path, path)
-  end
-
-  # Runs worker processes as the specified +user+ and +group+.
-  # The master process always stays running as the user who started it.
-  # This switch will occur after calling the after_fork hook, and only
-  # if the Worker#user method is not called in the after_fork hook
-  # +group+ is optional and will not change if unspecified.
-  #
-  # Do not use Configurator#user if you rely on changing users in the
-  # after_worker_ready hook.  Instead, you need to call Worker#user
-  # directly in after_worker_ready.
-  def user(user, group = nil)
-    # raises ArgumentError on invalid user/group
-    Etc.getpwnam(user)
-    Etc.getgrnam(group) if group
-    set[:user] = [ user, group ]
   end
 
   # expands "unix:path/to/foo" to a socket relative to the current path

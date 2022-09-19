@@ -14,7 +14,7 @@ class Unicorn::HttpServer
   attr_accessor :app, :timeout, :worker_processes,
                 :before_fork, :after_fork,
                 :listener_opts,
-                :orig_app, :config, :ready_pipe, :user,
+                :orig_app, :config, :ready_pipe,
                 :default_middleware, :early_hints
   attr_writer   :after_worker_exit, :after_worker_ready
 
@@ -533,7 +533,6 @@ class Unicorn::HttpServer
     after_fork.call(self, worker) # can drop perms and create listeners
     LISTENERS.each { |sock| sock.close_on_exec = true }
 
-    worker.user(*user) if user.kind_of?(Array) && ! worker.switched
     @config = nil
     @after_fork = @listener_opts = @orig_app = nil
     readers = LISTENERS.dup
