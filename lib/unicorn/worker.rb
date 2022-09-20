@@ -11,36 +11,32 @@ module Unicorn
   # See the Unicorn::Configurator RDoc for examples.
   class Worker
     # :stopdoc:
-    attr_accessor :nr, :switched
+    attr_accessor :nr, :switched, :master
     attr_reader :to_io # IO.select-compatible
-    attr_reader :master
 
     PER_DROP = Raindrops::PAGE_SIZE / Raindrops::SIZE
     DROPS = []
 
-    def initialize(nr, pipe=nil)
+    def initialize(nr)
       drop_index = nr / PER_DROP
       @raindrop = DROPS[drop_index] ||= Raindrops.new(PER_DROP)
       @offset = nr % PER_DROP
       @raindrop[@offset] = 0
       @nr = nr
       @switched = false
-      @to_io, @master = pipe || Unicorn.pipe
+      @to_io = @master = nil
     end
 
-    def atfork_child # :nodoc:
-      # we _must_ close in child, parent just holds this open to signal
-      @master = @master.close
+    def register_to_master(control_socket)
+      @to_io, @master = Unicorn.pipe
+      message = Message::WorkerSpawned.new(@nr, Process.pid, @master)
+      control_socket.sendmsg(message)
+      @master.close
     end
 
     # master fakes SIGQUIT using this
     def quit # :nodoc:
       @master = @master.close if @master
-    end
-
-    # parent does not read
-    def atfork_parent # :nodoc:
-      @to_io = @to_io.close
     end
 
     # call a signal handler immediately without triggering EINTR

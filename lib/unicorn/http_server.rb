@@ -28,6 +28,8 @@ module Unicorn
     # in new projects
     LISTENERS = []
 
+    NOOP = '.'
+
     # listeners we have yet to bind
     NEW_LISTENERS = []
 
@@ -63,6 +65,8 @@ module Unicorn
     # incoming requests on the socket.
     def initialize(app, options = {})
       @app = app
+      @respawn = false
+      @last_check = time_now
       @default_middleware = true
       options = options.dup
       @ready_pipe = options.delete(:ready_pipe)
@@ -82,6 +86,7 @@ module Unicorn
       # Unicorn::Worker class for the pipe workers use.
       @control_socket = []
       @workers = {} # hash maps PIDs to Workers
+      @pending_workers = {} # hash maps NRs to Workers
       @sig_queue = [] # signal queue used for self-piping
       @pid = nil
 
@@ -124,6 +129,10 @@ module Unicorn
       bind_new_listeners!
 
       spawn_missing_workers
+      # We could just return here as we'd register them later in #join.
+      # However a good part of the test suite assumes #start only return
+      # once all initial workers are spawned.
+      wait_for_pending_workers
       self
     end
 
@@ -204,8 +213,7 @@ module Unicorn
     # one-at-a-time time and we'll happily drop signals in case somebody
     # is signalling us too often.
     def join
-      respawn = true
-      last_check = time_now
+      @respawn = true
 
       proc_name 'master'
       logger.info "master process ready" # test_exec.rb relies on this message
@@ -217,41 +225,57 @@ module Unicorn
         end
         @ready_pipe = @ready_pipe.close rescue nil
       end
-      begin
-        reap_all_workers
-        case @sig_queue.shift
-        when nil
-          # avoid murdering workers after our master process (or the
-          # machine) comes out of suspend/hibernation
-          if (last_check + @timeout) >= (last_check = time_now)
-            sleep_time = murder_lazy_workers
-          else
-            sleep_time = @timeout/2.0 + 1
-            @logger.debug("waiting #{sleep_time}s after suspend/hibernation")
+      while true
+        begin
+          if monitor_loop == StopIteration
+            break
           end
-          maintain_worker_count if respawn
-          master_sleep(sleep_time)
-        when :QUIT # graceful shutdown
-          break
-        when :TERM, :INT # immediate shutdown
-          stop(false)
-          break
-        when :USR1 # rotate logs
-          logger.info "master reopening logs..."
-          Unicorn::Util.reopen_logs
-          logger.info "master done reopening logs"
-          soft_kill_each_worker(:USR1)
-        when :TTIN
-          respawn = true
-          self.worker_processes += 1
-        when :TTOU
-          self.worker_processes -= 1 if self.worker_processes > 0
+        rescue => e
+          Unicorn.log_error(@logger, "master loop error", e)
         end
-      rescue => e
-        Unicorn.log_error(@logger, "master loop error", e)
-      end while true
+      end
       stop # gracefully shutdown all workers on our way out
       logger.info "master complete"
+    end
+
+    def monitor_loop
+      reap_all_workers
+      case message = @sig_queue.shift
+      when nil
+        # avoid murdering workers after our master process (or the
+        # machine) comes out of suspend/hibernation
+        if (@last_check + @timeout) >= (@last_check = time_now)
+          sleep_time = murder_lazy_workers
+        else
+          sleep_time = @timeout/2.0 + 1
+          @logger.debug("waiting #{sleep_time}s after suspend/hibernation")
+        end
+        maintain_worker_count if @respawn
+        master_sleep(sleep_time)
+      when :QUIT # graceful shutdown
+        return StopIteration
+      when :TERM, :INT # immediate shutdown
+        stop(false)
+        return StopIteration
+      when :USR1 # rotate logs
+        logger.info "master reopening logs..."
+        Unicorn::Util.reopen_logs
+        logger.info "master done reopening logs"
+        soft_kill_each_worker(:USR1)
+      when :TTIN
+        @respawn = true
+        self.worker_processes += 1
+      when :TTOU
+        self.worker_processes -= 1 if self.worker_processes > 0
+      when Message::WorkerSpawned
+        worker = @pending_workers.fetch(message.nr)
+        worker.master = message.pipe
+        @workers[message.pid] = @pending_workers.delete(message.nr)
+        # TODO: should we send a message to the worker to acknowledge?
+        logger.info "worker=#{worker.nr} registered with pid=#{message.pid}"
+      else
+        logger.error("Unexpected message in sig_queue #{message.inspect}")
+      end
     end
 
     # Terminates all workers, but does not exit master process
@@ -300,16 +324,17 @@ module Unicorn
     # wait for a signal hander to wake us up and then consume the pipe
     def master_sleep(sec)
       @control_socket[0].wait(sec) or return
-      # 11 bytes is the maximum string length which can be embedded within
-      # the Ruby itself and not require a separate malloc (on 32-bit MRI 1.9+).
-      # Most reads are only one byte here and uncommon, so it's not worth a
-      # persistent buffer, either:
-      @control_socket[0].read_nonblock(11, exception: false)
+      case message = @control_socket[0].recvmsg_nonblock(exception: false)
+      when :wait_readable, NOOP
+        nil
+      else
+        @sig_queue << message
+      end
     end
 
     def awaken_master
       return if $$ != @master_pid
-      @control_socket[1].write_nonblock('.', exception: false) # wakeup master process from select
+      @control_socket[1].write_nonblock(NOOP, exception: false) # wakeup master process from select
     end
 
     # reaps all unreaped workers
@@ -377,26 +402,37 @@ module Unicorn
     def spawn_missing_workers
       worker_nr = -1
       until (worker_nr += 1) == @worker_processes
-        @workers.value?(worker_nr) and next
+        @workers.value?(worker_nr) || @pending_workers.key?(worker_nr) and next
         worker = Unicorn::Worker.new(worker_nr)
         before_fork.call(self, worker)
 
-        pid = fork do
+        fork do
           after_fork_internal
           worker_loop(worker)
           exit
         end
 
-        @workers[pid] = worker
-        worker.atfork_parent
+        # We could directly register workers when we spawn from the
+        # master, like unicorn does. However it is preferable to
+        # always go through the asynchronous registering process for
+        # consistency.
+        @pending_workers[worker.nr] = worker
       end
     rescue => e
       @logger.error(e) rescue nil
       exit!
     end
 
+    def wait_for_pending_workers
+      until @pending_workers.empty?
+        master_sleep(0.5)
+        monitor_loop
+        maintain_worker_count
+      end
+    end
+
     def maintain_worker_count
-      (off = @workers.size - worker_processes) == 0 and return
+      (off = @workers.size + @pending_workers.size - worker_processes) == 0 and return
       off < 0 and return spawn_missing_workers
       @workers.each_value { |w| w.nr >= worker_processes and w.soft_kill(:QUIT) }
     end
@@ -508,7 +544,7 @@ module Unicorn
     # traps for USR1, USR2, and HUP may be set in the after_fork Proc
     # by the user.
     def init_worker_process(worker)
-      worker.atfork_child
+      worker.register_to_master(@control_socket[1])
       # we'll re-trap :QUIT later for graceful shutdown iff we accept clients
       exit_sigs = [ :QUIT, :TERM, :INT ]
       exit_sigs.each { |sig| trap(sig) { exit!(0) } }

@@ -96,7 +96,7 @@ class WebServerTest < Test::Unit::TestCase
     assert_equal $$, loader_pid
     assert worker_pid != loader_pid
   ensure
-    tmp.close!
+    tmp&.close!
   end
 
   def test_early_hints
