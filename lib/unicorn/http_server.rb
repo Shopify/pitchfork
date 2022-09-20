@@ -100,14 +100,6 @@ module Unicorn
       # list of signals we care about and trap in master.
       @queue_sigs = [
         :QUIT, :INT, :TERM, :USR1, :TTIN, :TTOU ]
-
-      @worker_data = if worker_data = ENV['UNICORN_WORKER']
-        worker_data = worker_data.split(',').map!(&:to_i)
-        worker_data[1] = worker_data.slice!(1..2).map do |i|
-          IO.for_fd(i)
-        end
-        worker_data
-      end
     end
 
     # Runs the thing.  Returns self so you can run join on it
@@ -116,7 +108,7 @@ module Unicorn
       # this pipe is used to wake us up from select(2) in #join when signals
       # are trapped.  See trap_deferred.
       @self_pipe.replace(Unicorn.pipe)
-      @master_pid = @worker_data ? Process.ppid : $$
+      @master_pid = $$
 
       # setup signal handlers before writing pid file in case people get
       # trigger happy and send signals as soon as the pid file exists.
@@ -379,13 +371,6 @@ module Unicorn
     end
 
     def spawn_missing_workers
-      if @worker_data
-        worker = Unicorn::Worker.new(*@worker_data)
-        after_fork_internal
-        worker_loop(worker)
-        exit
-      end
-
       worker_nr = -1
       until (worker_nr += 1) == @worker_processes
         @workers.value?(worker_nr) and next
