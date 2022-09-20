@@ -7,6 +7,3 @@ $stdout.binmode
 $stderr.binmode
 
 require 'unicorn'
-
-module Unicorn::Launcher
-end
