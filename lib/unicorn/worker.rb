@@ -11,8 +11,8 @@ module Unicorn
   # See the Unicorn::Configurator RDoc for examples.
   class Worker
     # :stopdoc:
-    attr_accessor :nr, :switched, :master
-    attr_reader :to_io # IO.select-compatible
+    attr_accessor :nr, :switched
+    attr_reader :master
 
     PER_DROP = Raindrops::PAGE_SIZE / Raindrops::SIZE
     DROPS = []
@@ -28,15 +28,23 @@ module Unicorn
     end
 
     def register_to_master(control_socket)
-      @to_io, @master = Unicorn.pipe
+      @to_io, @master = Unicorn.socketpair
       message = Message::WorkerSpawned.new(@nr, Process.pid, @master)
       control_socket.sendmsg(message)
       @master.close
     end
 
+    def to_io # IO.select-compatible
+      @to_io.to_io
+    end
+
     # master fakes SIGQUIT using this
     def quit # :nodoc:
       @master = @master.close if @master
+    end
+
+    def master=(socket)
+      @master = MessageSocket.new(socket)
     end
 
     # call a signal handler immediately without triggering EINTR
@@ -61,10 +69,9 @@ module Unicorn
             raise ArgumentError, "BUG: bad signal: #{sig.inspect}"
       end
 
-      # writing and reading 4 bytes on a pipe is atomic on all POSIX platforms
       # Do not care in the odd case the buffer is full, here.
       begin
-        @master.write_nonblock([signum].pack('l'), exception: false)
+        @master.sendmsg_nonblock(Message::SoftKill.new(signum), exception: false)
       rescue Errno::EPIPE
         # worker will be reaped soon
       end
@@ -74,7 +81,7 @@ module Unicorn
     # act like a listener
     def accept_nonblock(exception: nil) # :nodoc:
       loop do
-        case buf = @to_io.read_nonblock(4, exception: false)
+        case buf = @to_io.recvmsg_nonblock(exception: false)
         when :wait_readable # keep waiting
           return false
         when nil # EOF master died, but we are at a safe place to exit
@@ -82,10 +89,9 @@ module Unicorn
         end
 
         case buf
-        when String
-          # unpack the buffer and trigger the signal handler
-          signum = buf.unpack('l')
-          fake_sig(signum[0])
+        when Message::SoftKill
+          # trigger the signal handler
+          fake_sig(buf.signum)
           # keep looping, more signals may be queued
         else
           raise TypeError, "Unexpected read_nonblock returns: #{buf.inspect}"

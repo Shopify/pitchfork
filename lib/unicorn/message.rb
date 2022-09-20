@@ -58,12 +58,23 @@ module Unicorn
       )
     end
 
+    def sendmsg_nonblock(message, exception: true)
+      payload, ios = dump_message(message)
+      @socket.sendmsg_nonblock(
+        payload,
+        0,
+        nil,
+        *ios.map { |io| Socket::AncillaryData.unix_rights(io) },
+        exception: exception,
+      )
+    end
+
     def recvmsg_nonblock(exception: true)
       case message = @socket.recvmsg_nonblock(scm_rights: true, exception: exception)
-      when Symbol
-        message
-      else
+      when Array
         load_message(message)
+      else
+        message
       end
     end
 
@@ -73,6 +84,12 @@ module Unicorn
 
     def load_message(message)
       payload, _, _, data = message
+
+      if payload.empty?
+        # EOF: Ruby return an empty packet on closed connection
+        # https://bugs.ruby-lang.org/issues/19012
+        return nil
+      end
 
       unless payload.start_with?(MARSHAL_PREFIX)
         return payload
@@ -94,11 +111,11 @@ module Unicorn
       return [message, []] unless message.is_a?(Message)
 
       args = message.to_a
-      ios = args.select { |arg| arg.is_a?(IO) }
+      ios = args.select { |arg| arg.is_a?(IO) || arg.is_a?(MessageSocket) }
 
       io_index = 0
       args.map! do |arg|
-        if arg.is_a?(IO)
+        if arg.is_a?(IO) || arg.is_a?(MessageSocket)
           fd = FD.new(io_index)
           io_index += 1
           fd
@@ -107,12 +124,13 @@ module Unicorn
         end
       end
 
-      [Marshal.dump([message.class, *args]), ios]
+      [Marshal.dump([message.class, *args]), ios.map(&:to_io)]
     end
   end
 
   Message = Class.new(Struct)
   class Message
     WorkerSpawned = Message.new(:nr, :pid, :pipe)
+    SoftKill = Message.new(:signum)
   end
 end

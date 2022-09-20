@@ -130,7 +130,10 @@ module Unicorn
   @socket_type = :SOCK_SEQPACKET
   def self.socketpair
     # TODO: Explore wether we want to shrink buffers or set any other socket option
-    UNIXSocket.socketpair(@socket_type)
+    pair = UNIXSocket.socketpair(@socket_type).map { |s| MessageSocket.new(s) }
+    pair[0].close_write
+    pair[1].close_read
+    pair
   rescue Errno::EPROTONOSUPPORT
     if @socket_type == :SOCK_SEQPACKET
       # macOS and very old linuxes don't support SOCK_SEQPACKET (SCTP).

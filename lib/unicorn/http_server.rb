@@ -114,9 +114,7 @@ module Unicorn
       # are trapped.  See trap_deferred.
       # It's also used by newly spawned children to send their soft_signal pipe
       # to the master when they are spawned.
-      @control_socket.replace(Unicorn.socketpair.map { |s| MessageSocket.new(s) })
-      @control_socket[0].close_write
-      @control_socket[1].close_read
+      @control_socket.replace(Unicorn.socketpair)
       @master_pid = $$
 
       # setup signal handlers before writing pid file in case people get

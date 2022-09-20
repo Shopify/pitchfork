@@ -140,7 +140,7 @@ class TestUtil < Test::Unit::TestCase
 
   TestMessage = Unicorn::Message.new(:text, :pipe)
   def test_message_socket
-    child, parent = Unicorn.socketpair.map { |s| Unicorn::MessageSocket.new(s) }
+    child, parent = Unicorn.socketpair
     child_pid = fork do
       parent.sendmsg('just text')
       read, write = Unicorn.pipe
