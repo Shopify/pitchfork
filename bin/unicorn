@@ -1,4 +1,4 @@
-#!/this/will/be/overwritten/or/wrapped/anyways/do/not/worry/ruby
+#!/usr/bin/env ruby
 # -*- encoding: binary -*-
 require 'unicorn/launcher'
 require 'optparse'
