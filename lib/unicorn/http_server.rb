@@ -695,17 +695,8 @@ module Unicorn
       raise ArgumentError, "no listeners" if LISTENERS.empty?
     end
 
-    # try to use the monotonic clock in Ruby >= 2.1, it is immune to clock
-    # offset adjustments and generates less garbage (Float vs Time object)
-    begin
+    def time_now
       Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      def time_now
-        Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      end
-    rescue NameError, NoMethodError
-      def time_now # Ruby <= 2.0
-        Time.now
-      end
     end
   end
 end
