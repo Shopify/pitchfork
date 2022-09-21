@@ -16,12 +16,12 @@ Gem::Specification.new do |s|
   s.summary = 'Rack HTTP server for fast clients and Unix'
   s.description = File.read('README').split("\n\n")[1]
   s.email = %q{unicorn-public@yhbt.net}
-  s.executables = %w(unicorn unicorn_rails)
   s.extensions = %w(ext/unicorn_http/extconf.rb)
   s.extra_rdoc_files = IO.readlines('.document').map!(&:chomp!).keep_if do |f|
     File.exist?(f)
   end
   s.files = manifest
+  s.executables = s.files.grep(%r{^exe/}) { |f| File.basename(f) }
   s.homepage = 'https://yhbt.net/unicorn/'
   s.test_files = test_files
 

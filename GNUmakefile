@@ -71,14 +71,14 @@ T_log := $(subst .rb,$(log_suffix),$(T))
 T_n_log := $(subst .n,$(log_suffix),$(T_n))
 
 base_bins := unicorn unicorn_rails
-bins := $(addprefix bin/, $(base_bins))
+bins := $(addprefix exe/, $(base_bins))
 man1_rdoc := $(addsuffix _1, $(base_bins))
 man1_bins := $(addsuffix .1, $(base_bins))
 man1_paths := $(addprefix man/man1/, $(man1_bins))
 tmp_bins = $(addprefix $(tmp_bin)/, unicorn unicorn_rails)
 pid := $(shell echo $$PPID)
 
-$(tmp_bin)/%: bin/% | $(tmp_bin)
+$(tmp_bin)/%: exe/% | $(tmp_bin)
 	$(INSTALL) -m 755 $< $@.$(pid)
 	$(MRI) -i -p -e '$$_.gsub!(%r{^#!.*$$},"#!$(ruby_bin)")' $@.$(pid)
 	mv $@.$(pid) $@
@@ -186,10 +186,10 @@ install: $(bins) $(ext)/unicorn_http.c
 	$(prep_setup_rb)
 	$(RM) -r .install-tmp
 	mkdir .install-tmp
-	cp -p bin/* .install-tmp
+	cp -p exe/* .install-tmp
 	$(RUBY) setup.rb all
 	$(RM) $^
-	mv .install-tmp/* bin/
+	mv .install-tmp/* exe/
 	$(RM) -r .install-tmp
 	$(prep_setup_rb)
 
