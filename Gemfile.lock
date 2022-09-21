@@ -2,12 +2,14 @@ PATH
   remote: .
   specs:
     unicorn (6.1.0)
+      child_subreaper
       rack (< 3)
       raindrops (~> 0.7)
 
 GEM
   remote: https://rubygems.org/
   specs:
+    child_subreaper (0.1.0)
     power_assert (2.0.1)
     rack (2.2.4)
     raindrops (0.20.0)

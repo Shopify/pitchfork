@@ -1,4 +1,5 @@
 # -*- encoding: binary -*-
+require 'child_subreaper'
 
 module Unicorn
   # This is the process manager of Unicorn. This manages worker
@@ -110,6 +111,8 @@ module Unicorn
 
     # Runs the thing.  Returns self so you can run join on it
     def start
+      ChildSubreaper.enable
+
       inherit_listeners!
       # This socketpair is used to wake us up from select(2) in #join when signals
       # are trapped.  See trap_deferred.
@@ -262,8 +265,12 @@ module Unicorn
         logger.info "master done reopening logs"
         soft_kill_each_worker(:USR1)
       when :USR2 # trigger a promotion
-        new_mold = select_mold
-        new_mold.soft_kill(:USR2)
+        if Process.pid == 1 || ChildSubreaper::AVAILABLE
+          new_mold = select_mold
+          new_mold.soft_kill(:USR2)
+        else
+          logger.error("This system doesn't support PR_SET_CHILD_SUBREAPER")
+        end
       when :TTIN
         @respawn = true
         self.worker_processes += 1
@@ -413,20 +420,23 @@ module Unicorn
       @control_socket[0].close_write # this is master-only, now
       @ready_pipe.close if @ready_pipe
       Unicorn::Configurator::RACKUP.clear
-      @ready_pipe = @init_listeners = @before_fork = nil
+      @ready_pipe = @init_listeners = nil
 
       # The OpenSSL PRNG is seeded with only the pid, and apps with frequently
       # dying workers can recycle pids
       OpenSSL::Random.seed(rand.to_s) if defined?(OpenSSL::Random)
     end
 
-    def spawn_worker(worker_nr, detach: false)
-      worker = Unicorn::Worker.new(worker_nr)
+    def spawn_worker(worker, detach:)
       before_fork.call(self, worker)
 
-      fork do
-        if detach
-          # TODO: detach here
+      pid = fork do
+        # We double fork so that the new worker is re-attached back
+        # to the master.
+        # This requires either PR_SET_CHILD_SUBREAPER which is exclusive to Linux 3.4
+        # or the master to be PID 1.
+        if detach && fork
+          exit
         end
 
         after_fork_internal
@@ -437,6 +447,12 @@ module Unicorn
         exit
       end
 
+      if detach
+        # If we double forked, we need to wait(2) so that the middle
+        # process doesn't end up a zombie.
+        Process.wait(pid)
+      end
+
       worker
     end
 
@@ -444,7 +460,13 @@ module Unicorn
       worker_nr = -1
       until (worker_nr += 1) == @worker_processes
         @workers.value?(worker_nr) || @pending_workers.key?(worker_nr) and next
-        worker = spawn_worker(worker_nr, detach: false)
+        worker = Unicorn::Worker.new(worker_nr)
+
+        if !@mold || !@mold.spawn_worker(worker)
+          # If there's no mold, or the mold was somehow unreachable
+          # we fallback to spawning the missing workers ourselves.
+          spawn_worker(worker, detach: false)
+        end
         # We could directly register workers when we spawn from the
         # master, like unicorn does. However it is preferable to
         # always go through the asynchronous registering process for
@@ -662,7 +684,7 @@ module Unicorn
 
         # timeout so we can .tick and keep parent from SIGKILL-ing us
         worker.tick = time_now.to_i
-        waiter.get_readers(ready, readers, @timeout)
+        waiter.get_readers(ready, readers, @timeout * 500) # to milliseconds, but halved
       rescue => e
         redo if reopen && readers[0]
         Unicorn.log_error(@logger, "listen loop error", e) if readers[0]
@@ -692,7 +714,7 @@ module Unicorn
           when false
             # no message
           when Message::SpawnWorker
-            spawn_worker(message.nr, detatch: true)
+            spawn_worker(Worker.new(message.nr), detach: true)
           else
             logger.error("Unexpected mold message #{message.inspect}")
           end

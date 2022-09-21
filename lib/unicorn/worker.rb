@@ -40,6 +40,20 @@ module Unicorn
       control_socket.sendmsg(message)
     end
 
+    def spawn_worker(worker)
+      success = false
+      begin
+        case @master.sendmsg_nonblock(Message::SpawnWorker.new(worker.nr), exception: false)
+        when :wait_writable
+        else
+          success = true
+        end
+      rescue Errno::EPIPE
+        # worker will be reaped soon
+      end
+      success
+    end
+
     def promote!
       @mold = true
     end
