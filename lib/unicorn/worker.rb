@@ -11,18 +11,19 @@ module Unicorn
   # See the Unicorn::Configurator RDoc for examples.
   class Worker
     # :stopdoc:
-    attr_accessor :nr, :switched
+    attr_accessor :nr, :switched, :pid
     attr_reader :master
 
     PER_DROP = Raindrops::PAGE_SIZE / Raindrops::SIZE
     DROPS = []
 
-    def initialize(nr)
+    def initialize(nr, pid: nil)
       drop_index = nr / PER_DROP
       @raindrop = DROPS[drop_index] ||= Raindrops.new(PER_DROP)
       @offset = nr % PER_DROP
       @raindrop[@offset] = 0
       @nr = nr
+      @pid = pid
       @mold = false
       @switched = false
       @to_io = @master = nil

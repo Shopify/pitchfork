@@ -278,17 +278,18 @@ module Unicorn
         self.worker_processes -= 1 if self.worker_processes > 0
       when Message::WorkerSpawned
         worker = @pending_workers.fetch(message.nr)
+        worker.pid = message.pid
         worker.master = message.pipe
         @workers[message.pid] = @pending_workers.delete(message.nr)
         # TODO: should we send a message to the worker to acknowledge?
-        logger.info "worker=#{worker.nr} registered with pid=#{message.pid}"
+        logger.info "worker=#{worker.nr} registered with pid=#{worker.pid}"
       when Message::WorkerPromoted
         if new_mold = @workers.delete(message.pid)
           old_mold = @mold
           @mold = new_mold
-          logger.info("worker=#{message.nr} pid=#{message.pid} promoted to a mold")
+          logger.info("worker=#{@mold.nr} pid=#{@mold.pid} promoted to a mold")
           if old_mold
-            logger.info("Terminating old mold") # TODO: include PID
+            logger.info("Terminating old mold pid=#{old_mold.pid}")
             old_mold.soft_kill(:QUIT)
           end
         else
@@ -438,6 +439,7 @@ module Unicorn
         if detach && fork
           exit
         end
+        worker.pid = Process.pid
 
         after_fork_internal
         worker_loop(worker)
