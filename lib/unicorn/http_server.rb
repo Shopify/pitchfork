@@ -1,4 +1,5 @@
 # -*- encoding: binary -*-
+require 'child_subreaper'
 
 module Unicorn
   # This is the process manager of Unicorn. This manages worker
@@ -27,6 +28,8 @@ module Unicorn
     # note: this is public used by raindrops, but not recommended for use
     # in new projects
     LISTENERS = []
+
+    NOOP = '.'
 
     # listeners we have yet to bind
     NEW_LISTENERS = []
@@ -63,6 +66,8 @@ module Unicorn
     # incoming requests on the socket.
     def initialize(app, options = {})
       @app = app
+      @respawn = false
+      @last_check = time_now
       @default_middleware = true
       options = options.dup
       @ready_pipe = options.delete(:ready_pipe)
@@ -71,7 +76,7 @@ module Unicorn
       self.config = Unicorn::Configurator.new(options)
       self.listener_opts = {}
 
-      # We use @self_pipe differently in the master and worker processes:
+      # We use @control_socket differently in the master and worker processes:
       #
       # * The master process never closes or reinitializes this once
       # initialized.  Signal handlers in the master process will write to
@@ -80,8 +85,10 @@ module Unicorn
       #
       # * The workers immediately close the pipe they inherit.  See the
       # Unicorn::Worker class for the pipe workers use.
-      @self_pipe = []
+      @control_socket = []
+      @mold = nil
       @workers = {} # hash maps PIDs to Workers
+      @pending_workers = {} # hash maps NRs to Workers
       @sig_queue = [] # signal queue used for self-piping
       @pid = nil
 
@@ -99,15 +106,19 @@ module Unicorn
       @orig_app = app
       # list of signals we care about and trap in master.
       @queue_sigs = [
-        :QUIT, :INT, :TERM, :USR1, :TTIN, :TTOU ]
+        :QUIT, :INT, :TERM, :USR1, :USR2, :TTIN, :TTOU ]
     end
 
     # Runs the thing.  Returns self so you can run join on it
     def start
+      ChildSubreaper.enable
+
       inherit_listeners!
-      # this pipe is used to wake us up from select(2) in #join when signals
+      # This socketpair is used to wake us up from select(2) in #join when signals
       # are trapped.  See trap_deferred.
-      @self_pipe.replace(Unicorn.pipe)
+      # It's also used by newly spawned children to send their soft_signal pipe
+      # to the master when they are spawned.
+      @control_socket.replace(Unicorn.socketpair)
       @master_pid = $$
 
       # setup signal handlers before writing pid file in case people get
@@ -120,6 +131,10 @@ module Unicorn
       bind_new_listeners!
 
       spawn_missing_workers
+      # We could just return here as we'd register them later in #join.
+      # However a good part of the test suite assumes #start only return
+      # once all initial workers are spawned.
+      wait_for_pending_workers
       self
     end
 
@@ -200,8 +215,7 @@ module Unicorn
     # one-at-a-time time and we'll happily drop signals in case somebody
     # is signalling us too often.
     def join
-      respawn = true
-      last_check = time_now
+      @respawn = true
 
       proc_name 'master'
       logger.info "master process ready" # test_exec.rb relies on this message
@@ -213,41 +227,77 @@ module Unicorn
         end
         @ready_pipe = @ready_pipe.close rescue nil
       end
-      begin
-        reap_all_workers
-        case @sig_queue.shift
-        when nil
-          # avoid murdering workers after our master process (or the
-          # machine) comes out of suspend/hibernation
-          if (last_check + @timeout) >= (last_check = time_now)
-            sleep_time = murder_lazy_workers
-          else
-            sleep_time = @timeout/2.0 + 1
-            @logger.debug("waiting #{sleep_time}s after suspend/hibernation")
+      while true
+        begin
+          if monitor_loop == StopIteration
+            break
           end
-          maintain_worker_count if respawn
-          master_sleep(sleep_time)
-        when :QUIT # graceful shutdown
-          break
-        when :TERM, :INT # immediate shutdown
-          stop(false)
-          break
-        when :USR1 # rotate logs
-          logger.info "master reopening logs..."
-          Unicorn::Util.reopen_logs
-          logger.info "master done reopening logs"
-          soft_kill_each_worker(:USR1)
-        when :TTIN
-          respawn = true
-          self.worker_processes += 1
-        when :TTOU
-          self.worker_processes -= 1 if self.worker_processes > 0
+        rescue => e
+          Unicorn.log_error(@logger, "master loop error", e)
         end
-      rescue => e
-        Unicorn.log_error(@logger, "master loop error", e)
-      end while true
+      end
       stop # gracefully shutdown all workers on our way out
       logger.info "master complete"
+    end
+
+    def monitor_loop
+      reap_all_workers
+      case message = @sig_queue.shift
+      when nil
+        # avoid murdering workers after our master process (or the
+        # machine) comes out of suspend/hibernation
+        if (@last_check + @timeout) >= (@last_check = time_now)
+          sleep_time = murder_lazy_workers
+        else
+          sleep_time = @timeout/2.0 + 1
+          @logger.debug("waiting #{sleep_time}s after suspend/hibernation")
+        end
+        maintain_worker_count if @respawn
+        master_sleep(sleep_time)
+      when :QUIT # graceful shutdown
+        return StopIteration
+      when :TERM, :INT # immediate shutdown
+        stop(false)
+        return StopIteration
+      when :USR1 # rotate logs
+        logger.info "master reopening logs..."
+        Unicorn::Util.reopen_logs
+        logger.info "master done reopening logs"
+        soft_kill_each_worker(:USR1)
+      when :USR2 # trigger a promotion
+        if Process.pid == 1 || ChildSubreaper::AVAILABLE
+          new_mold = select_mold
+          new_mold.soft_kill(:USR2)
+        else
+          logger.error("This system doesn't support PR_SET_CHILD_SUBREAPER, no point promoting a worker")
+        end
+      when :TTIN
+        @respawn = true
+        self.worker_processes += 1
+      when :TTOU
+        self.worker_processes -= 1 if self.worker_processes > 0
+      when Message::WorkerSpawned
+        worker = @pending_workers.fetch(message.nr)
+        worker.update(message)
+        @workers[message.pid] = @pending_workers.delete(message.nr)
+        # TODO: should we send a message to the worker to acknowledge?
+        logger.info "worker=#{worker.nr} registered with pid=#{worker.pid}"
+      when Message::WorkerPromoted
+        if new_mold = @workers.delete(message.pid)
+          new_mold.update(message)
+          old_mold = @mold
+          @mold = new_mold
+          logger.info("worker=#{@mold.nr} pid=#{@mold.pid} promoted to a mold")
+          if old_mold
+            logger.info("Terminating old mold pid=#{old_mold.pid}")
+            old_mold.soft_kill(:QUIT)
+          end
+        else
+          logger.error("No worker=#{message.nr} found with pid=#{message.pid}")
+        end
+      else
+        logger.error("Unexpected message in sig_queue #{message.inspect}")
+      end
     end
 
     # Terminates all workers, but does not exit master process
@@ -293,19 +343,27 @@ module Unicorn
 
     private
 
+    def select_mold
+      # This is the simplest possible algorithm, we promote the oldest worker.
+      # Later on it would make sense to use memory metrics to select the best candidate.
+      # We can even expose a callback to let users implement their own algorithm.
+      @workers.values.first
+    end
+
     # wait for a signal hander to wake us up and then consume the pipe
     def master_sleep(sec)
-      @self_pipe[0].wait(sec) or return
-      # 11 bytes is the maximum string length which can be embedded within
-      # the Ruby itself and not require a separate malloc (on 32-bit MRI 1.9+).
-      # Most reads are only one byte here and uncommon, so it's not worth a
-      # persistent buffer, either:
-      @self_pipe[0].read_nonblock(11, exception: false)
+      @control_socket[0].wait(sec) or return
+      case message = @control_socket[0].recvmsg_nonblock(exception: false)
+      when :wait_readable, NOOP
+        nil
+      else
+        @sig_queue << message
+      end
     end
 
     def awaken_master
       return if $$ != @master_pid
-      @self_pipe[1].write_nonblock('.', exception: false) # wakeup master process from select
+      @control_socket[1].write_nonblock(NOOP, exception: false) # wakeup master process from select
     end
 
     # reaps all unreaped workers
@@ -360,39 +418,78 @@ module Unicorn
     end
 
     def after_fork_internal
-      @self_pipe.each(&:close).clear # this is master-only, now
+      @control_socket[0].close_write # this is master-only, now
       @ready_pipe.close if @ready_pipe
       Unicorn::Configurator::RACKUP.clear
-      @ready_pipe = @init_listeners = @before_fork = nil
+      @ready_pipe = @init_listeners = nil
 
       # The OpenSSL PRNG is seeded with only the pid, and apps with frequently
       # dying workers can recycle pids
       OpenSSL::Random.seed(rand.to_s) if defined?(OpenSSL::Random)
     end
 
+    def spawn_worker(worker, detach:)
+      before_fork.call(self, worker)
+
+      pid = fork do
+        # We double fork so that the new worker is re-attached back
+        # to the master.
+        # This requires either PR_SET_CHILD_SUBREAPER which is exclusive to Linux 3.4
+        # or the master to be PID 1.
+        if detach && fork
+          exit
+        end
+        worker.pid = Process.pid
+
+        after_fork_internal
+        worker_loop(worker)
+        if worker.mold?
+          mold_loop(worker)
+        end
+        exit
+      end
+
+      if detach
+        # If we double forked, we need to wait(2) so that the middle
+        # process doesn't end up a zombie.
+        Process.wait(pid)
+      end
+
+      worker
+    end
+
     def spawn_missing_workers
       worker_nr = -1
       until (worker_nr += 1) == @worker_processes
-        @workers.value?(worker_nr) and next
+        @workers.value?(worker_nr) || @pending_workers.key?(worker_nr) and next
         worker = Unicorn::Worker.new(worker_nr)
-        before_fork.call(self, worker)
 
-        pid = fork do
-          after_fork_internal
-          worker_loop(worker)
-          exit
+        if !@mold || !@mold.spawn_worker(worker)
+          # If there's no mold, or the mold was somehow unreachable
+          # we fallback to spawning the missing workers ourselves.
+          spawn_worker(worker, detach: false)
         end
-
-        @workers[pid] = worker
-        worker.atfork_parent
+        # We could directly register workers when we spawn from the
+        # master, like unicorn does. However it is preferable to
+        # always go through the asynchronous registering process for
+        # consistency.
+        @pending_workers[worker.nr] = worker
       end
     rescue => e
       @logger.error(e) rescue nil
       exit!
     end
 
+    def wait_for_pending_workers
+      until @pending_workers.empty?
+        master_sleep(0.5)
+        monitor_loop
+        maintain_worker_count
+      end
+    end
+
     def maintain_worker_count
-      (off = @workers.size - worker_processes) == 0 and return
+      (off = @workers.size + @pending_workers.size - worker_processes) == 0 and return
       off < 0 and return spawn_missing_workers
       @workers.each_value { |w| w.nr >= worker_processes and w.soft_kill(:QUIT) }
     end
@@ -504,7 +601,7 @@ module Unicorn
     # traps for USR1, USR2, and HUP may be set in the after_fork Proc
     # by the user.
     def init_worker_process(worker)
-      worker.atfork_child
+      worker.register_to_master(@control_socket[1])
       # we'll re-trap :QUIT later for graceful shutdown iff we accept clients
       exit_sigs = [ :QUIT, :TERM, :INT ]
       exit_sigs.each { |sig| trap(sig) { exit!(0) } }
@@ -512,17 +609,23 @@ module Unicorn
       (@queue_sigs - exit_sigs).each { |sig| trap(sig, nil) }
       trap(:CHLD, 'DEFAULT')
       @sig_queue.clear
-      proc_name "worker[#{worker.nr}]"
-      START_CTX.clear
+      proc_name "worker[#{worker.nr}] (gen:#{worker.generation})"
       @workers.clear
 
       after_fork.call(self, worker) # can drop perms and create listeners
       LISTENERS.each { |sock| sock.close_on_exec = true }
 
       @config = nil
-      @after_fork = @listener_opts = @orig_app = nil
+      @listener_opts = @orig_app = nil
       readers = LISTENERS.dup
       readers << worker
+      trap(:QUIT) { nuke_listeners!(readers) }
+      readers
+    end
+
+    def init_mold_process(worker)
+      proc_name "mold (gen: #{worker.generation})"
+      readers = [worker]
       trap(:QUIT) { nuke_listeners!(readers) }
       readers
     end
@@ -556,6 +659,8 @@ module Unicorn
       waiter = prep_readers(readers)
       reopen = false
 
+      trap(:USR2) { worker.promote! }
+
       # this only works immediately if the master sent us the signal
       # (which is the normal case)
       trap(:USR1) { reopen = true }
@@ -576,6 +681,45 @@ module Unicorn
             worker.tick = time_now.to_i
           end
           break if reopen
+          return if worker.mold? # We've been promoted we can exit the loop
+        end
+
+        # timeout so we can .tick and keep parent from SIGKILL-ing us
+        worker.tick = time_now.to_i
+        waiter.get_readers(ready, readers, @timeout * 500) # to milliseconds, but halved
+      rescue => e
+        redo if reopen && readers[0]
+        Unicorn.log_error(@logger, "listen loop error", e) if readers[0]
+      end while readers[0]
+    end
+
+    def mold_loop(worker)
+      readers = init_mold_process(worker)
+      waiter = prep_readers(readers)
+      reopen = false
+
+      # this only works immediately if the master sent us the signal
+      # (which is the normal case)
+      trap(:USR1) { reopen = true }
+
+      ready = readers.dup
+      worker.acknowlege_promotion(@control_socket[1])
+      # TODO: mold ready callback?
+
+      begin
+        reopen = reopen_worker_logs(worker.nr) if reopen
+        worker.tick = time_now.to_i
+        while sock = ready.shift
+          # Unicorn::Worker#accept_nonblock is not like accept(2) at all,
+          # but that will return false
+          case message = sock.accept_nonblock(exception: false)
+          when false
+            # no message
+          when Message::SpawnWorker
+            spawn_worker(Worker.new(message.nr), detach: true)
+          else
+            logger.error("Unexpected mold message #{message.inspect}")
+          end
         end
 
         # timeout so we can .tick and keep parent from SIGKILL-ing us

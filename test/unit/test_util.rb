@@ -104,6 +104,15 @@ class TestUtil < Test::Unit::TestCase
     tmp.close!
   end
 
+  def test_socketpair
+    child, parent = Unicorn.socketpair
+    assert child
+    assert parent
+  ensure
+    child.close
+    parent.close
+  end
+
   def test_pipe
     r, w = Unicorn.pipe
     assert r
@@ -127,5 +136,33 @@ class TestUtil < Test::Unit::TestCase
   ensure
     w.close
     r.close
+  end
+
+  TestMessage = Unicorn::Message.new(:text, :pipe)
+  def test_message_socket
+    child, parent = Unicorn.socketpair
+    child_pid = fork do
+      parent.sendmsg('just text')
+      read, write = Unicorn.pipe
+      message = TestMessage.new('rich message', write)
+      parent.sendmsg(message)
+      write.close
+      read.wait_readable(1)
+      status = read.read_nonblock(11)
+      exit!(Integer(status))
+    end
+
+    child.wait(1)
+    assert_equal 'just text', child.recvmsg_nonblock(exception: false)
+    child.wait(1)
+    message = child.recvmsg_nonblock(exception: false)
+    assert_instance_of TestMessage, message
+    assert_equal 'rich message', message.text
+    assert_instance_of IO, message.pipe
+
+    message.pipe.wait_writable(1)
+    message.pipe.write_nonblock("42")
+    _, status = Process.waitpid2(child_pid)
+    assert_equal 42, status.exitstatus
   end
 end

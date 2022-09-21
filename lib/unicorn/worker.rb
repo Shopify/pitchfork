@@ -11,26 +11,76 @@ module Unicorn
   # See the Unicorn::Configurator RDoc for examples.
   class Worker
     # :stopdoc:
-    attr_accessor :nr, :switched
-    attr_reader :to_io # IO.select-compatible
+    @generation = 0
+    class << self
+      attr_accessor :generation
+    end
+    attr_accessor :nr, :switched, :pid, :generation
     attr_reader :master
 
     PER_DROP = Raindrops::PAGE_SIZE / Raindrops::SIZE
     DROPS = []
 
-    def initialize(nr, pipe=nil)
+    def initialize(nr, pid: nil)
       drop_index = nr / PER_DROP
       @raindrop = DROPS[drop_index] ||= Raindrops.new(PER_DROP)
       @offset = nr % PER_DROP
       @raindrop[@offset] = 0
       @nr = nr
+      @pid = pid
+      @generation = self.class.generation
+      @mold = false
       @switched = false
-      @to_io, @master = pipe || Unicorn.pipe
+      @to_io = @master = nil
     end
 
-    def atfork_child # :nodoc:
-      # we _must_ close in child, parent just holds this open to signal
-      @master = @master.close
+    def update(message)
+      self.pid = message.pid
+      self.nr = message.nr
+      self.generation = message.generation
+      case message
+      when Message::WorkerSpawned
+        @master = MessageSocket.new(message.pipe)
+      end
+    end
+
+    def register_to_master(control_socket)
+      @to_io, @master = Unicorn.socketpair
+      message = Message::WorkerSpawned.new(@nr, Process.pid, generation, @master)
+      control_socket.sendmsg(message)
+      @master.close
+    end
+
+    def acknowlege_promotion(control_socket)
+      message = Message::WorkerPromoted.new(@nr, Process.pid, generation)
+      control_socket.sendmsg(message)
+    end
+
+    def spawn_worker(worker)
+      success = false
+      begin
+        case @master.sendmsg_nonblock(Message::SpawnWorker.new(worker.nr), exception: false)
+        when :wait_writable
+        else
+          success = true
+        end
+      rescue Errno::EPIPE
+        # worker will be reaped soon
+      end
+      success
+    end
+
+    def promote!
+      @mold = true
+      @generation = self.class.generation += 1
+    end
+
+    def mold?
+      @mold
+    end
+
+    def to_io # IO.select-compatible
+      @to_io.to_io
     end
 
     # master fakes SIGQUIT using this
@@ -38,9 +88,8 @@ module Unicorn
       @master = @master.close if @master
     end
 
-    # parent does not read
-    def atfork_parent # :nodoc:
-      @to_io = @to_io.close
+    def master=(socket)
+      @master = MessageSocket.new(socket)
     end
 
     # call a signal handler immediately without triggering EINTR
@@ -65,10 +114,9 @@ module Unicorn
             raise ArgumentError, "BUG: bad signal: #{sig.inspect}"
       end
 
-      # writing and reading 4 bytes on a pipe is atomic on all POSIX platforms
       # Do not care in the odd case the buffer is full, here.
       begin
-        @master.write_nonblock([signum].pack('l'), exception: false)
+        @master.sendmsg_nonblock(Message::SoftKill.new(signum), exception: false)
       rescue Errno::EPIPE
         # worker will be reaped soon
       end
@@ -78,7 +126,7 @@ module Unicorn
     # act like a listener
     def accept_nonblock(exception: nil) # :nodoc:
       loop do
-        case buf = @to_io.read_nonblock(4, exception: false)
+        case buf = @to_io.recvmsg_nonblock(exception: false)
         when :wait_readable # keep waiting
           return false
         when nil # EOF master died, but we are at a safe place to exit
@@ -86,11 +134,12 @@ module Unicorn
         end
 
         case buf
-        when String
-          # unpack the buffer and trigger the signal handler
-          signum = buf.unpack('l')
-          fake_sig(signum[0])
+        when Message::SoftKill
+          # trigger the signal handler
+          fake_sig(buf.signum)
           # keep looping, more signals may be queued
+        when Message
+          return buf
         else
           raise TypeError, "Unexpected read_nonblock returns: #{buf.inspect}"
         end

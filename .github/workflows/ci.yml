@@ -24,7 +24,7 @@ jobs:
           bundler-cache: true
 
       - name: Install packages
-        run: sudo apt-get install -y ragel socat
+        run: sudo apt-get install -y ragel socat netcat
 
       - name: Unit Tests
         run: bundle exec make test
