@@ -269,7 +269,7 @@ module Unicorn
           new_mold = select_mold
           new_mold.soft_kill(:USR2)
         else
-          logger.error("This system doesn't support PR_SET_CHILD_SUBREAPER")
+          logger.error("This system doesn't support PR_SET_CHILD_SUBREAPER, no point promoting a worker")
         end
       when :TTIN
         @respawn = true
@@ -278,13 +278,13 @@ module Unicorn
         self.worker_processes -= 1 if self.worker_processes > 0
       when Message::WorkerSpawned
         worker = @pending_workers.fetch(message.nr)
-        worker.pid = message.pid
-        worker.master = message.pipe
+        worker.update(message)
         @workers[message.pid] = @pending_workers.delete(message.nr)
         # TODO: should we send a message to the worker to acknowledge?
         logger.info "worker=#{worker.nr} registered with pid=#{worker.pid}"
       when Message::WorkerPromoted
         if new_mold = @workers.delete(message.pid)
+          new_mold.update(message)
           old_mold = @mold
           @mold = new_mold
           logger.info("worker=#{@mold.nr} pid=#{@mold.pid} promoted to a mold")
@@ -609,7 +609,7 @@ module Unicorn
       (@queue_sigs - exit_sigs).each { |sig| trap(sig, nil) }
       trap(:CHLD, 'DEFAULT')
       @sig_queue.clear
-      proc_name "worker[#{worker.nr}]"
+      proc_name "worker[#{worker.nr}] (gen:#{worker.generation})"
       @workers.clear
 
       after_fork.call(self, worker) # can drop perms and create listeners
@@ -624,7 +624,7 @@ module Unicorn
     end
 
     def init_mold_process(worker)
-      proc_name "mold"
+      proc_name "mold (gen: #{worker.generation})"
       readers = [worker]
       trap(:QUIT) { nuke_listeners!(readers) }
       readers

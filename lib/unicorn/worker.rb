@@ -11,7 +11,11 @@ module Unicorn
   # See the Unicorn::Configurator RDoc for examples.
   class Worker
     # :stopdoc:
-    attr_accessor :nr, :switched, :pid
+    @generation = 0
+    class << self
+      attr_accessor :generation
+    end
+    attr_accessor :nr, :switched, :pid, :generation
     attr_reader :master
 
     PER_DROP = Raindrops::PAGE_SIZE / Raindrops::SIZE
@@ -24,20 +28,31 @@ module Unicorn
       @raindrop[@offset] = 0
       @nr = nr
       @pid = pid
+      @generation = self.class.generation
       @mold = false
       @switched = false
       @to_io = @master = nil
     end
 
+    def update(message)
+      self.pid = message.pid
+      self.nr = message.nr
+      self.generation = message.generation
+      case message
+      when Message::WorkerSpawned
+        @master = MessageSocket.new(message.pipe)
+      end
+    end
+
     def register_to_master(control_socket)
       @to_io, @master = Unicorn.socketpair
-      message = Message::WorkerSpawned.new(@nr, Process.pid, @master)
+      message = Message::WorkerSpawned.new(@nr, Process.pid, generation, @master)
       control_socket.sendmsg(message)
       @master.close
     end
 
     def acknowlege_promotion(control_socket)
-      message = Message::WorkerPromoted.new(@nr, Process.pid)
+      message = Message::WorkerPromoted.new(@nr, Process.pid, generation)
       control_socket.sendmsg(message)
     end
 
@@ -57,6 +72,7 @@ module Unicorn
 
     def promote!
       @mold = true
+      @generation = self.class.generation += 1
     end
 
     def mold?

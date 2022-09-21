@@ -130,9 +130,9 @@ module Unicorn
 
   Message = Class.new(Struct)
   class Message
-    WorkerSpawned = Message.new(:nr, :pid, :pipe)
+    WorkerSpawned = Message.new(:nr, :pid, :generation, :pipe)
     SoftKill = Message.new(:signum)
-    WorkerPromoted = Message.new(:nr, :pid)
+    WorkerPromoted = Message.new(:nr, :pid, :generation)
     SpawnWorker = Message.new(:nr)
   end
 end
