@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# Since pitfork rely on a bunch of Linux features
+# this script gives a quick dev environment for macOS
+# and Windows contributors.
+exec docker run -v $PWD:/app -it $(docker build -q .)

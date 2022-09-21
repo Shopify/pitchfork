@@ -15,6 +15,7 @@ GEM
       power_assert
 
 PLATFORMS
+  aarch64-linux
   arm64-darwin-21
   x86_64-linux
 
