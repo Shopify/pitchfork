@@ -539,14 +539,11 @@ module Unicorn
 
     if Unicorn.const_defined?(:Waiter)
       def prep_readers(readers)
-        wtr = Unicorn::Waiter.prep_readers(readers)
-        @timeout *= 500 # to milliseconds for epoll, but halved
-        wtr
+        Unicorn::Waiter.prep_readers(readers)
       end
     else
       require_relative 'select_waiter'
       def prep_readers(_readers)
-        @timeout /= 2.0 # halved for IO.select
         Unicorn::SelectWaiter.new
       end
     end
@@ -583,7 +580,7 @@ module Unicorn
 
         # timeout so we can .tick and keep parent from SIGKILL-ing us
         worker.tick = time_now.to_i
-        waiter.get_readers(ready, readers, @timeout)
+        waiter.get_readers(ready, readers, @timeout * 500) # to milliseconds, but halved
       rescue => e
         redo if reopen && readers[0]
         Unicorn.log_error(@logger, "listen loop error", e) if readers[0]
