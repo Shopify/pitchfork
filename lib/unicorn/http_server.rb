@@ -85,6 +85,7 @@ module Unicorn
       # * The workers immediately close the pipe they inherit.  See the
       # Unicorn::Worker class for the pipe workers use.
       @control_socket = []
+      @mold = nil
       @workers = {} # hash maps PIDs to Workers
       @pending_workers = {} # hash maps NRs to Workers
       @sig_queue = [] # signal queue used for self-piping
@@ -104,7 +105,7 @@ module Unicorn
       @orig_app = app
       # list of signals we care about and trap in master.
       @queue_sigs = [
-        :QUIT, :INT, :TERM, :USR1, :TTIN, :TTOU ]
+        :QUIT, :INT, :TERM, :USR1, :USR2, :TTIN, :TTOU ]
     end
 
     # Runs the thing.  Returns self so you can run join on it
@@ -260,6 +261,9 @@ module Unicorn
         Unicorn::Util.reopen_logs
         logger.info "master done reopening logs"
         soft_kill_each_worker(:USR1)
+      when :USR2 # trigger a promotion
+        new_mold = select_mold
+        new_mold.soft_kill(:USR2)
       when :TTIN
         @respawn = true
         self.worker_processes += 1
@@ -271,6 +275,18 @@ module Unicorn
         @workers[message.pid] = @pending_workers.delete(message.nr)
         # TODO: should we send a message to the worker to acknowledge?
         logger.info "worker=#{worker.nr} registered with pid=#{message.pid}"
+      when Message::WorkerPromoted
+        if new_mold = @workers.delete(message.pid)
+          old_mold = @mold
+          @mold = new_mold
+          logger.info("worker=#{message.nr} pid=#{message.pid} promoted to a mold")
+          if old_mold
+            logger.info("Terminating old mold") # TODO: include PID
+            old_mold.soft_kill(:QUIT)
+          end
+        else
+          logger.error("No worker=#{message.nr} found with pid=#{message.pid}")
+        end
       else
         logger.error("Unexpected message in sig_queue #{message.inspect}")
       end
@@ -318,6 +334,13 @@ module Unicorn
     end
 
     private
+
+    def select_mold
+      # This is the simplest possible algorithm, we promote the oldest worker.
+      # Later on it would make sense to use memory metrics to select the best candidate.
+      # We can even expose a callback to let users implement their own algorithm.
+      @workers.values.first
+    end
 
     # wait for a signal hander to wake us up and then consume the pipe
     def master_sleep(sec)
@@ -397,19 +420,31 @@ module Unicorn
       OpenSSL::Random.seed(rand.to_s) if defined?(OpenSSL::Random)
     end
 
+    def spawn_worker(worker_nr, detach: false)
+      worker = Unicorn::Worker.new(worker_nr)
+      before_fork.call(self, worker)
+
+      fork do
+        if detach
+          # TODO: detach here
+        end
+
+        after_fork_internal
+        worker_loop(worker)
+        if worker.mold?
+          mold_loop(worker)
+        end
+        exit
+      end
+
+      worker
+    end
+
     def spawn_missing_workers
       worker_nr = -1
       until (worker_nr += 1) == @worker_processes
         @workers.value?(worker_nr) || @pending_workers.key?(worker_nr) and next
-        worker = Unicorn::Worker.new(worker_nr)
-        before_fork.call(self, worker)
-
-        fork do
-          after_fork_internal
-          worker_loop(worker)
-          exit
-        end
-
+        worker = spawn_worker(worker_nr, detach: false)
         # We could directly register workers when we spawn from the
         # master, like unicorn does. However it is preferable to
         # always go through the asynchronous registering process for
@@ -551,16 +586,22 @@ module Unicorn
       trap(:CHLD, 'DEFAULT')
       @sig_queue.clear
       proc_name "worker[#{worker.nr}]"
-      START_CTX.clear
       @workers.clear
 
       after_fork.call(self, worker) # can drop perms and create listeners
       LISTENERS.each { |sock| sock.close_on_exec = true }
 
       @config = nil
-      @after_fork = @listener_opts = @orig_app = nil
+      @listener_opts = @orig_app = nil
       readers = LISTENERS.dup
       readers << worker
+      trap(:QUIT) { nuke_listeners!(readers) }
+      readers
+    end
+
+    def init_mold_process(worker)
+      proc_name "mold"
+      readers = [worker]
       trap(:QUIT) { nuke_listeners!(readers) }
       readers
     end
@@ -594,6 +635,8 @@ module Unicorn
       waiter = prep_readers(readers)
       reopen = false
 
+      trap(:USR2) { worker.promote! }
+
       # this only works immediately if the master sent us the signal
       # (which is the normal case)
       trap(:USR1) { reopen = true }
@@ -614,6 +657,45 @@ module Unicorn
             worker.tick = time_now.to_i
           end
           break if reopen
+          return if worker.mold? # We've been promoted we can exit the loop
+        end
+
+        # timeout so we can .tick and keep parent from SIGKILL-ing us
+        worker.tick = time_now.to_i
+        waiter.get_readers(ready, readers, @timeout)
+      rescue => e
+        redo if reopen && readers[0]
+        Unicorn.log_error(@logger, "listen loop error", e) if readers[0]
+      end while readers[0]
+    end
+
+    def mold_loop(worker)
+      readers = init_mold_process(worker)
+      waiter = prep_readers(readers)
+      reopen = false
+
+      # this only works immediately if the master sent us the signal
+      # (which is the normal case)
+      trap(:USR1) { reopen = true }
+
+      ready = readers.dup
+      worker.acknowlege_promotion(@control_socket[1])
+      # TODO: mold ready callback?
+
+      begin
+        reopen = reopen_worker_logs(worker.nr) if reopen
+        worker.tick = time_now.to_i
+        while sock = ready.shift
+          # Unicorn::Worker#accept_nonblock is not like accept(2) at all,
+          # but that will return false
+          case message = sock.accept_nonblock(exception: false)
+          when false
+            # no message
+          when Message::SpawnWorker
+            spawn_worker(message.nr, detatch: true)
+          else
+            logger.error("Unexpected mold message #{message.inspect}")
+          end
         end
 
         # timeout so we can .tick and keep parent from SIGKILL-ing us

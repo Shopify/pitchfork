@@ -132,5 +132,7 @@ module Unicorn
   class Message
     WorkerSpawned = Message.new(:nr, :pid, :pipe)
     SoftKill = Message.new(:signum)
+    WorkerPromoted = Message.new(:nr, :pid)
+    SpawnWorker = Message.new(:nr)
   end
 end

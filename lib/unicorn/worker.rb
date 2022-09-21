@@ -23,6 +23,7 @@ module Unicorn
       @offset = nr % PER_DROP
       @raindrop[@offset] = 0
       @nr = nr
+      @mold = false
       @switched = false
       @to_io = @master = nil
     end
@@ -32,6 +33,19 @@ module Unicorn
       message = Message::WorkerSpawned.new(@nr, Process.pid, @master)
       control_socket.sendmsg(message)
       @master.close
+    end
+
+    def acknowlege_promotion(control_socket)
+      message = Message::WorkerPromoted.new(@nr, Process.pid)
+      control_socket.sendmsg(message)
+    end
+
+    def promote!
+      @mold = true
+    end
+
+    def mold?
+      @mold
     end
 
     def to_io # IO.select-compatible
@@ -93,6 +107,8 @@ module Unicorn
           # trigger the signal handler
           fake_sig(buf.signum)
           # keep looping, more signals may be queued
+        when Message
+          return buf
         else
           raise TypeError, "Unexpected read_nonblock returns: #{buf.inspect}"
         end
