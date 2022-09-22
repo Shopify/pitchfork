@@ -360,7 +360,7 @@ module Unicorn
 
     def awaken_master
       return if $$ != @master_pid
-      @control_socket[1].write_nonblock(NOOP, exception: false) # wakeup master process from select
+      @control_socket[1].sendmsg_nonblock(NOOP, exception: false) # wakeup master process from select
     end
 
     # reaps all unreaped workers

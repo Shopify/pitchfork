@@ -38,16 +38,6 @@ module Unicorn
       @socket.close
     end
 
-    def read_nonblock(*args)
-      @socket.read_nonblock(*args)
-    end
-    ruby2_keywords :read_nonblock
-
-    def write_nonblock(*args)
-      @socket.write_nonblock(*args)
-    end
-    ruby2_keywords :write_nonblock
-
     def sendmsg(message)
       payload, ios = dump_message(message)
       @socket.sendmsg(

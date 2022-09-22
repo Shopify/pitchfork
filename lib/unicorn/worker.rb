@@ -127,9 +127,11 @@ module Unicorn
         when Message
           return buf
         else
-          raise TypeError, "Unexpected read_nonblock returns: #{buf.inspect}"
+          raise TypeError, "Unexpected recvmsg_nonblock returns: #{buf.inspect}"
         end
       end # loop, as multiple signals may be sent
+    rescue Errno::ECONNRESET
+      nil
     end
 
     # worker objects may be compared to just plain Integers

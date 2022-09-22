@@ -137,8 +137,9 @@ module Unicorn
   rescue Errno::EPROTONOSUPPORT
     if @socket_type == :SOCK_SEQPACKET
       # macOS and very old linuxes don't support SOCK_SEQPACKET (SCTP).
-      # In such case we can fallback to SOCK_STREAM (TCP)
-      @socket_type = :SOCK_STREAM
+      # In such case we can fallback to SOCK_DGRAM (TCP)
+      warn("SEQPACKET (SCTP) isn't supported, falling back to DGRAM")
+      @socket_type = :SOCK_DGRAM
       retry
     else
       raise
