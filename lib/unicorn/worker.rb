@@ -29,14 +29,13 @@ module Unicorn
     end
 
     def update(message)
-      self.pid = message.pid
-      self.nr = message.nr
-      self.generation = message.generation
+      message.class.members.each do |member|
+        send("#{member}=", message.public_send(member))
+      end
+
       case message
-      when Message::WorkerSpawned
-        @master = MessageSocket.new(message.pipe)
-      when Message::WorkerPromoted
-        promote!
+      when Message::WorkerPromoted, Message::PromoteWorker
+        promoted!
       end
     end
 
@@ -52,25 +51,18 @@ module Unicorn
       control_socket.sendmsg(message)
     end
 
-    def spawn_worker(worker)
-      success = false
-      begin
-        case @master.sendmsg_nonblock(Message::SpawnWorker.new(worker.nr), exception: false)
-        when :wait_writable
-        else
-          success = true
-        end
-      rescue Errno::EPIPE
-        # worker will be reaped soon
-      end
-      success
+    def promote(generation)
+      send_message_nonblock(Message::PromoteWorker.new(generation))
     end
 
-    def promote!
+    def spawn_worker(new_worker)
+      send_message_nonblock(Message::SpawnWorker.new(new_worker.nr))
+    end
+
+    def promoted!
       @mold = true
       @nr = nil
       build_raindrop(0)
-      @generation = self.class.generation += 1
     end
 
     def mold?
@@ -166,6 +158,24 @@ module Unicorn
     end
 
     private
+
+    def pipe=(socket)
+      @master = MessageSocket.new(socket)
+    end
+
+    def send_message_nonblock(message)
+      success = false
+      begin
+        case @master.sendmsg_nonblock(message, exception: false)
+        when :wait_writable
+        else
+          success = true
+        end
+      rescue Errno::EPIPE
+        # worker will be reaped soon
+      end
+      success
+    end
 
     PER_DROP = Raindrops::PAGE_SIZE / Raindrops::SIZE
     DROPS = []

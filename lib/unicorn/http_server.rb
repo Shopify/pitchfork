@@ -265,7 +265,7 @@ module Unicorn
       when :USR2 # trigger a promotion
         if Process.pid == 1 || ChildSubreaper::AVAILABLE
           new_mold = select_mold
-          new_mold.soft_kill(:USR2)
+          new_mold.promote(Worker.generation += 1)
         else
           logger.error("This system doesn't support PR_SET_CHILD_SUBREAPER, no point promoting a worker")
         end
@@ -658,8 +658,6 @@ module Unicorn
       waiter = prep_readers(readers)
       reopen = false
 
-      trap(:USR2) { worker.promote! }
-
       # this only works immediately if the master sent us the signal
       # (which is the normal case)
       trap(:USR1) { reopen = true }
@@ -676,7 +674,12 @@ module Unicorn
           client = sock.accept_nonblock(exception: false)
           client = false if client == :wait_readable
           if client
-            process_client(client)
+            case client
+            when Message
+              worker.update(client)
+            else
+              process_client(client)
+            end
             worker.tick = time_now.to_i
           end
           break if reopen
