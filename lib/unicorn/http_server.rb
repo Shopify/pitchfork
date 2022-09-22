@@ -369,7 +369,11 @@ module Unicorn
         wpid, status = Process.waitpid2(-1, Process::WNOHANG)
         wpid or return
         worker = @children.reap(wpid) and worker.close rescue nil
-        @after_worker_exit.call(self, worker, status)
+        if worker
+          @after_worker_exit.call(self, worker, status)
+        else
+          logger.error("reaped unknown subprocess #{status.inspect}")
+        end
       rescue Errno::ECHILD
         break
       end while true
