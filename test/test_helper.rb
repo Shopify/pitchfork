@@ -187,7 +187,7 @@ def wait_workers_ready(path, nr_workers)
   lines = []
   while (tries -= 1) > 0
     begin
-      lines = File.readlines(path).grep(/worker=\d+ ready/)
+      lines = File.readlines(path).grep(/worker=\d+.*ready/)
       lines.size == nr_workers and return
     rescue Errno::ENOENT
     end

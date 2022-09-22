@@ -66,8 +66,14 @@ class SignalsTest < Test::Unit::TestCase
     t0 = Time.now
     assert child
     assert t0
-    assert_raises(Errno::ESRCH) { loop { Process.kill(0, child); sleep 0.2 } }
+    assert_raises(Errno::ESRCH) { 25.times { Process.kill(0, child); sleep 0.2 } }
+    child = nil
     assert((Time.now - t0) < 60)
+  ensure
+    if child
+      puts "SIGKILL child pid=#{child}"
+      Process.kill(:KILL, child)
+    end
   end
 
   def test_sleepy_kill
