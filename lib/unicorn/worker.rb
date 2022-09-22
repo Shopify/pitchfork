@@ -11,21 +11,23 @@ module Unicorn
   # See the Unicorn::Configurator RDoc for examples.
   class Worker
     # :stopdoc:
+    EXIT_SIGNALS = [:QUIT, :TERM]
     @generation = 0
-    class << self
-      attr_accessor :generation
-    end
-    attr_accessor :nr, :switched, :pid, :generation
+    attr_accessor :nr, :pid, :generation
     attr_reader :master
 
-    def initialize(nr, pid: nil)
+    def initialize(nr, pid: nil, generation: 0)
       build_raindrop(nr + 1)
       @nr = nr
       @pid = pid
-      @generation = self.class.generation
+      @generation = generation
       @mold = false
-      @switched = false
       @to_io = @master = nil
+      @exiting = false
+    end
+
+    def exiting?
+      @exiting
     end
 
     def update(message)
@@ -96,20 +98,14 @@ module Unicorn
 
     # master sends fake signals to children
     def soft_kill(sig) # :nodoc:
-      case sig
-      when Integer
-        signum = sig
-      else
-        signum = Signal.list[sig.to_s] or
-            raise ArgumentError, "BUG: bad signal: #{sig.inspect}"
-      end
+      signum = Signal.list[sig.to_s] or raise ArgumentError, "BUG: bad signal: #{sig.inspect}"
 
       # Do not care in the odd case the buffer is full, here.
-      begin
-        @master.sendmsg_nonblock(Message::SoftKill.new(signum), exception: false)
-      rescue Errno::EPIPE
-        # worker will be reaped soon
+      success = send_message_nonblock(Message::SoftKill.new(signum))
+      if success && EXIT_SIGNALS.include?(sig)
+        @exiting = true
       end
+      success
     end
 
     # this only runs when the Rack app.call is not running

@@ -250,7 +250,11 @@ module Unicorn
           sleep_time = @timeout/2.0 + 1
           @logger.debug("waiting #{sleep_time}s after suspend/hibernation")
         end
-        maintain_worker_count if @respawn
+        if @respawn
+          maintain_worker_count
+          shutdown_outdated_workers
+        end
+
         master_sleep(sleep_time) if sleep
       when :QUIT # graceful shutdown
         return StopIteration
@@ -265,7 +269,7 @@ module Unicorn
       when :USR2 # trigger a promotion
         if Process.pid == 1 || ChildSubreaper::AVAILABLE
           new_mold = select_mold
-          new_mold.promote(Worker.generation += 1)
+          new_mold.promote(@children.last_generation += 1)
         else
           logger.error("This system doesn't support PR_SET_CHILD_SUBREAPER, no point promoting a worker")
         end
@@ -277,11 +281,12 @@ module Unicorn
       when Message::WorkerSpawned
         worker = @children.update(message)
         # TODO: should we send a message to the worker to acknowledge?
-        logger.info "worker=#{worker.nr} registered with pid=#{worker.pid}"
+        logger.info "worker=#{worker.nr} pid=#{worker.pid} registered"
       when Message::WorkerPromoted
         old_molds = @children.molds
-        new_mold = @children.update(message)
+        new_mold = @children.fetch(message.pid)
         logger.info("worker=#{new_mold.nr} pid=#{new_mold.pid} promoted to a mold")
+        @children.update(message)
         old_molds.each do |old_mold|
           logger.info("Terminating old mold pid=#{old_mold.pid}")
           old_mold.soft_kill(:QUIT)
@@ -493,6 +498,23 @@ module Unicorn
       @children.each_worker { |w| w.nr >= worker_processes and w.soft_kill(:QUIT) }
     end
 
+    def shutdown_outdated_workers
+      return unless @children.mold
+
+      # We don't shutdown any outdated worker if any worker is already being spawed
+      # or a worker is exiting. Workers are only reforked one by one to minimize the
+      # impact on capacity.
+      # In the future we may want to use a dynamic limit, e.g. 10% of workers may be down at
+      # a time.
+      return if @children.pending_workers?
+      return if @children.workers.any?(&:exiting?)
+
+      if outdated_worker = @children.workers.find { |w| w.generation < @children.mold.generation }
+        logger.info("worker=#{outdated_worker.nr} pid=#{outdated_worker.pid} restarting")
+        outdated_worker.soft_kill(:QUIT)
+      end
+    end
+
     # if we get any error, try to write something back to the client
     # assuming we haven't closed the socket, but don't get hung up
     # if the socket is already closed or broken.  We'll always ensure
@@ -695,22 +717,16 @@ module Unicorn
       end while readers[0]
     end
 
-    def mold_loop(worker)
-      readers = init_mold_process(worker)
+    def mold_loop(mold)
+      readers = init_mold_process(mold)
       waiter = prep_readers(readers)
-      reopen = false
-
-      # this only works immediately if the master sent us the signal
-      # (which is the normal case)
-      trap(:USR1) { reopen = true }
 
       ready = readers.dup
-      worker.acknowlege_promotion(@control_socket[1])
+      mold.acknowlege_promotion(@control_socket[1])
       # TODO: mold ready callback?
 
       begin
-        reopen = reopen_worker_logs(worker.nr) if reopen
-        worker.tick = time_now.to_i
+        mold.tick = time_now.to_i
         while sock = ready.shift
           # Unicorn::Worker#accept_nonblock is not like accept(2) at all,
           # but that will return false
@@ -718,17 +734,16 @@ module Unicorn
           when false
             # no message
           when Message::SpawnWorker
-            spawn_worker(Worker.new(message.nr), detach: true)
+            spawn_worker(Worker.new(message.nr, generation: mold.generation), detach: true)
           else
             logger.error("Unexpected mold message #{message.inspect}")
           end
         end
 
         # timeout so we can .tick and keep parent from SIGKILL-ing us
-        worker.tick = time_now.to_i
+        mold.tick = time_now.to_i
         waiter.get_readers(ready, readers, @timeout * 500) # to milliseconds, but halved
       rescue => e
-        redo if reopen && readers[0]
         Unicorn.log_error(@logger, "listen loop error", e) if readers[0]
       end while readers[0]
     end

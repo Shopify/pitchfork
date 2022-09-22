@@ -35,6 +35,7 @@ class TestCccTCPI < Test::Unit::TestCase
       opts = {
         listeners: [ "#{host}:#{port}" ],
         stderr_path: err.path,
+        worker_processes: 1,
         check_client_connection: true,
       }
       uni = Unicorn::HttpServer.new(app, opts)

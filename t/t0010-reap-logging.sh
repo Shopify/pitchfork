@@ -23,7 +23,7 @@ t_begin "wait for 2nd worker to start" && {
 
 t_begin "ensure log of 1st reap is an ERROR" && {
 	dbgcat r_err
-	grep 'ERROR.*reaped.*worker=0' $r_err | grep $pid_1
+	grep 'ERROR.*worker=0.*reaped' $r_err | grep $pid_1
 	dbgcat r_err
 	> $r_err
 }
@@ -38,7 +38,7 @@ t_begin "wait for 3rd worker=0 to start " && {
 }
 
 t_begin "ensure log of 2nd reap is a INFO" && {
-	grep 'INFO.*reaped.*worker=0' $r_err | grep $pid_2
+	grep 'INFO.*worker=0.*reaped' $r_err | grep $pid_2
 	> $r_err
 }
 

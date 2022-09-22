@@ -5,8 +5,10 @@ module Unicorn
   # This class keep tracks of the state of all the master children.
   class Children
     attr_reader :mold
+    attr_accessor :last_generation
 
     def initialize
+      @last_generation = 0
       @children = {} # All children, including molds, indexed by PID.
       @workers = {} # Workers indexed by their `nr`.
       @molds = {} # Molds, index by PID.
@@ -19,8 +21,12 @@ module Unicorn
       @pending_workers[child.nr] = @workers[child.nr] = child
     end
 
+    def fetch(pid)
+      @children.fetch(pid)
+    end
+
     def update(message)
-      child = @children[message.pid] || @workers[message.nr]
+      child = @children[message.pid] || (message.nr && @workers[message.nr])
       old_nr = child.nr
 
       child.update(message)

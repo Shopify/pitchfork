@@ -33,13 +33,17 @@ module Unicorn
       :logger => Logger.new($stderr),
       :worker_processes => 1,
       :after_fork => lambda { |server, worker|
-          server.logger.info("worker=#{worker.nr} spawned pid=#{$$}")
+          server.logger.info("worker=#{worker.nr} gen=#{worker.generation} pid=#{$$} spawned")
         },
       :before_fork => lambda { |server, worker|
-          server.logger.info("worker=#{worker.nr} spawning...")
+          server.logger.info("worker=#{worker.nr} gen=#{worker.generation} spawning...")
         },
       :after_worker_exit => lambda { |server, worker, status|
-          m = "reaped #{status.inspect} worker=#{worker.nr rescue 'unknown'}"
+          m = if worker.mold?
+            "mold gen=#{worker.generation rescue 'unknown'} reaped (#{status.inspect})"
+          else
+            "worker=#{worker.nr rescue 'unknown'} gen=#{worker.generation rescue 'unknown'} reaped (#{status.inspect})"
+          end
           if status.success?
             server.logger.info(m)
           else
