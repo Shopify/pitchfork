@@ -18,14 +18,8 @@ module Unicorn
     attr_accessor :nr, :switched, :pid, :generation
     attr_reader :master
 
-    PER_DROP = Raindrops::PAGE_SIZE / Raindrops::SIZE
-    DROPS = []
-
     def initialize(nr, pid: nil)
-      drop_index = nr / PER_DROP
-      @raindrop = DROPS[drop_index] ||= Raindrops.new(PER_DROP)
-      @offset = nr % PER_DROP
-      @raindrop[@offset] = 0
+      build_raindrop(nr + 1)
       @nr = nr
       @pid = pid
       @generation = self.class.generation
@@ -74,6 +68,8 @@ module Unicorn
 
     def promote!
       @mold = true
+      @nr = nil
+      build_raindrop(0)
       @generation = self.class.generation += 1
     end
 
@@ -167,6 +163,18 @@ module Unicorn
     def close # :nodoc:
       @master.close if @master
       @to_io.close if @to_io
+    end
+
+    private
+
+    PER_DROP = Raindrops::PAGE_SIZE / Raindrops::SIZE
+    DROPS = []
+
+    def build_raindrop(drop_nr)
+      drop_index = drop_nr / PER_DROP
+      @raindrop = DROPS[drop_index] ||= Raindrops.new(PER_DROP)
+      @offset = drop_nr % PER_DROP
+      @raindrop[@offset] = 0
     end
   end
 end
