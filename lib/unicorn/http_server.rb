@@ -86,9 +86,7 @@ module Unicorn
       # * The workers immediately close the pipe they inherit.  See the
       # Unicorn::Worker class for the pipe workers use.
       @control_socket = []
-      @mold = nil
-      @workers = {} # hash maps PIDs to Workers
-      @pending_workers = {} # hash maps NRs to Workers
+      @children = Children.new
       @sig_queue = [] # signal queue used for self-piping
       @pid = nil
 
@@ -240,7 +238,7 @@ module Unicorn
       logger.info "master complete"
     end
 
-    def monitor_loop
+    def monitor_loop(sleep = true)
       reap_all_workers
       case message = @sig_queue.shift
       when nil
@@ -253,7 +251,7 @@ module Unicorn
           @logger.debug("waiting #{sleep_time}s after suspend/hibernation")
         end
         maintain_worker_count if @respawn
-        master_sleep(sleep_time)
+        master_sleep(sleep_time) if sleep
       when :QUIT # graceful shutdown
         return StopIteration
       when :TERM, :INT # immediate shutdown
@@ -277,26 +275,20 @@ module Unicorn
       when :TTOU
         self.worker_processes -= 1 if self.worker_processes > 0
       when Message::WorkerSpawned
-        worker = @pending_workers.fetch(message.nr)
-        worker.update(message)
-        @workers[message.pid] = @pending_workers.delete(message.nr)
+        worker = @children.update(message)
         # TODO: should we send a message to the worker to acknowledge?
         logger.info "worker=#{worker.nr} registered with pid=#{worker.pid}"
       when Message::WorkerPromoted
-        if new_mold = @workers.delete(message.pid)
-          new_mold.update(message)
-          old_mold = @mold
-          @mold = new_mold
-          logger.info("worker=#{@mold.nr} pid=#{@mold.pid} promoted to a mold")
-          if old_mold
-            logger.info("Terminating old mold pid=#{old_mold.pid}")
-            old_mold.soft_kill(:QUIT)
-          end
-        else
-          logger.error("No worker=#{message.nr} found with pid=#{message.pid}")
+        old_molds = @children.molds
+        new_mold = @children.update(message)
+        logger.info("worker=#{new_mold.nr} pid=#{new_mold.pid} promoted to a mold")
+        old_molds.each do |old_mold|
+          logger.info("Terminating old mold pid=#{old_mold.pid}")
+          old_mold.soft_kill(:QUIT)
         end
       else
         logger.error("Unexpected message in sig_queue #{message.inspect}")
+        logger.error(@sig_queue.inspect)
       end
     end
 
@@ -304,7 +296,7 @@ module Unicorn
     def stop(graceful = true)
       self.listeners = []
       limit = time_now + timeout
-      until @workers.empty? || time_now > limit
+      until @children.workers.empty? || time_now > limit
         if graceful
           soft_kill_each_worker(:QUIT)
         else
@@ -347,7 +339,7 @@ module Unicorn
       # This is the simplest possible algorithm, we promote the oldest worker.
       # Later on it would make sense to use memory metrics to select the best candidate.
       # We can even expose a callback to let users implement their own algorithm.
-      @workers.values.first
+      @children.workers.first
     end
 
     # wait for a signal hander to wake us up and then consume the pipe
@@ -371,7 +363,7 @@ module Unicorn
       begin
         wpid, status = Process.waitpid2(-1, Process::WNOHANG)
         wpid or return
-        worker = @workers.delete(wpid) and worker.close rescue nil
+        worker = @children.reap(wpid) and worker.close rescue nil
         @after_worker_exit.call(self, worker, status)
       rescue Errno::ECHILD
         break
@@ -400,7 +392,7 @@ module Unicorn
     def murder_lazy_workers
       next_sleep = @timeout - 1
       now = time_now.to_i
-      @workers.dup.each_pair do |wpid, worker|
+      @children.workers.each do |worker|
         tick = worker.tick
         0 == tick and next # skip workers that haven't processed any clients
         diff = now - tick
@@ -410,9 +402,12 @@ module Unicorn
           next
         end
         next_sleep = 0
-        logger.error "worker=#{worker.nr} PID:#{wpid} timeout " \
-                     "(#{diff}s > #{@timeout}s), killing"
-        kill_worker(:KILL, wpid) # take no prisoners for timeout violations
+        if worker.mold?
+          logger.error "mold PID:#{worker.pid} timeout (#{diff}s > #{@timeout}s), killing"
+        else
+          logger.error "worker=#{worker.nr} PID:#{worker.pid} timeout (#{diff}s > #{@timeout}s), killing"
+        end
+        kill_worker(:KILL, worker.pid) # take no prisoners for timeout violations
       end
       next_sleep <= 0 ? 1 : next_sleep
     end
@@ -461,10 +456,12 @@ module Unicorn
     def spawn_missing_workers
       worker_nr = -1
       until (worker_nr += 1) == @worker_processes
-        @workers.value?(worker_nr) || @pending_workers.key?(worker_nr) and next
+        if @children.nr_alive?(worker_nr)
+          next
+        end
         worker = Unicorn::Worker.new(worker_nr)
 
-        if !@mold || !@mold.spawn_worker(worker)
+        if !@children.mold || !@children.mold.spawn_worker(worker)
           # If there's no mold, or the mold was somehow unreachable
           # we fallback to spawning the missing workers ourselves.
           spawn_worker(worker, detach: false)
@@ -473,7 +470,7 @@ module Unicorn
         # master, like unicorn does. However it is preferable to
         # always go through the asynchronous registering process for
         # consistency.
-        @pending_workers[worker.nr] = worker
+        @children.register(worker)
       end
     rescue => e
       @logger.error(e) rescue nil
@@ -481,17 +478,19 @@ module Unicorn
     end
 
     def wait_for_pending_workers
-      until @pending_workers.empty?
+      while @children.pending_workers?
         master_sleep(0.5)
-        monitor_loop
+        if monitor_loop(false) == StopIteration
+          break
+        end
         maintain_worker_count
       end
     end
 
     def maintain_worker_count
-      (off = @workers.size + @pending_workers.size - worker_processes) == 0 and return
+      (off = @children.workers_count - worker_processes) == 0 and return
       off < 0 and return spawn_missing_workers
-      @workers.each_value { |w| w.nr >= worker_processes and w.soft_kill(:QUIT) }
+      @children.each_worker { |w| w.nr >= worker_processes and w.soft_kill(:QUIT) }
     end
 
     # if we get any error, try to write something back to the client
@@ -610,7 +609,7 @@ module Unicorn
       trap(:CHLD, 'DEFAULT')
       @sig_queue.clear
       proc_name "worker[#{worker.nr}] (gen:#{worker.generation})"
-      @workers.clear
+      @children = nil
 
       after_fork.call(self, worker) # can drop perms and create listeners
       LISTENERS.each { |sock| sock.close_on_exec = true }
@@ -736,16 +735,16 @@ module Unicorn
     def kill_worker(signal, wpid)
       Process.kill(signal, wpid)
     rescue Errno::ESRCH
-      worker = @workers.delete(wpid) and worker.close rescue nil
+      worker = @children.reap(wpid) and worker.close rescue nil
     end
 
     # delivers a signal to each worker
     def kill_each_worker(signal)
-      @workers.keys.each { |wpid| kill_worker(signal, wpid) }
+      @children.each_worker { |w| kill_worker(signal, w.pid) }
     end
 
     def soft_kill_each_worker(signal)
-      @workers.each_value { |worker| worker.soft_kill(signal) }
+      @children.each_worker { |worker| worker.soft_kill(signal) }
     end
 
     def load_config!

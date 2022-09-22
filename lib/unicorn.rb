@@ -148,7 +148,9 @@ module Unicorn
 end
 # :enddoc:
 
-%w(const socket_helper stream_input tee_input message http_request configurator
-   tmpio util http_response worker http_server).each do |s|
+%w(
+  const socket_helper stream_input tee_input children message http_request
+  configurator tmpio util http_response worker http_server
+).each do |s|
   require_relative "unicorn/#{s}"
 end

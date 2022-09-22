@@ -41,6 +41,8 @@ module Unicorn
       case message
       when Message::WorkerSpawned
         @master = MessageSocket.new(message.pipe)
+      when Message::WorkerPromoted
+        promote!
       end
     end
 
@@ -147,8 +149,8 @@ module Unicorn
     end
 
     # worker objects may be compared to just plain Integers
-    def ==(other_nr) # :nodoc:
-      @nr == other_nr
+    def ==(other) # :nodoc:
+      super || (!@nr.nil? && @nr == other)
     end
 
     # called in the worker process
