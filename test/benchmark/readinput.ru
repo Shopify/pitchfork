@@ -35,6 +35,6 @@ run(lambda do |env|
   l.debug('DONE reading input ...') if l
 
   buf.clear
-  [ 200, [ %W(Content-Length #{DOC.size}), %w(Content-Type text/plain) ],
+  [ 200, [ %W(content-length #{DOC.size}), %w(content-type text/plain) ],
     [ DOC ] ]
 end)

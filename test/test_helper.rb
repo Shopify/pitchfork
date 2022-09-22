@@ -29,6 +29,7 @@ require 'fileutils'
 require 'logger'
 require 'unicorn'
 require 'io/nonblock'
+require 'rack/lint'
 
 if ENV['DEBUG']
   require 'ruby-debug'

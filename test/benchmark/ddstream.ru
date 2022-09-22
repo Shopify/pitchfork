@@ -25,7 +25,7 @@ class BigResponse
     @buf = "#{bs.to_s(16)}\r\n#{' ' * bs}\r\n"
     @count = count
     @res = [ 200,
-      { 'Transfer-Encoding' => -'chunked', 'Content-Type' => 'text/plain' },
+      { 'transfer-encoding' => -'chunked', 'content-type' => 'text/plain' },
       self
     ]
   end

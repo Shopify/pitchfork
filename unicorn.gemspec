@@ -31,9 +31,8 @@ Gem::Specification.new do |s|
   # version in extconf.rb
   s.required_ruby_version = ">= 2.5.0"
 
-  s.add_dependency(%q<rack>, '< 3') # TODO: rack 3.0 compat
-
   s.add_dependency(%q<raindrops>, '~> 0.7')
+  s.add_dependency(%q<rack>)
   s.add_dependency(%q<child_subreaper>) # TODO: it's so small we should merge it.
 
   # Note: To avoid ambiguity, we intentionally avoid the SPDX-compatible

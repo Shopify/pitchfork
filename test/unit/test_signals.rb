@@ -126,7 +126,7 @@ class SignalsTest < Test::Unit::TestCase
 
   def test_response_write
     app = lambda { |env|
-      [ 200, { 'Content-Type' => 'text/plain', 'X-Pid' => Process.pid.to_s },
+      [ 200, { 'content-type' => 'text/plain', 'X-Pid' => Process.pid.to_s },
         Dd.new(@bs, @count) ]
     }
     redirect_test_io { @server = HttpServer.new(app, @server_opts).start }
@@ -164,7 +164,7 @@ class SignalsTest < Test::Unit::TestCase
     app = lambda { |env|
       while env['rack.input'].read(4096)
       end
-      [ 200, {'Content-Type'=>'text/plain', 'X-Pid'=>Process.pid.to_s}, [] ]
+      [ 200, {'content-type'=>'text/plain', 'X-Pid'=>Process.pid.to_s}, [] ]
     }
     redirect_test_io { @server = HttpServer.new(app, @server_opts).start }
 

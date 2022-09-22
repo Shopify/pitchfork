@@ -11,7 +11,7 @@ class UploadTest < Test::Unit::TestCase
   def setup
     @addr = ENV['UNICORN_TEST_ADDR'] || '127.0.0.1'
     @port = unused_port
-    @hdr = {'Content-Type' => 'text/plain', 'Content-Length' => '0'}
+    @hdr = {'content-type' => 'text/plain', 'content-length' => '0'}
     @bs = 4096
     @count = 256
     @server = nil

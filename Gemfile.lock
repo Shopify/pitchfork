@@ -3,7 +3,7 @@ PATH
   specs:
     unicorn (6.1.0)
       child_subreaper
-      rack (< 3)
+      rack
       raindrops (~> 0.7)
 
 GEM
@@ -11,7 +11,7 @@ GEM
   specs:
     child_subreaper (0.1.0)
     power_assert (2.0.1)
-    rack (2.2.4)
+    rack (3.0.0)
     raindrops (0.20.0)
     test-unit (3.5.3)
       power_assert
