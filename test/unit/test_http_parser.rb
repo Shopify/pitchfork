@@ -11,7 +11,7 @@ require './test/test_helper'
 
 include Unicorn
 
-class HttpParserTest < Test::Unit::TestCase
+class HttpParserTest < Minitest::Test
 
   def test_parse_simple
     parser = HttpParser.new

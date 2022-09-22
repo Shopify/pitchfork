@@ -1459,7 +1459,7 @@ class Installer
     end
     $stderr.puts 'Running tests...' if verbose?
     begin
-      require 'test/unit'
+      require 'minitest/autorun'
     rescue LoadError
       setup_rb_error 'test/unit cannot loaded.  You need Ruby 1.8 or later to invoke this task.'
     end

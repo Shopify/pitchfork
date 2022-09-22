@@ -2,6 +2,8 @@
 
 source "https://rubygems.org"
 
-gem 'test-unit', '~> 3.0'
+gem 'minitest'
+gem 'rake'
+gem 'rake-compiler'
 
 gemspec

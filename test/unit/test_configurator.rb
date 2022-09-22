@@ -1,12 +1,12 @@
 # -*- encoding: binary -*-
 
-require 'test/unit'
+require 'minitest/autorun'
 require 'tempfile'
 require 'unicorn'
 
 TestStruct = Struct.new(
   *(Unicorn::Configurator::DEFAULTS.keys + %w(listener_opts listeners)))
-class TestConfigurator < Test::Unit::TestCase
+class TestConfigurator < Minitest::Test
 
   def test_config_init
     Unicorn::Configurator.new {}
@@ -137,9 +137,8 @@ class TestConfigurator < Test::Unit::TestCase
     test_struct = TestStruct.new
     tmp.syswrite("check_client_connection true\n")
 
-    assert_nothing_raised do
-      Unicorn::Configurator.new(:config_file => tmp.path).commit!(test_struct)
-    end
+    # Nothing raised
+    Unicorn::Configurator.new(:config_file => tmp.path).commit!(test_struct)
 
     assert test_struct.check_client_connection
   end

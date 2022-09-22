@@ -3,7 +3,7 @@
 require './test/test_helper'
 
 module Unicorn
-  class TestChildren < Test::Unit::TestCase
+  class TestChildren < Minitest::Test
     def setup
       @children = Children.new
     end

@@ -3,7 +3,7 @@
 require './test/test_helper'
 require 'tempfile'
 
-class TestSocketHelper < Test::Unit::TestCase
+class TestSocketHelper < Minitest::Test
   include Unicorn::SocketHelper
   attr_reader :logger
   GET_SLASH = "GET / HTTP/1.0\r\n\r\n".freeze

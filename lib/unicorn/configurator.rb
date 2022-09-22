@@ -39,7 +39,9 @@ module Unicorn
           server.logger.info("worker=#{worker.nr} gen=#{worker.generation} spawning...")
         },
       :after_worker_exit => lambda { |server, worker, status|
-          m = if worker.mold?
+          m = if worker.nil?
+            "repead unknown process (#{status.inspect})"
+          elsif worker.mold?
             "mold gen=#{worker.generation rescue 'unknown'} reaped (#{status.inspect})"
           else
             "worker=#{worker.nr rescue 'unknown'} gen=#{worker.generation rescue 'unknown'} reaped (#{status.inspect})"

@@ -18,7 +18,7 @@ ENV['NO_PROXY'] ||= ENV['UNICORN_TEST_ADDR'] || '127.0.0.1'
 DEFAULT_TRIES = 1000
 DEFAULT_RES = 0.2
 
-require 'test/unit'
+require 'minitest/autorun'
 require 'net/http'
 require 'digest/sha1'
 require 'uri'

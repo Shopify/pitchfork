@@ -3,7 +3,7 @@
 require './test/test_helper'
 require 'tempfile'
 
-class TestUtil < Test::Unit::TestCase
+class TestUtil < Minitest::Test
 
   EXPECT_FLAGS = File::WRONLY | File::APPEND
   def test_reopen_logs_noop
@@ -16,7 +16,11 @@ class TestUtil < Test::Unit::TestCase
     Unicorn::Util.reopen_logs
     assert_equal before, File.stat(fp.path).inspect
     assert_equal ext, (fp.external_encoding rescue nil)
-    assert_equal int, (fp.internal_encoding rescue nil)
+    if int.nil?
+      assert_nil (fp.internal_encoding rescue nil)
+    else
+      assert_equal int, (fp.internal_encoding rescue nil)
+    end
     assert_equal(EXPECT_FLAGS, EXPECT_FLAGS & fp.fcntl(Fcntl::F_GETFL))
     tmp.close!
     fp.close
@@ -40,7 +44,11 @@ class TestUtil < Test::Unit::TestCase
     assert before != File.stat(tmp_path).inspect
     assert_equal fp.stat.inspect, File.stat(tmp_path).inspect
     assert_equal ext, (fp.external_encoding rescue nil)
-    assert_equal int, (fp.internal_encoding rescue nil)
+    if int.nil?
+      assert_nil (fp.internal_encoding rescue nil)
+    else
+      assert_equal int, (fp.internal_encoding rescue nil)
+    end
     assert_equal(EXPECT_FLAGS, EXPECT_FLAGS & fp.fcntl(Fcntl::F_GETFL))
     assert fp.sync
     tmp.close!

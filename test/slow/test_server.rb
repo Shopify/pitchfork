@@ -52,7 +52,7 @@ class TestRackAfterReply
   end
 end
 
-class WebServerTest < Test::Unit::TestCase
+class WebServerTest < Minitest::Test
 
   def setup
     @valid_request = "GET / HTTP/1.1\r\nHost: www.zedshaw.com\r\nContent-Type: text/plain\r\n\r\n"

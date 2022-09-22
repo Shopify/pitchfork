@@ -1,7 +1,7 @@
 # -*- encoding: binary -*-
 # :enddoc:
 # no stable API here
-require 'unicorn_http'
+require 'unicorn/unicorn_http'
 
 # TODO: remove redundant names
 Unicorn.const_set(:HttpRequest, Unicorn::HttpParser)

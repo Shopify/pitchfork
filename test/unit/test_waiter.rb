@@ -1,7 +1,7 @@
-require 'test/unit'
+require 'minitest/autorun'
 require 'unicorn'
 require 'unicorn/select_waiter'
-class TestSelectWaiter < Test::Unit::TestCase
+class TestSelectWaiter < Minitest::Test
 
   def test_select_timeout # n.b. this is level-triggered
     sw = Unicorn::SelectWaiter.new

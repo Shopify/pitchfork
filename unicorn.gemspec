@@ -1,13 +1,4 @@
 # -*- encoding: binary -*-
-manifest = File.exist?('.manifest') ?
-  IO.readlines('.manifest').map!(&:chomp!) : `git ls-files`.split("\n")
-
-# don't bother with tests that fork, not worth our time to get working
-# with `gem check -t` ... (of course we care for them when testing with
-# GNU make when they can run in parallel)
-test_files = manifest.grep(%r{\Atest/unit/test_.*\.rb\z}).map do |f|
-  File.readlines(f).grep(/\bfork\b/).empty? ? f : nil
-end.compact
 
 Gem::Specification.new do |s|
   s.name = %q{unicorn}
@@ -20,10 +11,11 @@ Gem::Specification.new do |s|
   s.extra_rdoc_files = IO.readlines('.document').map!(&:chomp!).keep_if do |f|
     File.exist?(f)
   end
-  s.files = manifest
+  s.files = Dir.chdir(File.expand_path('..', __FILE__)) do
+    %x(git ls-files -z).split("\x0").reject { |f| f.match(%r{^(test|spec|features|bin)/}) }
+  end
   s.executables = s.files.grep(%r{^exe/}) { |f| File.basename(f) }
   s.homepage = 'https://yhbt.net/unicorn/'
-  s.test_files = test_files
 
   # 2.0.0 is the minimum supported version. We don't specify
   # a maximum version to make it easier to test pre-releases,

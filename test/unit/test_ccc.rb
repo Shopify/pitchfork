@@ -2,10 +2,10 @@ require 'socket'
 require 'unicorn'
 require 'io/wait'
 require 'tempfile'
-require 'test/unit'
+require 'minitest/autorun'
 require './test/test_helper'
 
-class TestCccTCPI < Test::Unit::TestCase
+class TestCccTCPI < Minitest::Test
   def test_ccc_tcpi
     start_pid = $$
     host = '127.0.0.1'

@@ -8,20 +8,19 @@
 
 require './test/test_helper'
 
-include Unicorn
+class SignalsTest < Minitest::Test
+  include Unicorn
 
-class Dd
-  def initialize(bs, count)
-    @count = count
-    @buf = ' ' * bs
+  class Dd
+    def initialize(bs, count)
+      @count = count
+      @buf = ' ' * bs
+    end
+
+    def each(&block)
+      @count.times { yield @buf }
+    end
   end
-
-  def each(&block)
-    @count.times { yield @buf }
-  end
-end
-
-class SignalsTest < Test::Unit::TestCase
 
   def setup
     @bs = 1 * 1024 * 1024

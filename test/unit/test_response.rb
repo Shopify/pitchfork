@@ -12,7 +12,7 @@ require 'time'
 
 include Unicorn
 
-class ResponseTest < Test::Unit::TestCase
+class ResponseTest < Minitest::Test
   include Unicorn::HttpResponse
 
   def test_httpdate

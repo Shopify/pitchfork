@@ -1,17 +1,15 @@
 # -*- encoding: binary -*-
 
-require 'test/unit'
+require 'minitest/autorun'
 require 'digest/sha1'
 require 'unicorn'
 
-class TeeInput < Unicorn::TeeInput
-  attr_accessor :tmp, :len
-end
-
-class TestTeeInput < Test::Unit::TestCase
+class TestTeeInput < Minitest::Test
+  class TeeInput < Unicorn::TeeInput
+    attr_accessor :tmp, :len
+  end
 
   def setup
-    @rs = $/
     @rd, @wr = UNIXSocket.pair
     @rd.sync = @wr.sync = true
     @start_pid = $$
@@ -19,7 +17,6 @@ class TestTeeInput < Test::Unit::TestCase
 
   def teardown
     return if $$ != @start_pid
-    $/ = @rs
     @rd.close rescue nil
     @wr.close rescue nil
     begin
@@ -99,7 +96,7 @@ class TestTeeInput < Test::Unit::TestCase
     assert_equal 'hell', buf
     assert_equal rv.object_id, buf.object_id
     assert_equal 'o', ti.read
-    assert_equal nil, ti.read(5, buf)
+    assert_nil ti.read(5, buf)
     assert_equal 0, ti.rewind
     assert_equal 'hello', ti.read(5, buf)
     assert_equal 'hello', buf
@@ -273,7 +270,7 @@ class TestTeeInput < Test::Unit::TestCase
     @wr.write("fghi\r\n0\r\nHello: World\r\n\r\n")
     assert_equal 9, ti.size
     assert_equal "fghi", ti.read(9)
-    assert_equal nil, ti.read(9)
+    assert_nil ti.read(9)
     assert_equal "World", @parser.env['HTTP_HELLO']
   end
 

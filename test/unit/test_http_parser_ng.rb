@@ -5,7 +5,7 @@ require 'digest/md5'
 
 include Unicorn
 
-class HttpParserNgTest < Test::Unit::TestCase
+class HttpParserNgTest < Minitest::Test
 
   def setup
     @parser = HttpParser.new
@@ -15,7 +15,7 @@ class HttpParserNgTest < Test::Unit::TestCase
   # but "chunked" must be last if used
   def test_is_chunked
     [ 'chunked,chunked', 'chunked,gzip', 'chunked,gzip,chunked' ].each do |x|
-      assert_raise(HttpParserError) { HttpParser.is_chunked?(x) }
+      assert_raises(HttpParserError) { HttpParser.is_chunked?(x) }
     end
     [ 'gzip, chunked', 'gzip,chunked', 'gzip ,chunked' ].each do |x|
       assert HttpParser.is_chunked?(x)
@@ -437,13 +437,13 @@ class HttpParserNgTest < Test::Unit::TestCase
            "#{n.to_s(16)}\r\na\r\n2\r\n..\r\n0\r\n"
     assert_equal req, @parser.parse
     assert_nil @parser.content_length
-    assert_raise(HttpParserError) { @parser.filter_body('', str) }
+    assert_raises(HttpParserError) { @parser.filter_body('', str) }
   end
 
   def test_overflow_content_length
     n = HttpParser::LENGTH_MAX + 1
     @parser.buf << "PUT / HTTP/1.1\r\nContent-Length: #{n}\r\n\r\n"
-    assert_raise(HttpParserError) { @parser.parse }
+    assert_raises(HttpParserError) { @parser.parse }
   end
 
   def test_bad_chunk
@@ -453,12 +453,12 @@ class HttpParserNgTest < Test::Unit::TestCase
     req = @parser.env
     assert_equal req, @parser.parse
     assert_nil @parser.content_length
-    assert_raise(HttpParserError) { @parser.filter_body("", @parser.buf) }
+    assert_raises(HttpParserError) { @parser.filter_body("", @parser.buf) }
   end
 
   def test_bad_content_length
     @parser.buf << "PUT / HTTP/1.1\r\nContent-Length: 7ff\r\n\r\n"
-    assert_raise(HttpParserError) { @parser.parse }
+    assert_raises(HttpParserError) { @parser.parse }
   end
 
   def test_bad_trailers
@@ -475,7 +475,7 @@ class HttpParserNgTest < Test::Unit::TestCase
     assert_equal 'a..', tmp
     assert_equal '', str
     str << "Transfer-Encoding: identity\r\n\r\n"
-    assert_raise(HttpParserError) { @parser.parse }
+    assert_raises(HttpParserError) { @parser.parse }
   end
 
   def test_repeat_headers
@@ -630,7 +630,7 @@ class HttpParserNgTest < Test::Unit::TestCase
           "Transfer-Encoding: chunked\r\n" \
           "Transfer-Encoding: gzip\r\n" \
           "\r\n"
-    assert_raise(HttpParserError) { @parser.headers({}, str) }
+    assert_raises(HttpParserError) { @parser.headers({}, str) }
   end
 
   def test_double_chunked
@@ -638,13 +638,13 @@ class HttpParserNgTest < Test::Unit::TestCase
           "Transfer-Encoding: chunked\r\n" \
           "Transfer-Encoding: chunked\r\n" \
           "\r\n"
-    assert_raise(HttpParserError) { @parser.headers({}, str) }
+    assert_raises(HttpParserError) { @parser.headers({}, str) }
 
     @parser.clear
     str = "PUT /x HTTP/1.1\r\n" \
           "Transfer-Encoding: chunked,chunked\r\n" \
           "\r\n"
-    assert_raise(HttpParserError) { @parser.headers({}, str) }
+    assert_raises(HttpParserError) { @parser.headers({}, str) }
   end
 
   def test_backtrace_is_empty

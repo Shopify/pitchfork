@@ -1,10 +1,10 @@
 # -*- encoding: binary -*-
 
-require 'test/unit'
+require 'minitest/autorun'
 require 'digest/sha1'
 require 'unicorn'
 
-class TestStreamInput < Test::Unit::TestCase
+class TestStreamInput < Minitest::Test
   def setup
     @env = {}
     @rd, @wr = UNIXSocket.pair
@@ -116,7 +116,7 @@ class TestStreamInput < Test::Unit::TestCase
     assert_equal 'hell', buf
     assert_equal rv.object_id, buf.object_id
     assert_equal 'o', si.read
-    assert_equal nil, si.read(5, buf)
+    assert_nil si.read(5, buf)
   end
 
   def test_read_with_buffer_clobbers

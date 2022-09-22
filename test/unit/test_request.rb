@@ -8,7 +8,7 @@ require './test/test_helper'
 
 include Unicorn
 
-class RequestTest < Test::Unit::TestCase
+class RequestTest < Minitest::Test
 
   class MockRequest < StringIO
     def remote_address

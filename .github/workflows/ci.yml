@@ -26,10 +26,5 @@ jobs:
       - name: Install packages
         run: sudo apt-get install -y ragel socat netcat
 
-      - name: Unit Tests
-        run: bundle exec make test
-
-      - name: Integration Tests
-        run: |
-          echo hello
-          bundle exec make test-integration
+      - name: Tests
+        run: bundle exec rake

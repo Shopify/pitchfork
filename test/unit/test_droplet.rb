@@ -1,7 +1,7 @@
-require 'test/unit'
+require 'minitest/autorun'
 require 'unicorn'
 
-class TestDroplet < Test::Unit::TestCase
+class TestDroplet < Minitest::Test
   def test_create_many_droplets
     now = Time.now.to_i
     (0..1024).each do |i|

@@ -10,11 +10,12 @@ GEM
   remote: https://rubygems.org/
   specs:
     child_subreaper (0.1.0)
-    power_assert (2.0.1)
+    minitest (5.16.3)
     rack (3.0.0)
     raindrops (0.20.0)
-    test-unit (3.5.3)
-      power_assert
+    rake (13.0.6)
+    rake-compiler (1.2.0)
+      rake
 
 PLATFORMS
   aarch64-linux
@@ -22,7 +23,9 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
-  test-unit (~> 3.0)
+  minitest
+  rake
+  rake-compiler
   unicorn!
 
 BUNDLED WITH

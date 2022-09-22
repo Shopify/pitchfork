@@ -6,7 +6,7 @@ require 'digest/md5'
 
 include Unicorn
 
-class UploadTest < Test::Unit::TestCase
+class UploadTest < Minitest::Test
 
   def setup
     @addr = ENV['UNICORN_TEST_ADDR'] || '127.0.0.1'
@@ -160,7 +160,7 @@ class UploadTest < Test::Unit::TestCase
     sock.syswrite("PUT / HTTP/1.0\r\nContent-Length: #{length}\r\n\r\n")
 
     @count.times { sock.syswrite(buf) }
-    assert_raise(Errno::ECONNRESET, Errno::EPIPE) do
+    assert_raises(Errno::ECONNRESET, Errno::EPIPE) do
       ::Unicorn::Const::CHUNK_SIZE.times { sock.syswrite(buf) }
     end
     sock.gets
