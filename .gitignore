@@ -21,4 +21,4 @@ pkg/
 /tmp
 /LATEST
 /*_1
-t/trash/
+test/integration/trash/

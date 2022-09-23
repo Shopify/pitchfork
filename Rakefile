@@ -29,10 +29,10 @@ namespace :test do
   end
 
   task integration: :compile do
-    File.write("t/random_blob", File.read("/dev/random", 1_000_000))
+    File.write("test/integration/random_blob", File.read("/dev/random", 1_000_000))
     lib = File.expand_path("lib", __dir__)
     path = "#{File.expand_path("exe", __dir__)}:#{ENV["PATH"]}"
-    Dir.chdir("t") do
+    Dir.chdir("test/integration") do
       Dir["t[0-9]*.sh"].each do |integration_test|
         sh("rm", "-rf", "trash")
         sh("mkdir", "trash")
