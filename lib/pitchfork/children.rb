@@ -75,6 +75,14 @@ module Pitchfork
       @workers.values
     end
 
+    def fresh_workers
+      if @mold
+        workers.select { |w| w.generation >= @mold.generation }
+      else
+        workers
+      end
+    end
+
     def workers_count
       @workers.size
     end
