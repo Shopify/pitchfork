@@ -36,12 +36,20 @@ namespace :test do
     File.write("test/integration/random_blob", File.read("/dev/random", 1_000_000))
     lib = File.expand_path("lib", __dir__)
     path = "#{File.expand_path("exe", __dir__)}:#{ENV["PATH"]}"
-    Dir.chdir("test/integration") do
-      Dir["t[0-9]*.sh"].each do |integration_test|
-        sh("rm", "-rf", "trash")
-        sh("mkdir", "trash")
-        sh({ "PATH" => path }, "sh", integration_test)
+    old_path = ENV["PATH"]
+    ENV["PATH"] = "#{path}:#{old_path}"
+    begin
+      Dir.chdir("test/integration") do
+        Dir["t[0-9]*.sh"].each do |integration_test|
+          sh("rm", "-rf", "trash")
+          sh("mkdir", "trash")
+          command = ["sh", integration_test]
+          command << "-v" if ENV["VERBOSE"]
+          sh(*command)
+        end
       end
+    ensure
+      ENV["PATH"] = old_path
     end
   end
 end
@@ -58,6 +66,6 @@ task :ragel do
   end
 end
 
-task test: %i(test:unit test:slow)
+task test: %i(test:unit test:slow test:integration)
 
 task default: %i(ragel compile test)
