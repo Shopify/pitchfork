@@ -24,9 +24,6 @@ See Unicorn::Configurator for details on the config file format.
 * Under Ruby 2.2 or later, Etc.nprocessors may be used to determine
   the number of CPU cores present.
 
-* worker_processes may be increased for Unicorn::OobGC users to provide
-  more consistent response times.
-
 * Never, ever, increase worker_processes to the point where the system
   runs out of physical memory and hits swap.  Production servers should
   never see heavy swap activity.

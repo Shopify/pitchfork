@@ -67,9 +67,6 @@ module Unicorn
       @use_defaults = defaults.delete(:use_defaults)
       self.config_file = defaults.delete(:config_file)
 
-      # after_load is only used by unicorn_rails, unsupported otherwise
-      self.after_load = defaults.delete(:after_load)
-
       set.merge!(DEFAULTS) if @use_defaults
       defaults.each { |key, value| self.__send__(key, value) }
       Hash === set[:listener_opts] or
@@ -91,9 +88,6 @@ module Unicorn
 
       RACKUP[:no_default_middleware] and
         set[:default_middleware] = false
-
-      # unicorn_rails creates dirs here.
-      after_load.call if after_load
 
       # ensure paths are correctly set.
       [ :stderr_path, :stdout_path ].each do |var|
