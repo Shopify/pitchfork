@@ -2,10 +2,10 @@
 
 require 'minitest/autorun'
 require 'digest/sha1'
-require 'unicorn'
+require 'pitchfork'
 
 class TestTeeInput < Minitest::Test
-  class TeeInput < Unicorn::TeeInput
+  class TeeInput < Pitchfork::TeeInput
     attr_accessor :tmp, :len
   end
 
@@ -30,7 +30,7 @@ class TestTeeInput < Minitest::Test
     tmp = @parser.env["rack.tempfiles"]
     assert_instance_of Array, tmp
     assert_operator tmp.size, :>=, 1
-    assert_instance_of Unicorn::TmpIO, tmp[0]
+    assert_instance_of Pitchfork::TmpIO, tmp[0]
   end
 
   def test_gets_long
@@ -103,13 +103,13 @@ class TestTeeInput < Minitest::Test
   end
 
   def test_big_body
-    r = init_request('.' * Unicorn::Const::MAX_BODY << 'a')
+    r = init_request('.' * Pitchfork::Const::MAX_BODY << 'a')
     ti = TeeInput.new(@rd, r)
     assert_equal 0, @parser.content_length
     assert @parser.body_eof?
     assert_kind_of File, ti.tmp
     assert_equal 0, ti.tmp.pos
-    assert_equal Unicorn::Const::MAX_BODY + 1, ti.size
+    assert_equal Pitchfork::Const::MAX_BODY + 1, ti.size
     check_tempfiles
   end
 
@@ -130,14 +130,14 @@ class TestTeeInput < Minitest::Test
   end
 
   def test_big_body_multi
-    r = init_request('.', Unicorn::Const::MAX_BODY + 1)
+    r = init_request('.', Pitchfork::Const::MAX_BODY + 1)
     ti = TeeInput.new(@rd, r)
-    assert_equal Unicorn::Const::MAX_BODY, @parser.content_length
+    assert_equal Pitchfork::Const::MAX_BODY, @parser.content_length
     assert ! @parser.body_eof?
     assert_kind_of File, ti.tmp
     assert_equal 0, ti.tmp.pos
-    assert_equal Unicorn::Const::MAX_BODY + 1, ti.size
-    nr = Unicorn::Const::MAX_BODY / 4
+    assert_equal Pitchfork::Const::MAX_BODY + 1, ti.size
+    nr = Pitchfork::Const::MAX_BODY / 4
     pid = fork {
       @rd.close
       nr.times { @wr.write('....') }
@@ -145,10 +145,10 @@ class TestTeeInput < Minitest::Test
     }
     @wr.close
     assert_equal '.', ti.read(1)
-    assert_equal Unicorn::Const::MAX_BODY + 1, ti.size
+    assert_equal Pitchfork::Const::MAX_BODY + 1, ti.size
     nr.times { |x|
       assert_equal '....', ti.read(4), "nr=#{x}"
-      assert_equal Unicorn::Const::MAX_BODY + 1, ti.size
+      assert_equal Pitchfork::Const::MAX_BODY + 1, ti.size
     }
     assert_nil ti.read(1)
     pid, status = Process.waitpid2(pid)
@@ -157,7 +157,7 @@ class TestTeeInput < Minitest::Test
   end
 
   def test_chunked
-    @parser = Unicorn::HttpParser.new
+    @parser = Pitchfork::HttpParser.new
     @parser.buf << "POST / HTTP/1.1\r\n" \
                    "Host: localhost\r\n" \
                    "Transfer-Encoding: chunked\r\n" \
@@ -193,7 +193,7 @@ class TestTeeInput < Minitest::Test
   end
 
   def test_chunked_ping_pong
-    @parser = Unicorn::HttpParser.new
+    @parser = Pitchfork::HttpParser.new
     buf = @parser.buf
     buf << "POST / HTTP/1.1\r\n" \
            "Host: localhost\r\n" \
@@ -224,7 +224,7 @@ class TestTeeInput < Minitest::Test
   end
 
   def test_chunked_with_trailer
-    @parser = Unicorn::HttpParser.new
+    @parser = Pitchfork::HttpParser.new
     buf = @parser.buf
     buf << "POST / HTTP/1.1\r\n" \
            "Host: localhost\r\n" \
@@ -252,7 +252,7 @@ class TestTeeInput < Minitest::Test
   end
 
   def test_chunked_and_size_slow
-    @parser = Unicorn::HttpParser.new
+    @parser = Pitchfork::HttpParser.new
     buf = @parser.buf
     buf << "POST / HTTP/1.1\r\n" \
            "Host: localhost\r\n" \
@@ -276,7 +276,7 @@ class TestTeeInput < Minitest::Test
 
   def test_gets_read_mix
     r = init_request("hello\nasdfasdf")
-    ti = Unicorn::TeeInput.new(@rd, r)
+    ti = Pitchfork::TeeInput.new(@rd, r)
     assert_equal "hello\n", ti.gets
     assert_equal "asdfasdf", ti.read(9)
     assert_nil ti.read(9)
@@ -285,7 +285,7 @@ class TestTeeInput < Minitest::Test
 private
 
   def init_request(body, size = nil)
-    @parser = Unicorn::HttpParser.new
+    @parser = Pitchfork::HttpParser.new
     body = body.to_s.freeze
     buf = @parser.buf
     buf << "POST / HTTP/1.1\r\n" \

@@ -1,6 +1,6 @@
 # This benchmark is the simplest test of the I/O facilities in
 # unicorn.  It is meant to return a fixed-sized blob to test
-# the performance of things in Unicorn, _NOT_ the app.
+# the performance of things in Pitchfork, _NOT_ the app.
 #
 # Adjusting this benchmark is done via the "bs" (byte size) and "count"
 # environment variables.  "count" designates the count of elements of

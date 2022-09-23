@@ -9,7 +9,7 @@
 
 require './test/test_helper'
 
-include Unicorn
+include Pitchfork
 
 class HttpParserTest < Minitest::Test
 
@@ -215,7 +215,7 @@ class HttpParserTest < Minitest::Test
 
   # legacy test case from Mongrel that we never supported before...
   # I still consider Pound irrelevant, unfortunately stupid clients that
-  # send extremely big headers do exist and they've managed to find Unicorn...
+  # send extremely big headers do exist and they've managed to find Pitchfork...
   def test_nasty_pound_header
     parser = HttpParser.new
     nasty_pound_header = "GET / HTTP/1.1\r\nX-SSL-Bullshit:   -----BEGIN CERTIFICATE-----\r\n\tMIIFbTCCBFWgAwIBAgICH4cwDQYJKoZIhvcNAQEFBQAwcDELMAkGA1UEBhMCVUsx\r\n\tETAPBgNVBAoTCGVTY2llbmNlMRIwEAYDVQQLEwlBdXRob3JpdHkxCzAJBgNVBAMT\r\n\tAkNBMS0wKwYJKoZIhvcNAQkBFh5jYS1vcGVyYXRvckBncmlkLXN1cHBvcnQuYWMu\r\n\tdWswHhcNMDYwNzI3MTQxMzI4WhcNMDcwNzI3MTQxMzI4WjBbMQswCQYDVQQGEwJV\r\n\tSzERMA8GA1UEChMIZVNjaWVuY2UxEzARBgNVBAsTCk1hbmNoZXN0ZXIxCzAJBgNV\r\n\tBAcTmrsogriqMWLAk1DMRcwFQYDVQQDEw5taWNoYWVsIHBhcmQYJKoZIhvcNAQEB\r\n\tBQADggEPADCCAQoCggEBANPEQBgl1IaKdSS1TbhF3hEXSl72G9J+WC/1R64fAcEF\r\n\tW51rEyFYiIeZGx/BVzwXbeBoNUK41OK65sxGuflMo5gLflbwJtHBRIEKAfVVp3YR\r\n\tgW7cMA/s/XKgL1GEC7rQw8lIZT8RApukCGqOVHSi/F1SiFlPDxuDfmdiNzL31+sL\r\n\t0iwHDdNkGjy5pyBSB8Y79dsSJtCW/iaLB0/n8Sj7HgvvZJ7x0fr+RQjYOUUfrePP\r\n\tu2MSpFyf+9BbC/aXgaZuiCvSR+8Snv3xApQY+fULK/xY8h8Ua51iXoQ5jrgu2SqR\r\n\twgA7BUi3G8LFzMBl8FRCDYGUDy7M6QaHXx1ZWIPWNKsCAwEAAaOCAiQwggIgMAwG\r\n\tA1UdEwEB/wQCMAAwEQYJYIZIAYb4QgEBBAQDAgWgMA4GA1UdDwEB/wQEAwID6DAs\r\n\tBglghkgBhvhCAQ0EHxYdVUsgZS1TY2llbmNlIFVzZXIgQ2VydGlmaWNhdGUwHQYD\r\n\tVR0OBBYEFDTt/sf9PeMaZDHkUIldrDYMNTBZMIGaBgNVHSMEgZIwgY+AFAI4qxGj\r\n\tloCLDdMVKwiljjDastqooXSkcjBwMQswCQYDVQQGEwJVSzERMA8GA1UEChMIZVNj\r\n\taWVuY2UxEjAQBgNVBAsTCUF1dGhvcml0eTELMAkGA1UEAxMCQ0ExLTArBgkqhkiG\r\n\t9w0BCQEWHmNhLW9wZXJhdG9yQGdyaWQtc3VwcG9ydC5hYy51a4IBADApBgNVHRIE\r\n\tIjAggR5jYS1vcGVyYXRvckBncmlkLXN1cHBvcnQuYWMudWswGQYDVR0gBBIwEDAO\r\n\tBgwrBgEEAdkvAQEBAQYwPQYJYIZIAYb4QgEEBDAWLmh0dHA6Ly9jYS5ncmlkLXN1\r\n\tcHBvcnQuYWMudmT4sopwqlBWsvcHViL2NybC9jYWNybC5jcmwwPQYJYIZIAYb4QgEDBDAWLmh0\r\n\tdHA6Ly9jYS5ncmlkLXN1cHBvcnQuYWMudWsvcHViL2NybC9jYWNybC5jcmwwPwYD\r\n\tVR0fBDgwNjA0oDKgMIYuaHR0cDovL2NhLmdyaWQt5hYy51ay9wdWIv\r\n\tY3JsL2NhY3JsLmNybDANBgkqhkiG9w0BAQUFAAOCAQEAS/U4iiooBENGW/Hwmmd3\r\n\tXCy6Zrt08YjKCzGNjorT98g8uGsqYjSxv/hmi0qlnlHs+k/3Iobc3LjS5AMYr5L8\r\n\tUO7OSkgFFlLHQyC9JzPfmLCAugvzEbyv4Olnsr8hbxF1MbKZoQxUZtMVu29wjfXk\r\n\thTeApBv7eaKCWpSp7MCbvgzm74izKhu3vlDk9w6qVrxePfGgpKPqfHiOoGhFnbTK\r\n\twTC6o2xq5y0qZ03JonF7OJspEd3I5zKY3E+ov7/ZhW6DqT8UFvsAdjvQbXyhV8Eu\r\n\tYhixw1aKEPzNjNowuIseVogKOLXxWI5vAi5HgXdS0/ES5gDGsABo4fqovUKlgop3\r\n\tRA==\r\n\t-----END CERTIFICATE-----\r\n\r\n"
@@ -753,7 +753,7 @@ class HttpParserTest < Minitest::Test
     # then that large header names are caught
     10.times do |c|
       get = "GET /#{rand_data(10,120)} HTTP/1.1\r\nX-#{rand_data(1024, 1024+(c*1024))}: Test\r\n\r\n"
-      assert_raises(Unicorn::HttpParserError,Unicorn::RequestURITooLongError) do
+      assert_raises(Pitchfork::HttpParserError,Pitchfork::RequestURITooLongError) do
         parser.buf << get
         parser.parse
         parser.clear
@@ -763,7 +763,7 @@ class HttpParserTest < Minitest::Test
     # then that large mangled field values are caught
     10.times do |c|
       get = "GET /#{rand_data(10,120)} HTTP/1.1\r\nX-Test: #{rand_data(1024, 1024+(c*1024), false)}\r\n\r\n"
-      assert_raises(Unicorn::HttpParserError,Unicorn::RequestURITooLongError) do
+      assert_raises(Pitchfork::HttpParserError,Pitchfork::RequestURITooLongError) do
         parser.buf << get
         parser.parse
         parser.clear
@@ -774,7 +774,7 @@ class HttpParserTest < Minitest::Test
     get = "GET /#{rand_data(10,120)} HTTP/1.1\r\n"
     get << "X-Test: test\r\n" * (80 * 1024)
     parser.buf << get
-    assert_raises(Unicorn::HttpParserError,Unicorn::RequestURITooLongError) do
+    assert_raises(Pitchfork::HttpParserError,Pitchfork::RequestURITooLongError) do
       parser.parse
     end
     parser.clear
@@ -782,7 +782,7 @@ class HttpParserTest < Minitest::Test
     # finally just that random garbage gets blocked all the time
     10.times do |c|
       get = "GET #{rand_data(1024, 1024+(c*1024), false)} #{rand_data(1024, 1024+(c*1024), false)}\r\n\r\n"
-      assert_raises(Unicorn::HttpParserError,Unicorn::RequestURITooLongError) do
+      assert_raises(Pitchfork::HttpParserError,Pitchfork::RequestURITooLongError) do
         parser.buf << get
         parser.parse
         parser.clear
@@ -854,7 +854,7 @@ class HttpParserTest < Minitest::Test
   def test_memsize
     require 'objspace'
     if ObjectSpace.respond_to?(:memsize_of)
-      n = ObjectSpace.memsize_of(Unicorn::HttpParser.new)
+      n = ObjectSpace.memsize_of(Pitchfork::HttpParser.new)
       assert_kind_of Integer, n
       # need to update this when 128-bit machines come out
       # n.b. actual struct size on 64-bit is 56 bytes + 40 bytes for RVALUE

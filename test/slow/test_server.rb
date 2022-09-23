@@ -9,7 +9,7 @@
 
 require './test/test_helper'
 
-include Unicorn
+include Pitchfork
 
 class TestHandler
 
@@ -17,7 +17,7 @@ class TestHandler
     while env['rack.input'].read(4096)
     end
     [200, { 'content-type' => 'text/plain' }, ['hello!\n']]
-  rescue Unicorn::ClientShutdown, Unicorn::HttpParserError => e
+  rescue Pitchfork::ClientShutdown, Pitchfork::HttpParserError => e
     $stderr.syswrite("#{e.class}: #{e.message} #{e.backtrace.empty?}\n")
     raise e
   end
@@ -46,7 +46,7 @@ class TestRackAfterReply
     env["rack.after_reply"] << -> { @called = true }
 
     [200, { 'content-type' => 'text/plain' }, ["after_reply_called: #{@called}"]]
-  rescue Unicorn::ClientShutdown, Unicorn::HttpParserError => e
+  rescue Pitchfork::ClientShutdown, Pitchfork::HttpParserError => e
     $stderr.syswrite("#{e.class}: #{e.message} #{e.backtrace.empty?}\n")
     raise e
   end
@@ -187,7 +187,7 @@ class WebServerTest < Minitest::Test
     next_client = Net::HTTP.get(URI.parse("http://127.0.0.1:#@port/"))
     assert_equal 'hello!\n', next_client
     lines = File.readlines("test_stderr.#$$.log")
-    assert lines.grep(/^Unicorn::ClientShutdown: /).empty?
+    assert lines.grep(/^Pitchfork::ClientShutdown: /).empty?
     assert_nil sock.close
   end
 
@@ -211,9 +211,9 @@ class WebServerTest < Minitest::Test
     next_client = Net::HTTP.get(URI.parse("http://127.0.0.1:#@port/"))
     assert_equal 'hello!\n', next_client
     lines = File.readlines("test_stderr.#$$.log")
-    lines = lines.grep(/^Unicorn::ClientShutdown: bytes_read=\d+/)
+    lines = lines.grep(/^Pitchfork::ClientShutdown: bytes_read=\d+/)
     assert_equal 1, lines.size
-    assert_match %r{\AUnicorn::ClientShutdown: bytes_read=\d+ true$}, lines[0]
+    assert_match %r{\APitchfork::ClientShutdown: bytes_read=\d+ true$}, lines[0]
     assert_nil sock.close
   end
 
@@ -235,7 +235,7 @@ class WebServerTest < Minitest::Test
     next_client = Net::HTTP.get(URI.parse("http://127.0.0.1:#@port/"))
     assert_equal 'hello!\n', next_client
     lines = File.readlines("test_stderr.#$$.log")
-    lines = lines.grep(/^Unicorn::HttpParserError: .* true$/)
+    lines = lines.grep(/^Pitchfork::HttpParserError: .* true$/)
     assert_equal 1, lines.size
   end
 
@@ -276,13 +276,13 @@ class WebServerTest < Minitest::Test
   end
 
   def test_logger_set
-    assert_equal @server.logger, Unicorn::HttpRequest::DEFAULTS["rack.logger"]
+    assert_equal @server.logger, Pitchfork::HttpRequest::DEFAULTS["rack.logger"]
   end
 
   def test_logger_changed
     tmp = Logger.new($stdout)
     @server.logger = tmp
-    assert_equal tmp, Unicorn::HttpRequest::DEFAULTS["rack.logger"]
+    assert_equal tmp, Pitchfork::HttpRequest::DEFAULTS["rack.logger"]
   end
 
   def test_bad_client_400
@@ -309,21 +309,21 @@ class WebServerTest < Minitest::Test
   end
 
   def test_file_streamed_request
-    body = "a" * (Unicorn::Const::MAX_BODY * 2)
+    body = "a" * (Pitchfork::Const::MAX_BODY * 2)
     long = "PUT /test HTTP/1.1\r\nContent-length: #{body.length}\r\n\r\n" + body
-    do_test(long, Unicorn::Const::CHUNK_SIZE * 2 - 400)
+    do_test(long, Pitchfork::Const::CHUNK_SIZE * 2 - 400)
   end
 
   def test_file_streamed_request_bad_body
-    body = "a" * (Unicorn::Const::MAX_BODY * 2)
+    body = "a" * (Pitchfork::Const::MAX_BODY * 2)
     long = "GET /test HTTP/1.1\r\nContent-ength: #{body.length}\r\n\r\n" + body
     assert_raises(EOFError,Errno::ECONNRESET,Errno::EPIPE,Errno::EINVAL,
                   Errno::EBADF) {
-      do_test(long, Unicorn::Const::CHUNK_SIZE * 2 - 400)
+      do_test(long, Pitchfork::Const::CHUNK_SIZE * 2 - 400)
     }
   end
 
   def test_listener_names
-    assert_equal [ "127.0.0.1:#@port" ], Unicorn.listener_names
+    assert_equal [ "127.0.0.1:#@port" ], Pitchfork.listener_names
   end
 end

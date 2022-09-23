@@ -1,14 +1,14 @@
 # -*- encoding: binary -*-
 require "raindrops"
 
-module Unicorn
+module Pitchfork
   # This class and its members can be considered a stable interface
   # and will not change in a backwards-incompatible fashion between
-  # releases of unicorn.  Knowledge of this class is generally not
-  # not needed for most users of unicorn.
+  # releases of pitchfork.  Knowledge of this class is generally not
+  # not needed for most users of pitchfork.
   #
   # Some users may want to access it in the before_fork/after_fork hooks.
-  # See the Unicorn::Configurator RDoc for examples.
+  # See the Pitchfork::Configurator RDoc for examples.
   class Worker
     # :stopdoc:
     EXIT_SIGNALS = [:QUIT, :TERM]
@@ -42,7 +42,7 @@ module Unicorn
     end
 
     def register_to_master(control_socket)
-      @to_io, @master = Unicorn.socketpair
+      @to_io, @master = Pitchfork.socketpair
       message = Message::WorkerSpawned.new(@nr, Process.pid, generation, @master)
       control_socket.sendmsg(message)
       @master.close

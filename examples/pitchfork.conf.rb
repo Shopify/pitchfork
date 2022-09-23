@@ -1,12 +1,4 @@
-# Sample verbose configuration file for Unicorn (not Rack)
-#
-# This configuration file documents many features of Unicorn
-# that may not be needed for some applications. See
-# https://yhbt.net/unicorn/examples/unicorn.conf.minimal.rb
-# for a much simpler configuration file.
-#
-# See https://yhbt.net/unicorn/Unicorn/Configurator.html for complete
-# documentation.
+# Sample verbose configuration file for Pitchfork
 
 # Use at least one worker per core if you're on a dedicated server,
 # more will usually help for _short_ waits on databases/caches.
@@ -14,22 +6,22 @@ worker_processes 4
 
 # listen on both a Unix domain socket and a TCP port,
 # we use a shorter backlog for quicker failover when busy
-listen "/path/to/.unicorn.sock", :backlog => 64
+listen "/path/to/.pitchfork.sock", :backlog => 64
 listen 8080, :tcp_nopush => true
 
 # nuke workers after 30 seconds instead of 60 seconds (the default)
 timeout 30
 
-# By default, the Unicorn logger will write to stderr.
+# By default, the Pitchfork logger will write to stderr.
 # Additionally, ome applications/frameworks log to stderr or stdout.
-stderr_path "/path/to/app/shared/log/unicorn.stderr.log"
-stdout_path "/path/to/app/shared/log/unicorn.stdout.log"
+stderr_path "/path/to/app/shared/log/pitchfork.stderr.log"
+stdout_path "/path/to/app/shared/log/pitchfork.stdout.log"
 
-# Enable this flag to have unicorn test client connections by writing the
+# Enable this flag to have pitchfork test client connections by writing the
 # beginning of the HTTP headers before calling the application.  This
 # prevents calling the application for connections that have disconnected
 # while queued.  This is only guaranteed to detect clients on the same
-# host unicorn runs on, and unlikely to detect disconnects even on a
+# host pitchfork runs on, and unlikely to detect disconnects even on a
 # fast LAN.
 check_client_connection false
 

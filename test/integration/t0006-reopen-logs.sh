@@ -5,9 +5,9 @@ t_plan 15 "reopen rotated logs"
 
 t_begin "setup and startup" && {
 	rtmpfiles curl_out curl_err r_rot
-	unicorn_setup
-	unicorn_spawn t0006.ru -c $unicorn_config
-	unicorn_wait_start
+	pitchfork_setup
+	pitchfork_spawn t0006.ru -c $pitchfork_config
+	pitchfork_wait_start
 }
 
 t_begin "ensure server is responsive" && {
@@ -22,7 +22,7 @@ t_begin "external log rotation" && {
 }
 
 t_begin "send reopen log signal (USR1)" && {
-	kill -USR1 $unicorn_pid
+	kill -USR1 $pitchfork_pid
 }
 
 t_begin "wait for rotated log to reappear" && {
@@ -72,7 +72,7 @@ t_begin "server is now writing logs to new stderr" && {
 }
 
 t_begin "stop server" && {
-	kill $unicorn_pid
+	kill $pitchfork_pid
 }
 
 dbgcat r_err

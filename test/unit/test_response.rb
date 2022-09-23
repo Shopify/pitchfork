@@ -10,10 +10,10 @@
 require './test/test_helper'
 require 'time'
 
-include Unicorn
+include Pitchfork
 
 class ResponseTest < Minitest::Test
-  include Unicorn::HttpResponse
+  include Pitchfork::HttpResponse
 
   def test_httpdate
     before = Time.now.to_i - 1

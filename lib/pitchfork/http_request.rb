@@ -1,11 +1,11 @@
 # -*- encoding: binary -*-
 # :enddoc:
 # no stable API here
-require 'unicorn/unicorn_http'
+require 'pitchfork/pitchfork_http'
 
 # TODO: remove redundant names
-Unicorn.const_set(:HttpRequest, Unicorn::HttpParser)
-module Unicorn
+Pitchfork.const_set(:HttpRequest, Pitchfork::HttpParser)
+module Pitchfork
   class HttpParser
 
     # default parameters we merge into the request env for Rack handlers
@@ -19,7 +19,7 @@ module Unicorn
       "SCRIPT_NAME" => "",
 
       # this is not in the Rack spec, but some apps may rely on it
-      "SERVER_SOFTWARE" => "Unicorn #{Unicorn::Const::UNICORN_VERSION}"
+      "SERVER_SOFTWARE" => "Pitchfork #{Pitchfork::Const::UNICORN_VERSION}"
     }
 
     NULL_IO = StringIO.new("")
@@ -27,7 +27,7 @@ module Unicorn
     # :stopdoc:
     HTTP_RESPONSE_START = [ 'HTTP'.freeze, '/1.1 '.freeze ]
     EMPTY_ARRAY = [].freeze
-    @@input_class = Unicorn::TeeInput
+    @@input_class = Pitchfork::TeeInput
     @@check_client_connection = false
     @@tcpi_inspect_ok = Socket.const_defined?(:TCP_INFO)
 
@@ -93,7 +93,7 @@ module Unicorn
                         NULL_IO : @@input_class.new(socket, self)
 
       # for Rack hijacking in Rack 1.5 and later
-      e['unicorn.socket'] = socket
+      e['pitchfork.socket'] = socket
       e['rack.hijack'] = self
 
       e.merge!(DEFAULTS)
@@ -103,7 +103,7 @@ module Unicorn
     # of a proc object
     def call
       hijacked!
-      env['rack.hijack_io'] = env['unicorn.socket']
+      env['rack.hijack_io'] = env['pitchfork.socket']
     end
 
     def hijacked?
@@ -194,15 +194,15 @@ module Unicorn
       end
     end
 
-    # called by ext/unicorn_http/unicorn_http.rl via rb_funcall
+    # called by ext/pitchfork_http/pitchfork_http.rl via rb_funcall
     def self.is_chunked?(v) # :nodoc:
       vals = v.split(/[ \t]*,[ \t]*/).map!(&:downcase)
       if vals.pop == 'chunked'.freeze
         return true unless vals.include?('chunked'.freeze)
-        raise Unicorn::HttpParserError, 'double chunked', []
+        raise Pitchfork::HttpParserError, 'double chunked', []
       end
       return false unless vals.include?('chunked'.freeze)
-      raise Unicorn::HttpParserError, 'chunked not last', []
+      raise Pitchfork::HttpParserError, 'chunked not last', []
     end
   end
 end

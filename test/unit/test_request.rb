@@ -6,7 +6,7 @@
 
 require './test/test_helper'
 
-include Unicorn
+include Pitchfork
 
 class RequestTest < Minitest::Test
 
@@ -128,7 +128,7 @@ class RequestTest < Minitest::Test
                              "Content-Length: 1\r\n" \
                              "Host: foo\r\n\r\n")
     env = @request.read(client)
-    assert_equal Unicorn::TeeInput, env['rack.input'].class
+    assert_equal Pitchfork::TeeInput, env['rack.input'].class
   end
 
   def test_rack_lint_put

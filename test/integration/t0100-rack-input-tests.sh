@@ -6,12 +6,12 @@ t_plan 10 "rack.input read tests"
 
 t_begin "setup and startup" && {
 	rtmpfiles curl_out curl_err
-	unicorn_setup
-	unicorn_spawn -E none rack-input-tests.ru -c $unicorn_config
+	pitchfork_setup
+	pitchfork_spawn -E none rack-input-tests.ru -c $pitchfork_config
 	blob_sha1=$(rsha1 < random_blob)
 	blob_size=$(count_bytes < random_blob)
 	t_info "blob_sha1=$blob_sha1"
-	unicorn_wait_start
+	pitchfork_wait_start
 }
 
 t_begin "corked identity request" && {
@@ -118,7 +118,7 @@ t_begin "chunked request" && {
 dbgcat r_err
 
 t_begin "shutdown" && {
-	kill $unicorn_pid
+	kill $pitchfork_pid
 }
 
 t_done

@@ -28,6 +28,10 @@ namespace :test do
     end
   end
 
+  # Unicorn had its own POSIX-shell based testing framework.
+  # It's quite hard to work with and it would be good to convert all this
+  # to Ruby integration tests, but while pitchfork is a moving target it's
+  # preferable to edit the test suite as little as possible.
   task integration: :compile do
     File.write("test/integration/random_blob", File.read("/dev/random", 1_000_000))
     lib = File.expand_path("lib", __dir__)
@@ -42,15 +46,15 @@ namespace :test do
   end
 end
 
-Rake::ExtensionTask.new("unicorn_http") do |ext|
-  ext.ext_dir = 'ext/unicorn_http'
-  ext.lib_dir = 'lib/unicorn'
+Rake::ExtensionTask.new("pitchfork_http") do |ext|
+  ext.ext_dir = 'ext/pitchfork_http'
+  ext.lib_dir = 'lib/pitchfork'
 end
 
 task :ragel do
-  Dir.chdir(File.expand_path("ext/unicorn_http", __dir__)) do
-    puts "* compiling unicorn_http.rl"
-    system("ragel", "-G2", "unicorn_http.rl", "-o", "unicorn_http.c") or raise "ragel #{ragel_file} failed"
+  Dir.chdir(File.expand_path("ext/pitchfork_http", __dir__)) do
+    puts "* compiling pitchfork_http.rl"
+    system("ragel", "-G2", "pitchfork_http.rl", "-o", "pitchfork_http.c") or raise "ragel #{ragel_file} failed"
   end
 end
 

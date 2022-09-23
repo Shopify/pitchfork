@@ -1,10 +1,10 @@
 #!/usr/bin/env ruby
 # -*- encoding: binary -*-
-require 'unicorn/launcher'
+require 'pitchfork/launcher'
 require 'optparse'
 
 ENV["RACK_ENV"] ||= "development"
-rackup_opts = Unicorn::Configurator::RACKUP
+rackup_opts = Pitchfork::Configurator::RACKUP
 options = rackup_opts[:options]
 set_no_default_middleware = true
 
@@ -43,13 +43,13 @@ op = OptionParser.new("", 24, '  ') do |opts|
   # some of these switches exist for rackup command-line compatibility,
 
   opts.on("-o", "--host HOST",
-          "listen on HOST (default: #{Unicorn::Const::DEFAULT_HOST})") do |h|
+          "listen on HOST (default: #{Pitchfork::Const::DEFAULT_HOST})") do |h|
     rackup_opts[:host] = h
     rackup_opts[:set_listener] = true
   end
 
   opts.on("-p", "--port PORT", Integer,
-          "use PORT (default: #{Unicorn::Const::DEFAULT_PORT})") do |port|
+          "use PORT (default: #{Pitchfork::Const::DEFAULT_PORT})") do |port|
     rackup_opts[:port] = port
     rackup_opts[:set_listener] = true
   end
@@ -79,7 +79,7 @@ op = OptionParser.new("", 24, '  ') do |opts|
   opts.on("-l", "--listen {HOST:PORT|PATH}",
           "listen on HOST:PORT or PATH",
           "this may be specified multiple times",
-          "(default: #{Unicorn::Const::DEFAULT_LISTEN})") do |address|
+          "(default: #{Pitchfork::Const::DEFAULT_LISTEN})") do |address|
     options[:listeners] << address
   end
 
@@ -100,7 +100,7 @@ op = OptionParser.new("", 24, '  ') do |opts|
   end
 
   opts.on_tail("-v", "--version", "Show version") do
-    puts "#{cmd} v#{Unicorn::Const::UNICORN_VERSION}"
+    puts "#{cmd} v#{Pitchfork::Const::UNICORN_VERSION}"
     exit
   end
 
@@ -108,15 +108,15 @@ op = OptionParser.new("", 24, '  ') do |opts|
 end
 
 set_no_default_middleware = false
-app = Unicorn.builder(ARGV[0] || 'config.ru', op)
+app = Pitchfork.builder(ARGV[0] || 'config.ru', op)
 op = nil
 
 if $DEBUG
   require 'pp'
   pp({
-    :unicorn_options => options,
+    :pitchfork_options => options,
     :app => app,
   })
 end
 
-Unicorn::HttpServer.new(app, options).start.join
+Pitchfork::HttpServer.new(app, options).start.join

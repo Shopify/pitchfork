@@ -4,7 +4,7 @@
 require './test/test_helper'
 require 'digest/md5'
 
-include Unicorn
+include Pitchfork
 
 class UploadTest < Minitest::Test
 
@@ -161,7 +161,7 @@ class UploadTest < Minitest::Test
 
     @count.times { sock.syswrite(buf) }
     assert_raises(Errno::ECONNRESET, Errno::EPIPE) do
-      ::Unicorn::Const::CHUNK_SIZE.times { sock.syswrite(buf) }
+      ::Pitchfork::Const::CHUNK_SIZE.times { sock.syswrite(buf) }
     end
     sock.gets
     tmp.rewind

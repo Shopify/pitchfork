@@ -14,7 +14,7 @@
 #include "c_util.h"
 #include "epollexclusive.h"
 
-void init_unicorn_httpdate(void);
+void init_pitchfork_httpdate(void);
 
 #define UH_FL_CHUNKED  0x1
 #define UH_FL_HASBODY  0x2
@@ -217,7 +217,7 @@ static int is_chunked(VALUE v)
     return 1;
 
   /*
-   * call Ruby function in unicorn/http_request.rb to deal with unlikely
+   * call Ruby function in pitchfork/http_request.rb to deal with unlikely
    * comma-delimited case
    */
   return rb_funcall(cHttpParser, id_is_chunked_p, 1, v) != Qfalse;
@@ -416,7 +416,7 @@ static void write_value(struct http_parser *hp,
     }
   }}
 
-  include unicorn_http_common "unicorn_http_common.rl";
+  include pitchfork_http_common "pitchfork_http_common.rl";
 }%%
 
 /** Data **/
@@ -484,7 +484,7 @@ static size_t hp_memsize(const void *ptr)
 }
 
 static const rb_data_type_t hp_type = {
-  "unicorn_http",
+  "pitchfork_http",
   { hp_mark, RUBY_TYPED_DEFAULT_FREE, hp_memsize, /* reserved */ },
   /* parent, data, [ flags ] */
 };
@@ -513,7 +513,7 @@ static void set_url_scheme(VALUE env, VALUE *server_port)
      * and X-Forwarded-Proto handling from this parser?  We've had it
      * forever and nobody has said anything against it, either.
      * Anyways, please send comments to our public mailing list:
-     * unicorn-public@yhbt.net (no HTML mail, no subscription necessary)
+     * pitchfork-public@yhbt.net (no HTML mail, no subscription necessary)
      */
     scheme = rb_hash_aref(env, g_http_x_forwarded_ssl);
     if (!NIL_P(scheme) && STR_CSTR_EQ(scheme, "on")) {
@@ -955,17 +955,17 @@ static VALUE HttpParser_rssget(VALUE self)
   assert(!NIL_P(var) && "missed global field"); \
 } while (0)
 
-void Init_unicorn_http(void)
+void Init_pitchfork_http(void)
 {
-  VALUE mUnicorn;
+  VALUE mPitchfork;
 
-  mUnicorn = rb_define_module("Unicorn");
-  cHttpParser = rb_define_class_under(mUnicorn, "HttpParser", rb_cObject);
+  mPitchfork = rb_define_module("Pitchfork");
+  cHttpParser = rb_define_class_under(mPitchfork, "HttpParser", rb_cObject);
   eHttpParserError =
-         rb_define_class_under(mUnicorn, "HttpParserError", rb_eIOError);
-  e413 = rb_define_class_under(mUnicorn, "RequestEntityTooLargeError",
+         rb_define_class_under(mPitchfork, "HttpParserError", rb_eIOError);
+  e413 = rb_define_class_under(mPitchfork, "RequestEntityTooLargeError",
                                eHttpParserError);
-  e414 = rb_define_class_under(mUnicorn, "RequestURITooLongError",
+  e414 = rb_define_class_under(mPitchfork, "RequestURITooLongError",
                                eHttpParserError);
 
   id_uminus = rb_intern("-@");
@@ -1013,13 +1013,13 @@ void Init_unicorn_http(void)
   SET_GLOBAL(g_content_length, "CONTENT_LENGTH");
   SET_GLOBAL(g_http_connection, "CONNECTION");
   id_set_backtrace = rb_intern("set_backtrace");
-  init_unicorn_httpdate();
+  init_pitchfork_httpdate();
 
 #ifndef HAVE_RB_HASH_CLEAR
   id_clear = rb_intern("clear");
 #endif
   id_is_chunked_p = rb_intern("is_chunked?");
 
-  init_epollexclusive(mUnicorn);
+  init_epollexclusive(mPitchfork);
 }
 #undef SET_GLOBAL

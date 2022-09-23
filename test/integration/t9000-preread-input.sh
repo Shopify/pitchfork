@@ -4,9 +4,9 @@ t_plan 9 "PrereadInput middleware tests"
 
 t_begin "setup and start" && {
 	random_blob_sha1=$(rsha1 < random_blob)
-	unicorn_setup
-	unicorn_spawn -c $unicorn_config preread_input.ru
-	unicorn_wait_start
+	pitchfork_setup
+	pitchfork_spawn -c $pitchfork_config preread_input.ru
+	pitchfork_wait_start
 }
 
 t_begin "single identity request" && {
@@ -42,7 +42,7 @@ t_begin "app only dispatched twice" && {
 }
 
 t_begin "killing succeeds" && {
-	kill -QUIT $unicorn_pid
+	kill -QUIT $pitchfork_pid
 }
 
 t_done

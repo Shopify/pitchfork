@@ -2,7 +2,7 @@
 
 require 'fcntl'
 
-module Unicorn
+module Pitchfork
   module Util # :nodoc:
 
   # :stopdoc:
@@ -32,7 +32,7 @@ module Unicorn
     #   3) unbuffered (as far as userspace buffering goes, not O_SYNC)
     # Returns the number of files reopened
     #
-    # In Unicorn 3.5.x and earlier, files must be opened with an absolute
+    # In Pitchfork 3.5.x and earlier, files must be opened with an absolute
     # path to be considered a log file.
     def self.reopen_logs
       to_reopen = []

@@ -1,18 +1,18 @@
 # -*- encoding: binary -*-
 require 'logger'
 
-module Unicorn
-  # Implements a simple DSL for configuring a unicorn server.
+module Pitchfork
+  # Implements a simple DSL for configuring a pitchfork server.
   #
-  # See https://yhbt.net/unicorn/examples/unicorn.conf.rb and
-  # https://yhbt.net/unicorn/examples/unicorn.conf.minimal.rb
+  # See https://yhbt.net/pitchfork/examples/pitchfork.conf.rb and
+  # https://yhbt.net/pitchfork/examples/pitchfork.conf.minimal.rb
   # example configuration files.  An example config file for use with
   # nginx is also available at
-  # https://yhbt.net/unicorn/examples/nginx.conf
+  # https://yhbt.net/pitchfork/examples/nginx.conf
   #
-  # See the link:/TUNING.html document for more information on tuning unicorn.
+  # See the link:/TUNING.html document for more information on tuning pitchfork.
   class Configurator
-    include Unicorn
+    include Pitchfork
 
     # :stopdoc:
     attr_accessor :set, :config_file, :after_load
@@ -21,13 +21,13 @@ module Unicorn
     # config.ru.  Do not rely on
     # this being around later on...
     RACKUP = {
-      :host => Unicorn::Const::DEFAULT_HOST,
-      :port => Unicorn::Const::DEFAULT_PORT,
+      :host => Pitchfork::Const::DEFAULT_HOST,
+      :port => Pitchfork::Const::DEFAULT_PORT,
       :set_listener => false,
       :options => { :listeners => [] }
     }
 
-    # Default settings for Unicorn
+    # Default settings for Pitchfork
     DEFAULTS = {
       :timeout => 60,
       :logger => Logger.new($stderr),
@@ -58,7 +58,7 @@ module Unicorn
       :early_hints => false,
       :check_client_connection => false,
       :rewindable_input => true,
-      :client_body_buffer_size => Unicorn::Const::MAX_BODY,
+      :client_body_buffer_size => Pitchfork::Const::MAX_BODY,
     }
     #:startdoc:
 
@@ -150,7 +150,7 @@ module Unicorn
     #
     #    # the negative :tries parameter indicates we will retry forever
     #    # waiting on the existing process to exit with a 5 second :delay
-    #    # Existing options for Unicorn::Configurator#listen such as
+    #    # Existing options for Pitchfork::Configurator#listen such as
     #    # :backlog, :rcvbuf, :sndbuf are available here as well.
     #    server.listen(addr, :tries => -1, :delay => 5, :backlog => 128)
     #  end
@@ -168,7 +168,7 @@ module Unicorn
     #    end
     #  end
     #
-    # after_worker_exit is only available in unicorn 5.3.0+
+    # after_worker_exit is only available in pitchfork 5.3.0+
     def after_worker_exit(*args, &block)
       set_hook(:after_worker_exit, block_given? ? block : args[0], 3)
     end
@@ -181,7 +181,7 @@ module Unicorn
     #    server.logger.info("worker #{worker.nr} ready")
     #  end
     #
-    # after_worker_ready is only available in unicorn 5.3.0+
+    # after_worker_ready is only available in pitchfork 5.3.0+
     def after_worker_ready(*args, &block)
       set_hook(:after_worker_ready, block_given? ? block : args[0])
     end
@@ -201,14 +201,14 @@ module Unicorn
     # low-complexity, low-overhead implementation, timeouts of less
     # than 3.0 seconds can be considered inaccurate and unsafe.
     #
-    # For running Unicorn behind nginx, it is recommended to set
+    # For running Pitchfork behind nginx, it is recommended to set
     # "fail_timeout=0" for in your nginx configuration like this
     # to have nginx always retry backends that may have had workers
     # SIGKILL-ed due to timeouts.
     #
-    #    upstream unicorn_backend {
+    #    upstream pitchfork_backend {
     #      # for UNIX domain socket setups:
-    #      server unix:/path/to/.unicorn.sock fail_timeout=0;
+    #      server unix:/path/to/.pitchfork.sock fail_timeout=0;
     #
     #      # for TCP setups
     #      server 192.168.0.7:8080 fail_timeout=0;
@@ -229,7 +229,7 @@ module Unicorn
     # process will serve exactly one client at a time.  You can
     # increment or decrement this value at runtime by sending SIGTTIN
     # or SIGTTOU respectively to the master process without reloading
-    # the rest of your Unicorn configuration.  See the SIGNALS document
+    # the rest of your Pitchfork configuration.  See the SIGNALS document
     # for more information.
     def worker_processes(nr)
       set_int(:worker_processes, nr, 1)
@@ -238,7 +238,7 @@ module Unicorn
     # sets whether to add default middleware in the development and
     # deployment RACK_ENVs.
     #
-    # default_middleware is only available in unicorn 5.5.0+
+    # default_middleware is only available in pitchfork 5.5.0+
     def default_middleware(bool)
       set_bool(:default_middleware, bool)
     end
@@ -255,7 +255,7 @@ module Unicorn
     # sets listeners to the given +addresses+, replacing or augmenting the
     # current set.  This is for the global listener pool shared by all
     # worker processes.  For per-worker listeners, see the after_fork example
-    # This is for internal API use only, do not use it in your Unicorn
+    # This is for internal API use only, do not use it in your Pitchfork
     # config file.  Use listen instead.
     def listeners(addresses) # :nodoc:
       Array === addresses or addresses = Array(addresses)
@@ -269,13 +269,13 @@ module Unicorn
     #
     #   listen 3000 # listen to port 3000 on all TCP interfaces
     #   listen "127.0.0.1:3000"  # listen to port 3000 on the loopback interface
-    #   listen "/path/to/.unicorn.sock" # listen on the given Unix domain socket
+    #   listen "/path/to/.pitchfork.sock" # listen on the given Unix domain socket
     #   listen "[::1]:3000" # listen to port 3000 on the IPv6 loopback interface
     #
     # When using Unix domain sockets, be sure:
     # 1) the path matches the one used by nginx
     # 2) uses the same filesystem namespace as the nginx process
-    # For systemd users using PrivateTmp=true (for either nginx or unicorn),
+    # For systemd users using PrivateTmp=true (for either nginx or pitchfork),
     # this means Unix domain sockets must not be placed in /tmp
     #
     # The following options may be specified (but are generally not needed):
@@ -291,7 +291,7 @@ module Unicorn
     #   syscall documentation of your OS for the exact semantics of
     #   this.
     #
-    #   If you are running unicorn on multiple machines, lowering this number
+    #   If you are running pitchfork on multiple machines, lowering this number
     #   can help your load balancer detect when a machine is overloaded
     #   and give requests to a different machine.
     #
@@ -325,19 +325,19 @@ module Unicorn
     #   Setting this to +true+ can make streaming responses in Rails 3.1
     #   appear more quickly at the cost of slightly higher bandwidth usage.
     #   The effect of this option is most visible if nginx is not used,
-    #   but nginx remains highly recommended with unicorn.
+    #   but nginx remains highly recommended with pitchfork.
     #
     #   This has no effect on UNIX sockets.
     #
-    #   Default: +true+ (Nagle's algorithm disabled) in unicorn
-    #   This defaulted to +false+ in unicorn 3.x
+    #   Default: +true+ (Nagle's algorithm disabled) in pitchfork
+    #   This defaulted to +false+ in pitchfork 3.x
     #
     # [:tcp_nopush => true or false]
     #
     #   Enables/disables TCP_CORK in Linux or TCP_NOPUSH in FreeBSD
     #
     #   This prevents partial TCP frames from being sent out and reduces
-    #   wakeups in nginx if it is on a different machine.  Since unicorn
+    #   wakeups in nginx if it is on a different machine.  Since pitchfork
     #   is only designed for applications that send the response body
     #   quickly without keepalive, sockets will always be flushed on close
     #   to prevent delays.
@@ -345,7 +345,7 @@ module Unicorn
     #   This has no effect on UNIX sockets.
     #
     #   Default: +false+
-    #   This defaulted to +true+ in unicorn 3.4 - 3.7
+    #   This defaulted to +true+ in pitchfork 3.4 - 3.7
     #
     # [:ipv6only => true or false]
     #
@@ -363,13 +363,13 @@ module Unicorn
     #
     # [:reuseport => true or false]
     #
-    #   This enables multiple, independently-started unicorn instances to
+    #   This enables multiple, independently-started pitchfork instances to
     #   bind to the same port (as long as all the processes enable this).
     #
-    #   This option must be used when unicorn first binds the listen socket.
+    #   This option must be used when pitchfork first binds the listen socket.
     #
     #   Note: there is a chance of connections being dropped if
-    #   one of the unicorn instances is stopped while using this.
+    #   one of the pitchfork instances is stopped while using this.
     #
     #   This is supported on *BSD systems and Linux 3.9 or later.
     #
@@ -427,7 +427,7 @@ module Unicorn
     #
     #   A value of +1+ is a good optimization for local networks
     #   and trusted clients.  There is no good reason to ever
-    #   disable this with a +zero+ value with unicorn.
+    #   disable this with a +zero+ value with pitchfork.
     #
     #   Default: 1
     #
@@ -488,7 +488,7 @@ module Unicorn
       set_int(:client_body_buffer_size, bytes, 0)
     end
 
-    # When enabled, unicorn will check the client connection by writing
+    # When enabled, pitchfork will check the client connection by writing
     # the beginning of the HTTP headers before calling the application.
     #
     # This will prevent calling the application for clients who have
@@ -504,7 +504,7 @@ module Unicorn
     end
 
     # Allow redirecting $stderr to a given path.  Unlike doing this from
-    # the shell, this allows the unicorn process to know the path its
+    # the shell, this allows the pitchfork process to know the path its
     # writing to and rotate the file if it is used for logging.  The
     # file will be opened with the File::APPEND flag and writes
     # synchronized to the kernel (but not necessarily to _disk_) so

@@ -2,7 +2,7 @@
 # :stopdoc:
 require 'tmpdir'
 
-module Unicorn
+module Pitchfork
   # some versions of Ruby had a broken Tempfile which didn't work
   # well with unlinked files.  This one is much shorter, easier
   # to understand, and slightly faster.

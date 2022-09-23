@@ -1,16 +1,16 @@
 # -*- encoding: binary -*-
 require 'child_subreaper'
 
-module Unicorn
-  # This is the process manager of Unicorn. This manages worker
+module Pitchfork
+  # This is the process manager of Pitchfork. This manages worker
   # processes which in turn handle the I/O and application process.
   # Listener sockets are started in the master process and shared with
   # forked worker children.
   #
   # Users do not need to know the internals of this class, but reading the
-  # {source}[https://yhbt.net/unicorn.git/tree/lib/unicorn/http_server.rb]
-  # is education for programmers wishing to learn how unicorn works.
-  # See Unicorn::Configurator for information on how to configure unicorn.
+  # {source}[https://yhbt.net/pitchfork.git/tree/lib/pitchfork/http_server.rb]
+  # is education for programmers wishing to learn how pitchfork works.
+  # See Pitchfork::Configurator for information on how to configure pitchfork.
   class HttpServer
     # :stopdoc:
     attr_accessor :app, :timeout, :worker_processes,
@@ -21,8 +21,8 @@ module Unicorn
     attr_writer   :after_worker_exit, :after_worker_ready
 
     attr_reader :logger
-    include Unicorn::SocketHelper
-    include Unicorn::HttpResponse
+    include Pitchfork::SocketHelper
+    include Pitchfork::HttpResponse
 
     # all bound listener sockets
     # note: this is public used by raindrops, but not recommended for use
@@ -36,14 +36,14 @@ module Unicorn
 
     # :startdoc:
     # This Hash is considered a stable interface and changing its contents
-    # will allow you to switch between different installations of Unicorn
+    # will allow you to switch between different installations of Pitchfork
     # or even different installations of the same applications without
     # downtime.  Keys of this constant Hash are described as follows:
     #
-    # * 0 - the path to the unicorn executable
+    # * 0 - the path to the pitchfork executable
     # * :argv - a deep copy of the ARGV array the executable originally saw
     # * :cwd - the working directory of the application, this is where
-    # you originally started Unicorn.
+    # you originally started Pitchfork.
     # TODO: Can we get rid of this?
     START_CTX = {
       :argv => ARGV.map(&:dup),
@@ -73,7 +73,7 @@ module Unicorn
       @ready_pipe = options.delete(:ready_pipe)
       @init_listeners = options[:listeners] ? options[:listeners].dup : []
       options[:use_defaults] = true
-      self.config = Unicorn::Configurator.new(options)
+      self.config = Pitchfork::Configurator.new(options)
       self.listener_opts = {}
 
       # We use @control_socket differently in the master and worker processes:
@@ -84,7 +84,7 @@ module Unicorn
       # djb describes in https://cr.yp.to/docs/selfpipe.html
       #
       # * The workers immediately close the pipe they inherit.  See the
-      # Unicorn::Worker class for the pipe workers use.
+      # Pitchfork::Worker class for the pipe workers use.
       @control_socket = []
       @children = Children.new
       @sig_queue = [] # signal queue used for self-piping
@@ -92,7 +92,7 @@ module Unicorn
 
       # we try inheriting listeners first, so we bind them later.
       # we don't write the pid file until we've bound listeners in case
-      # unicorn was started twice by mistake.  Even though our #pid= method
+      # pitchfork was started twice by mistake.  Even though our #pid= method
       # checks for stale/existing pid files, race conditions are still
       # possible (and difficult/non-portable to avoid) and can be likely
       # to clobber the pid if the second start was in quick succession
@@ -116,7 +116,7 @@ module Unicorn
       # are trapped.  See trap_deferred.
       # It's also used by newly spawned children to send their soft_signal pipe
       # to the master when they are spawned.
-      @control_socket.replace(Unicorn.socketpair)
+      @control_socket.replace(Pitchfork.socketpair)
       @master_pid = $$
 
       # setup signal handlers before writing pid file in case people get
@@ -167,7 +167,7 @@ module Unicorn
     def stderr_path=(path); redirect_io($stderr, path); end
 
     def logger=(obj)
-      Unicorn::HttpRequest::DEFAULTS["rack.logger"] = @logger = obj
+      Pitchfork::HttpRequest::DEFAULTS["rack.logger"] = @logger = obj
     end
 
     # add a given address to the +listeners+ set, idempotently
@@ -231,7 +231,7 @@ module Unicorn
             break
           end
         rescue => e
-          Unicorn.log_error(@logger, "master loop error", e)
+          Pitchfork.log_error(@logger, "master loop error", e)
         end
       end
       stop # gracefully shutdown all workers on our way out
@@ -263,7 +263,7 @@ module Unicorn
         return StopIteration
       when :USR1 # rotate logs
         logger.info "master reopening logs..."
-        Unicorn::Util.reopen_logs
+        Pitchfork::Util.reopen_logs
         logger.info "master done reopening logs"
         soft_kill_each_worker(:USR1)
       when :USR2 # trigger a promotion
@@ -314,28 +314,28 @@ module Unicorn
     end
 
     def rewindable_input
-      Unicorn::HttpRequest.input_class.method_defined?(:rewind)
+      Pitchfork::HttpRequest.input_class.method_defined?(:rewind)
     end
 
     def rewindable_input=(bool)
-      Unicorn::HttpRequest.input_class = bool ?
-                                  Unicorn::TeeInput : Unicorn::StreamInput
+      Pitchfork::HttpRequest.input_class = bool ?
+                                  Pitchfork::TeeInput : Pitchfork::StreamInput
     end
 
     def client_body_buffer_size
-      Unicorn::TeeInput.client_body_buffer_size
+      Pitchfork::TeeInput.client_body_buffer_size
     end
 
     def client_body_buffer_size=(bytes)
-      Unicorn::TeeInput.client_body_buffer_size = bytes
+      Pitchfork::TeeInput.client_body_buffer_size = bytes
     end
 
     def check_client_connection
-      Unicorn::HttpRequest.check_client_connection
+      Pitchfork::HttpRequest.check_client_connection
     end
 
     def check_client_connection=(bool)
-      Unicorn::HttpRequest.check_client_connection = bool
+      Pitchfork::HttpRequest.check_client_connection = bool
     end
 
     private
@@ -424,7 +424,7 @@ module Unicorn
     def after_fork_internal
       @control_socket[0].close_write # this is master-only, now
       @ready_pipe.close if @ready_pipe
-      Unicorn::Configurator::RACKUP.clear
+      Pitchfork::Configurator::RACKUP.clear
       @ready_pipe = @init_listeners = nil
 
       # The OpenSSL PRNG is seeded with only the pid, and apps with frequently
@@ -468,7 +468,7 @@ module Unicorn
         if @children.nr_alive?(worker_nr)
           next
         end
-        worker = Unicorn::Worker.new(worker_nr)
+        worker = Pitchfork::Worker.new(worker_nr)
 
         if !@children.mold || !@children.mold.spawn_worker(worker)
           # If there's no mold, or the mold was somehow unreachable
@@ -476,7 +476,7 @@ module Unicorn
           spawn_worker(worker, detach: false)
         end
         # We could directly register workers when we spawn from the
-        # master, like unicorn does. However it is preferable to
+        # master, like pitchfork does. However it is preferable to
         # always go through the asynchronous registering process for
         # consistency.
         @children.register(worker)
@@ -527,14 +527,14 @@ module Unicorn
       code = case e
       when EOFError,Errno::ECONNRESET,Errno::EPIPE,Errno::ENOTCONN
         # client disconnected on us and there's nothing we can do
-      when Unicorn::RequestURITooLongError
+      when Pitchfork::RequestURITooLongError
         414
-      when Unicorn::RequestEntityTooLargeError
+      when Pitchfork::RequestEntityTooLargeError
         413
-      when Unicorn::HttpParserError # try to tell the client they're bad
+      when Pitchfork::HttpParserError # try to tell the client they're bad
         400
       else
-        Unicorn.log_error(@logger, "app error", e)
+        Pitchfork.log_error(@logger, "app error", e)
         500
       end
       if code
@@ -577,7 +577,7 @@ module Unicorn
     # once a client is accepted, it is processed in its entirety here
     # in 3 easy steps: read request, call app, write app response
     def process_client(client)
-      @request = Unicorn::HttpRequest.new
+      @request = Pitchfork::HttpRequest.new
       env = @request.read(client)
 
       if early_hints
@@ -657,7 +657,7 @@ module Unicorn
 
     def reopen_worker_logs(worker_nr)
       logger.info "worker=#{worker_nr} reopening logs..."
-      Unicorn::Util.reopen_logs
+      Pitchfork::Util.reopen_logs
       logger.info "worker=#{worker_nr} done reopening logs"
       false
     rescue => e
@@ -665,14 +665,14 @@ module Unicorn
       exit!(77) # EX_NOPERM in sysexits.h
     end
 
-    if Unicorn.const_defined?(:Waiter)
+    if Pitchfork.const_defined?(:Waiter)
       def prep_readers(readers)
-        Unicorn::Waiter.prep_readers(readers)
+        Pitchfork::Waiter.prep_readers(readers)
       end
     else
       require_relative 'select_waiter'
       def prep_readers(_readers)
-        Unicorn::SelectWaiter.new
+        Pitchfork::SelectWaiter.new
       end
     end
 
@@ -695,7 +695,7 @@ module Unicorn
         reopen = reopen_worker_logs(worker.nr) if reopen
         worker.tick = time_now.to_i
         while sock = ready.shift
-          # Unicorn::Worker#accept_nonblock is not like accept(2) at all,
+          # Pitchfork::Worker#accept_nonblock is not like accept(2) at all,
           # but that will return false
           client = sock.accept_nonblock(exception: false)
           client = false if client == :wait_readable
@@ -717,7 +717,7 @@ module Unicorn
         waiter.get_readers(ready, readers, @timeout * 500) # to milliseconds, but halved
       rescue => e
         redo if reopen && readers[0]
-        Unicorn.log_error(@logger, "listen loop error", e) if readers[0]
+        Pitchfork.log_error(@logger, "listen loop error", e) if readers[0]
       end while readers[0]
     end
 
@@ -732,7 +732,7 @@ module Unicorn
       begin
         mold.tick = time_now.to_i
         while sock = ready.shift
-          # Unicorn::Worker#accept_nonblock is not like accept(2) at all,
+          # Pitchfork::Worker#accept_nonblock is not like accept(2) at all,
           # but that will return false
           case message = sock.accept_nonblock(exception: false)
           when false
@@ -748,7 +748,7 @@ module Unicorn
         mold.tick = time_now.to_i
         waiter.get_readers(ready, readers, @timeout * 500) # to milliseconds, but halved
       rescue => e
-        Unicorn.log_error(@logger, "listen loop error", e) if readers[0]
+        Pitchfork.log_error(@logger, "listen loop error", e) if readers[0]
       end while readers[0]
     end
 
@@ -776,12 +776,12 @@ module Unicorn
       config.load
       config.commit!(self)
       soft_kill_each_worker(:QUIT)
-      Unicorn::Util.reopen_logs
+      Pitchfork::Util.reopen_logs
       self.app = @orig_app
       build_app!
       logger.info "done reloading config_file=#{config.config_file}"
     rescue StandardError, LoadError, SyntaxError => e
-      Unicorn.log_error(@logger,
+      Pitchfork.log_error(@logger,
           "error reloading config_file=#{config.config_file}", e)
       self.app = loaded_app
     end
@@ -843,9 +843,9 @@ module Unicorn
       # garbage-collected
       config_listeners -= listener_names
       if config_listeners.empty? && LISTENERS.empty?
-        config_listeners << Unicorn::Const::DEFAULT_LISTEN
-        @init_listeners << Unicorn::Const::DEFAULT_LISTEN
-        START_CTX[:argv] << "-l#{Unicorn::Const::DEFAULT_LISTEN}"
+        config_listeners << Pitchfork::Const::DEFAULT_LISTEN
+        @init_listeners << Pitchfork::Const::DEFAULT_LISTEN
+        START_CTX[:argv] << "-l#{Pitchfork::Const::DEFAULT_LISTEN}"
       end
       NEW_LISTENERS.replace(config_listeners)
     end

@@ -13,7 +13,7 @@ class TestUtil < Minitest::Test
     ext = fp.external_encoding rescue nil
     int = fp.internal_encoding rescue nil
     before = fp.stat.inspect
-    Unicorn::Util.reopen_logs
+    Pitchfork::Util.reopen_logs
     assert_equal before, File.stat(fp.path).inspect
     assert_equal ext, (fp.external_encoding rescue nil)
     if int.nil?
@@ -38,7 +38,7 @@ class TestUtil < Minitest::Test
     to = Tempfile.new('')
     File.rename(tmp_path, to.path)
     assert ! File.exist?(tmp_path)
-    Unicorn::Util.reopen_logs
+    Pitchfork::Util.reopen_logs
     assert_equal tmp_path, tmp.path
     assert File.exist?(tmp_path)
     assert before != File.stat(tmp_path).inspect
@@ -66,7 +66,7 @@ class TestUtil < Minitest::Test
         assert_nil fp.internal_encoding
         File.unlink(tmp_path)
         assert ! File.exist?(tmp_path)
-        Unicorn::Util.reopen_logs
+        Pitchfork::Util.reopen_logs
         assert_equal tmp_path, fp.path
         assert File.exist?(tmp_path)
         assert_equal fp.stat.inspect, File.stat(tmp_path).inspect
@@ -96,7 +96,7 @@ class TestUtil < Minitest::Test
 
           File.unlink(tmp_path)
           assert ! File.exist?(tmp_path)
-          Unicorn::Util.reopen_logs
+          Pitchfork::Util.reopen_logs
           assert_equal tmp_path, fp.path
           assert File.exist?(tmp_path)
           assert_equal fp.stat.inspect, File.stat(tmp_path).inspect
@@ -113,7 +113,7 @@ class TestUtil < Minitest::Test
   end
 
   def test_socketpair
-    child, parent = Unicorn.socketpair
+    child, parent = Pitchfork.socketpair
     assert child
     assert parent
   ensure
@@ -122,7 +122,7 @@ class TestUtil < Minitest::Test
   end
 
   def test_pipe
-    r, w = Unicorn.pipe
+    r, w = Pitchfork.pipe
     assert r
     assert w
 
@@ -146,12 +146,12 @@ class TestUtil < Minitest::Test
     r.close
   end
 
-  TestMessage = Unicorn::Message.new(:text, :pipe)
+  TestMessage = Pitchfork::Message.new(:text, :pipe)
   def test_message_socket
-    child, parent = Unicorn.socketpair
+    child, parent = Pitchfork.socketpair
     child_pid = fork do
       parent.sendmsg('just text')
-      read, write = Unicorn.pipe
+      read, write = Pitchfork.pipe
       message = TestMessage.new('rich message', write)
       parent.sendmsg(message)
       write.close

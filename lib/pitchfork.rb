@@ -11,16 +11,16 @@ rescue LoadError
 end
 
 # :stopdoc:
-# Unicorn module containing all of the classes (include C extensions) for
-# running a Unicorn web server.  It contains a minimalist HTTP server with just
+# Pitchfork module containing all of the classes (include C extensions) for
+# running a Pitchfork web server.  It contains a minimalist HTTP server with just
 # enough functionality to service web application requests fast as possible.
 # :startdoc:
 
-# unicorn exposes very little of an user-visible API and most of its
-# internals are subject to change.  unicorn is designed to host Rack
+# pitchfork exposes very little of an user-visible API and most of its
+# internals are subject to change.  pitchfork is designed to host Rack
 # applications, so applications should be written against the Rack SPEC
-# and not unicorn internals.
-module Unicorn
+# and not pitchfork internals.
+module Pitchfork
 
   # Raised inside TeeInput when a client closes the socket inside the
   # application dispatch.  This is always raised with an empty backtrace
@@ -38,7 +38,7 @@ module Unicorn
   # time to build the app.
   def self.builder(ru, op)
     # allow Configurator to parse cli switches embedded in the ru file
-    op = Unicorn::Configurator::RACKUP.merge!(:file => ru, :optparse => op)
+    op = Pitchfork::Configurator::RACKUP.merge!(:file => ru, :optparse => op)
     if ru =~ /\.ru$/ && !defined?(Rack::Builder)
       abort "rack and Rack::Builder must be available for processing #{ru}"
     end
@@ -72,7 +72,7 @@ module Unicorn
       }
 
       # return value, matches rackup defaults based on env
-      # Unicorn does not support persistent connections, but Rainbows!
+      # Pitchfork does not support persistent connections, but Rainbows!
       # and Zbatery both do.  Users accustomed to the Rack::Server default
       # middlewares will need ContentLength/Chunked middlewares.
       case ENV["RACK_ENV"]
@@ -96,9 +96,9 @@ module Unicorn
   # and Unix domain socket paths.  This is useful for use with
   # Raindrops::Middleware under Linux: https://yhbt.net/raindrops/
   def self.listener_names
-    Unicorn::HttpServer::LISTENERS.map do |io|
-      Unicorn::SocketHelper.sock_name(io)
-    end + Unicorn::HttpServer::NEW_LISTENERS
+    Pitchfork::HttpServer::LISTENERS.map do |io|
+      Pitchfork::SocketHelper.sock_name(io)
+    end + Pitchfork::HttpServer::NEW_LISTENERS
   end
 
   def self.log_error(logger, prefix, exc)
@@ -153,5 +153,5 @@ end
   const socket_helper stream_input tee_input children message http_request
   configurator tmpio util http_response worker http_server
 ).each do |s|
-  require_relative "unicorn/#{s}"
+  require_relative "pitchfork/#{s}"
 end

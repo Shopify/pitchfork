@@ -65,9 +65,9 @@ static VALUE httpdate(VALUE self)
 	return buf;
 }
 
-void init_unicorn_httpdate(void)
+void init_pitchfork_httpdate(void)
 {
-	VALUE mod = rb_define_module("Unicorn");
+	VALUE mod = rb_define_module("Pitchfork");
 	mod = rb_define_module_under(mod, "HttpResponse");
 
 	buf = rb_str_new(0, buf_capa - 1);

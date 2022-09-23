@@ -2,14 +2,14 @@
 # :enddoc:
 require 'socket'
 
-module Unicorn
+module Pitchfork
   module SocketHelper
 
     # internal interface
     DEFAULTS = {
       # The semantics for TCP_DEFER_ACCEPT changed in Linux 2.6.32+
       # with commit d1b99ba41d6c5aa1ed2fc634323449dd656899e9
-      # This change shouldn't affect unicorn users behind nginx (a
+      # This change shouldn't affect pitchfork users behind nginx (a
       # value of 1 remains an optimization).
       :tcp_defer_accept => 1,
 
@@ -90,7 +90,7 @@ module Unicorn
       end
       sock.listen(opt[:backlog])
     rescue => e
-      Unicorn.log_error(logger, "#{sock_name(sock)} #{opt.inspect}", e)
+      Pitchfork.log_error(logger, "#{sock_name(sock)} #{opt.inspect}", e)
     end
 
     def log_buffer_sizes(sock, pfx = '')
@@ -196,4 +196,4 @@ module Unicorn
     end
 
   end # module SocketHelper
-end # module Unicorn
+end # module Pitchfork

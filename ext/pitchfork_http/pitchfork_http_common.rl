@@ -1,6 +1,6 @@
 %%{
 
-  machine unicorn_http_common;
+  machine pitchfork_http_common;
 
 #### HTTP PROTOCOL GRAMMAR
 # line endings

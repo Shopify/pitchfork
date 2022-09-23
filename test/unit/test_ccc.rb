@@ -1,5 +1,5 @@
 require 'socket'
-require 'unicorn'
+require 'pitchfork'
 require 'io/wait'
 require 'tempfile'
 require 'minitest/autorun'
@@ -11,7 +11,7 @@ class TestCccTCPI < Minitest::Test
     host = '127.0.0.1'
     srv = TCPServer.new(host, 0)
     port = srv.addr[1]
-    err = Tempfile.new('unicorn_ccc')
+    err = Tempfile.new('pitchfork_ccc')
     rd, wr = IO.pipe
     sleep_pipe = IO.pipe
     pid = fork do
@@ -38,7 +38,7 @@ class TestCccTCPI < Minitest::Test
         worker_processes: 1,
         check_client_connection: true,
       }
-      uni = Unicorn::HttpServer.new(app, opts)
+      uni = Pitchfork::HttpServer.new(app, opts)
       uni.start.join
     end
     wr.close

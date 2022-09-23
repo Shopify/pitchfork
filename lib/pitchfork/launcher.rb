@@ -6,4 +6,4 @@ $stdin.binmode
 $stdout.binmode
 $stderr.binmode
 
-require 'unicorn'
+require 'pitchfork'

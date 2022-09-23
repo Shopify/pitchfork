@@ -3,7 +3,7 @@
 require './test/test_helper'
 require 'digest/md5'
 
-include Unicorn
+include Pitchfork
 
 class HttpParserNgTest < Minitest::Test
 

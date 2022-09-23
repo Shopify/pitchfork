@@ -18,9 +18,9 @@
 #   then serve that.
 #
 # This means that if you are using page caching it will actually work
-# with Unicorn and you should see a decent speed boost (but not as
+# with Pitchfork and you should see a decent speed boost (but not as
 # fast as if you use a static server like nginx).
-class Unicorn::App::OldRails::Static < Struct.new(:app, :root, :file_server)
+class Pitchfork::App::OldRails::Static < Struct.new(:app, :root, :file_server)
   FILE_METHODS = { 'GET' => true, 'HEAD' => true }
 
   # avoid allocating new strings for hash lookups
@@ -56,4 +56,4 @@ class Unicorn::App::OldRails::Static < Struct.new(:app, :root, :file_server)
 
     app.call(env) # call OldRails
   end
-end if defined?(Unicorn::App::OldRails)
+end if defined?(Pitchfork::App::OldRails)

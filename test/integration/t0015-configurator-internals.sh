@@ -3,13 +3,13 @@
 t_plan 4 "configurator internals tests (from FAQ)"
 
 t_begin "setup and start" && {
-	unicorn_setup
-	cat >> $unicorn_config <<EOF
+	pitchfork_setup
+	cat >> $pitchfork_config <<EOF
 HttpRequest::DEFAULTS["rack.url_scheme"] = "https"
 Configurator::DEFAULTS[:logger].formatter = Logger::Formatter.new
 EOF
-	unicorn_spawn -c $unicorn_config env.ru
-	unicorn_wait_start
+	pitchfork_spawn -c $pitchfork_config env.ru
+	pitchfork_wait_start
 }
 
 t_begin "single request" && {
@@ -17,7 +17,7 @@ t_begin "single request" && {
 }
 
 t_begin "killing succeeds" && {
-	kill $unicorn_pid
+	kill $pitchfork_pid
 }
 
 t_begin "no errors" && check_stderr

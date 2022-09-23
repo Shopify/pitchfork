@@ -9,7 +9,7 @@
 require './test/test_helper'
 
 class SignalsTest < Minitest::Test
-  include Unicorn
+  include Pitchfork
 
   class Dd
     def initialize(bs, count)
@@ -26,8 +26,8 @@ class SignalsTest < Minitest::Test
     @bs = 1 * 1024 * 1024
     @count = 100
     @port = unused_port
-    @sock = Tempfile.new('unicorn.sock')
-    @tmp = Tempfile.new('unicorn.write')
+    @sock = Tempfile.new('pitchfork.sock')
+    @tmp = Tempfile.new('pitchfork.write')
     @tmp.sync = true
     File.unlink(@sock.path)
     File.unlink(@tmp.path)

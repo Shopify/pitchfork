@@ -95,7 +95,7 @@ check_stderr () {
 	_r_err=${1-${r_err}}
 	set -u
 	if grep -v $T $_r_err | grep -i Error | \
-		grep -v NameError.*Unicorn::Waiter
+		grep -v NameError.*Pitchfork::Waiter
 	then
 		die "Errors found in $_r_err"
 	elif grep SIGKILL $_r_err
@@ -104,14 +104,14 @@ check_stderr () {
 	fi
 }
 
-# unicorn_setup
-unicorn_setup () {
+# pitchfork_setup
+pitchfork_setup () {
 	eval $(unused_listen)
 	port=$(expr $listen : '[^:]*:\([0-9]*\)')
 	host=$(expr $listen : '\([^:][^:]*\):[0-9][0-9]*')
 
-	rtmpfiles unicorn_config pid r_err r_out fifo tmp ok
-	cat > $unicorn_config <<EOF
+	rtmpfiles pitchfork_config pid r_err r_out fifo tmp ok
+	cat > $pitchfork_config <<EOF
 listen "$listen"
 stderr_path "$r_err"
 stdout_path "$r_out"
@@ -152,17 +152,17 @@ wait_for_service() {
 	return 0
 }
 
-unicorn_spawn () {
+pitchfork_spawn () {
 	(
-		unicorn "$@" &
+		pitchfork "$@" &
 		echo "$!" > "$pid"
 	) &
 	wait
 }
 
-unicorn_wait_start () {
+pitchfork_wait_start () {
 	wait_for_service 30
-	unicorn_pid=$(cat $pid)
+	pitchfork_pid=$(cat $pid)
 }
 
 rsha1 () {

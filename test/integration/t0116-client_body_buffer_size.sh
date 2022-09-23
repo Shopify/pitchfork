@@ -3,19 +3,19 @@
 t_plan 16 "client_body_buffer_size settings"
 
 t_begin "setup and start" && {
-	unicorn_setup
-	rtmpfiles unicorn_config_tmp one_meg
+	pitchfork_setup
+	rtmpfiles pitchfork_config_tmp one_meg
 	dd if=/dev/zero bs=1M count=1 of=$one_meg
-	cat >> $unicorn_config <<EOF
+	cat >> $pitchfork_config <<EOF
 after_fork do |server, worker|
   File.open("$fifo", "wb") { |fp| fp.syswrite "START" }
 end
 EOF
-	cat $unicorn_config > $unicorn_config_tmp
-	echo client_body_buffer_size 0 >> $unicorn_config
-	unicorn_spawn -c $unicorn_config t0116.ru
-	unicorn_wait_start
-	fs_class=Unicorn::TmpIO
+	cat $pitchfork_config > $pitchfork_config_tmp
+	echo client_body_buffer_size 0 >> $pitchfork_config
+	pitchfork_spawn -c $pitchfork_config t0116.ru
+	pitchfork_wait_start
+	fs_class=Pitchfork::TmpIO
 	mem_class=StringIO
 
 	test x"$(cat $fifo)" = xSTART
@@ -32,7 +32,7 @@ t_begin "class for a 1 byte file should be filesystem-backed" && {
 }
 
 t_begin "killing succeeds" && {
-	kill $unicorn_pid
+	kill $pitchfork_pid
 }
 
 t_begin "check stderr" && {
@@ -40,9 +40,9 @@ t_begin "check stderr" && {
 }
 
 t_begin "restart with default client_body_buffer_size" && {
-	mv $unicorn_config_tmp $unicorn_config
-	unicorn_spawn -c $unicorn_config t0116.ru
-	unicorn_wait_start
+	mv $pitchfork_config_tmp $pitchfork_config
+	pitchfork_spawn -c $pitchfork_config t0116.ru
+	pitchfork_wait_start
 	test x"$(cat $fifo)" = xSTART
 }
 
@@ -62,7 +62,7 @@ t_begin "one megabyte file should be filesystem-backed" && {
 }
 
 t_begin "killing succeeds" && {
-	kill $unicorn_pid
+	kill $pitchfork_pid
 }
 
 t_begin "check stderr" && {
@@ -70,9 +70,9 @@ t_begin "check stderr" && {
 }
 
 t_begin "reload with a big client_body_buffer_size" && {
-	echo "client_body_buffer_size(1024 * 1024)" >> $unicorn_config
-	unicorn_spawn -c $unicorn_config t0116.ru
-	unicorn_wait_start
+	echo "client_body_buffer_size(1024 * 1024)" >> $pitchfork_config
+	pitchfork_spawn -c $pitchfork_config t0116.ru
+	pitchfork_wait_start
 	test x"$(cat $fifo)" = xSTART
 }
 
@@ -88,7 +88,7 @@ t_begin "one megabyte + 1 byte file should be filesystem-backed" && {
 }
 
 t_begin "killing succeeds" && {
-	kill $unicorn_pid
+	kill $pitchfork_pid
 }
 
 t_begin "check stderr" && {

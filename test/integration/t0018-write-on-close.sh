@@ -3,9 +3,9 @@
 t_plan 4 "write-on-close tests for funky response-bodies"
 
 t_begin "setup and start" && {
-	unicorn_setup
-	unicorn_spawn -c $unicorn_config write-on-close.ru
-	unicorn_wait_start
+	pitchfork_setup
+	pitchfork_spawn -c $pitchfork_config write-on-close.ru
+	pitchfork_wait_start
 }
 
 t_begin "write-on-close response body succeeds" && {
@@ -13,7 +13,7 @@ t_begin "write-on-close response body succeeds" && {
 }
 
 t_begin "killing succeeds" && {
-	kill $unicorn_pid
+	kill $pitchfork_pid
 }
 
 t_begin "check stderr" && {

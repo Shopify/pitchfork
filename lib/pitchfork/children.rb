@@ -1,7 +1,7 @@
 # -*- encoding: binary -*-
 require 'child_subreaper'
 
-module Unicorn
+module Pitchfork
   # This class keep tracks of the state of all the master children.
   class Children
     attr_reader :mold

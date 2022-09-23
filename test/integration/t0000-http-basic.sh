@@ -3,9 +3,9 @@
 t_plan 8 "simple HTTP connection tests"
 
 t_begin "setup and start" && {
-	unicorn_setup
-	unicorn_spawn -c $unicorn_config env.ru &
-	unicorn_wait_start
+	pitchfork_setup
+	pitchfork_spawn -c $pitchfork_config env.ru &
+	pitchfork_wait_start
 }
 
 t_begin "single request" && {
@@ -40,7 +40,7 @@ t_begin "no headers in output" && {
 }
 
 t_begin "killing succeeds" && {
-	kill $unicorn_pid
+	kill $pitchfork_pid
 }
 
 t_begin "check stderr has no errors" && {

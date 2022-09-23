@@ -34,4 +34,4 @@ else
 end
 
 have_func('epoll_create1', %w(sys/epoll.h))
-create_makefile("unicorn_http")
+create_makefile("pitchfork_http")

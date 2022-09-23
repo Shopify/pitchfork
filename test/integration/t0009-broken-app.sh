@@ -4,9 +4,9 @@
 t_plan 9 "graceful handling of broken apps"
 
 t_begin "setup and start" && {
-	unicorn_setup
-	unicorn_spawn -E none broken-app.ru -c $unicorn_config
-	unicorn_wait_start
+	pitchfork_setup
+	pitchfork_spawn -E none broken-app.ru -c $pitchfork_config
+	pitchfork_wait_start
 }
 
 t_begin "normal response is alright" && {
@@ -48,7 +48,7 @@ t_begin "normal responses alright afterwards" && {
 }
 
 t_begin "teardown" && {
-	kill $unicorn_pid
+	kill $pitchfork_pid
 }
 
 t_begin "check stderr" && check_stderr

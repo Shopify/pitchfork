@@ -1,10 +1,10 @@
 require 'minitest/autorun'
-require 'unicorn'
-require 'unicorn/select_waiter'
+require 'pitchfork'
+require 'pitchfork/select_waiter'
 class TestSelectWaiter < Minitest::Test
 
   def test_select_timeout # n.b. this is level-triggered
-    sw = Unicorn::SelectWaiter.new
+    sw = Pitchfork::SelectWaiter.new
     IO.pipe do |r,w|
       sw.get_readers(ready = [], [r], 0)
       assert_equal [], ready
@@ -18,7 +18,7 @@ class TestSelectWaiter < Minitest::Test
 
   def test_linux # ugh, also level-triggered, unlikely to change
     IO.pipe do |r,w|
-      wtr = Unicorn::Waiter.prep_readers([r])
+      wtr = Pitchfork::Waiter.prep_readers([r])
       wtr.get_readers(ready = [], [r], 0)
       assert_equal [], ready
       w.syswrite '.'
@@ -30,5 +30,5 @@ class TestSelectWaiter < Minitest::Test
     end
   rescue SystemCallError => e
     warn "#{e.message} (#{e.class})"
-  end if Unicorn.const_defined?(:Waiter)
+  end if Pitchfork.const_defined?(:Waiter)
 end

@@ -1,7 +1,7 @@
 # -*- encoding: binary -*-
 
 # :stopdoc:
-module Unicorn
+module Pitchfork
   class MessageSocket
     unless respond_to?(:ruby2_keywords, true)
       class << self

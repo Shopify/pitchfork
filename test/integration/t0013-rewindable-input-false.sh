@@ -3,10 +3,10 @@
 t_plan 4 "rewindable_input toggled to false"
 
 t_begin "setup and start" && {
-	unicorn_setup
-	echo rewindable_input false >> $unicorn_config
-	unicorn_spawn -c $unicorn_config t0013.ru
-	unicorn_wait_start
+	pitchfork_setup
+	echo rewindable_input false >> $pitchfork_config
+	pitchfork_spawn -c $pitchfork_config t0013.ru
+	pitchfork_wait_start
 }
 
 t_begin "ensure worker is started" && {
@@ -14,7 +14,7 @@ t_begin "ensure worker is started" && {
 }
 
 t_begin "killing succeeds" && {
-	kill $unicorn_pid
+	kill $pitchfork_pid
 }
 
 t_begin "check stderr" && {

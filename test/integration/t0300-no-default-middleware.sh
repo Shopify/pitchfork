@@ -3,9 +3,9 @@
 t_plan 3 "test the -N / --no-default-middleware option"
 
 t_begin "setup and start" && {
-	unicorn_setup
-	unicorn_spawn -N -c $unicorn_config fails-rack-lint.ru
-	unicorn_wait_start
+	pitchfork_setup
+	pitchfork_spawn -N -c $pitchfork_config fails-rack-lint.ru
+	pitchfork_wait_start
 }
 
 t_begin "check exit status with Rack::Lint not present" && {
@@ -13,7 +13,7 @@ t_begin "check exit status with Rack::Lint not present" && {
 }
 
 t_begin "killing succeeds" && {
-	kill $unicorn_pid
+	kill $pitchfork_pid
 	check_stderr
 }
 

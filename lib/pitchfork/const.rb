@@ -1,6 +1,6 @@
 # -*- encoding: binary -*-
 
-module Unicorn
+module Pitchfork
   module Const # :nodoc:
     # default TCP listen host address (0.0.0.0, all interfaces)
     DEFAULT_HOST = "0.0.0.0"

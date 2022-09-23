@@ -27,7 +27,7 @@ require 'pathname'
 require 'tempfile'
 require 'fileutils'
 require 'logger'
-require 'unicorn'
+require 'pitchfork'
 require 'io/nonblock'
 require 'rack/lint'
 
@@ -106,8 +106,8 @@ def hit(uris)
 end
 
 # unused_port provides an unused port on +addr+ usable for TCP that is
-# guaranteed to be unused across all unicorn builds on that system.  It
-# prevents race conditions by using a lock file other unicorn builds
+# guaranteed to be unused across all pitchfork builds on that system.  It
+# prevents race conditions by using a lock file other pitchfork builds
 # will see.  This is required if you perform several builds in parallel
 # with a continuous integration system or run tests in parallel via
 # gmake.  This is NOT guaranteed to be race-free if you run other
@@ -121,7 +121,7 @@ def unused_port(addr = '127.0.0.1')
   begin
     begin
       port = base + rand(32768 - base)
-      while port == Unicorn::Const::DEFAULT_PORT
+      while port == Pitchfork::Const::DEFAULT_PORT
         port = base + rand(32768 - base)
       end
 
@@ -137,7 +137,7 @@ def unused_port(addr = '127.0.0.1')
     # condition could allow the random port we just chose to reselect itself
     # when running tests in parallel with gmake.  Create a lock file while
     # we have the port here to ensure that does not happen .
-    lock_path = "#{Dir::tmpdir}/unicorn_test.#{addr}:#{port}.lock"
+    lock_path = "#{Dir::tmpdir}/pitchfork_test.#{addr}:#{port}.lock"
     File.open(lock_path, File::WRONLY|File::CREAT|File::EXCL, 0600).close
     at_exit { File.unlink(lock_path) rescue nil }
   rescue Errno::EEXIST

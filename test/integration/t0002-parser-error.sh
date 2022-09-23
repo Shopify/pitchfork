@@ -3,9 +3,9 @@
 t_plan 11 "parser error test"
 
 t_begin "setup and startup" && {
-	unicorn_setup
-	unicorn_spawn env.ru -c $unicorn_config
-	unicorn_wait_start
+	pitchfork_setup
+	pitchfork_spawn env.ru -c $pitchfork_config
+	pitchfork_wait_start
 }
 
 t_begin "send a bad request" && {
@@ -89,6 +89,6 @@ t_begin "response should be a 414 (FRAGMENT)" && {
 
 t_begin "server stderr should be clean" && check_stderr
 
-t_begin "term signal sent" && kill $unicorn_pid
+t_begin "term signal sent" && kill $pitchfork_pid
 
 t_done

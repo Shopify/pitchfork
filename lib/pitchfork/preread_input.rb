@@ -1,15 +1,15 @@
 # -*- encoding: binary -*-
 
-module Unicorn
+module Pitchfork
   # This middleware is used to ensure input is buffered to memory
   # or disk (depending on size) before the application is dispatched
   # by entirely consuming it (from TeeInput) beforehand.
   #
   # Usage (in config.ru):
   #
-  #     require 'unicorn/preread_input'
-  #     if defined?(Unicorn)
-  #       use Unicorn::PrereadInput
+  #     require 'pitchfork/preread_input'
+  #     if defined?(Pitchfork)
+  #       use Pitchfork::PrereadInput
   #     end
   #     run YourApp.new
   class PrereadInput

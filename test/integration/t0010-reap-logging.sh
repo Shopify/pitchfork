@@ -3,13 +3,13 @@
 t_plan 9 "reap worker logging messages"
 
 t_begin "setup and start" && {
-	unicorn_setup
-	cat >> $unicorn_config <<EOF
+	pitchfork_setup
+	cat >> $pitchfork_config <<EOF
 after_fork { |s,w| File.open('$fifo','w') { |f| f.write '.' } }
 EOF
-	unicorn_spawn -c $unicorn_config pid.ru
+	pitchfork_spawn -c $pitchfork_config pid.ru
 	test '.' = $(cat $fifo)
-	unicorn_wait_start
+	pitchfork_wait_start
 }
 
 t_begin "kill 1st worker=0" && {
@@ -43,7 +43,7 @@ t_begin "ensure log of 2nd reap is a INFO" && {
 }
 
 t_begin "killing succeeds" && {
-	kill "$unicorn_pid"
+	kill "$pitchfork_pid"
 	wait
 }
 

@@ -1,14 +1,14 @@
 # -*- encoding: binary -*-
 
-module Unicorn
-  # When processing uploads, unicorn may expose a StreamInput object under
+module Pitchfork
+  # When processing uploads, pitchfork may expose a StreamInput object under
   # "rack.input" of the Rack environment when
-  # Unicorn::Configurator#rewindable_input is set to +false+
+  # Pitchfork::Configurator#rewindable_input is set to +false+
   class StreamInput
     # The I/O chunk size (in +bytes+) for I/O operations where
     # the size cannot be user-specified when a method is called.
     # The default is 16 kilobytes.
-    @@io_chunk_size = Unicorn::Const::CHUNK_SIZE # :nodoc:
+    @@io_chunk_size = Pitchfork::Const::CHUNK_SIZE # :nodoc:
 
     # Initializes a new StreamInput object.  You normally do not have to call
     # this unless you are writing an HTTP server.
@@ -146,7 +146,7 @@ module Unicorn
       # raised EOFError on us.
       @socket.shutdown if @socket
     ensure
-      raise Unicorn::ClientShutdown, "bytes_read=#{@bytes_read}", []
+      raise Pitchfork::ClientShutdown, "bytes_read=#{@bytes_read}", []
     end
   end
 end

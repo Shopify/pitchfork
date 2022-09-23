@@ -3,12 +3,12 @@
 t_plan 5 "max_header_len setting (only intended for Rainbows!)"
 
 t_begin "setup and start" && {
-	unicorn_setup
+	pitchfork_setup
 	req='GET / HTTP/1.0\r\n\r\n'
 	len=$(printf "$req" | count_bytes)
-	echo Unicorn::HttpParser.max_header_len = $len >> $unicorn_config
-	unicorn_spawn -c $unicorn_config env.ru
-	unicorn_wait_start
+	echo Pitchfork::HttpParser.max_header_len = $len >> $pitchfork_config
+	pitchfork_spawn -c $pitchfork_config env.ru
+	pitchfork_wait_start
 }
 
 t_begin "minimal request succeeds" && {
@@ -39,7 +39,7 @@ t_begin "big request fails" && {
 dbgcat tmp
 
 t_begin "killing succeeds" && {
-	kill $unicorn_pid
+	kill $pitchfork_pid
 }
 
 t_begin "check stderr" && {

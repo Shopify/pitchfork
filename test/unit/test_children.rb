@@ -2,7 +2,7 @@
 
 require './test/test_helper'
 
-module Unicorn
+module Pitchfork
   class TestChildren < Minitest::Test
     def setup
       @children = Children.new

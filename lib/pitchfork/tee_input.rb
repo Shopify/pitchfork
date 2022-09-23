@@ -1,6 +1,6 @@
 # -*- encoding: binary -*-
 
-module Unicorn
+module Pitchfork
   # Acts like tee(1) on an input input to provide a input-like stream
   # while providing rewindable semantics through a File/StringIO backing
   # store.  On the first pass, the input is only read on demand so your
@@ -10,12 +10,12 @@ module Unicorn
   # strict interpretation of Rack::Lint::InputWrapper functionality and
   # will not support any deviations from it.
   #
-  # When processing uploads, unicorn exposes a TeeInput object under
+  # When processing uploads, pitchfork exposes a TeeInput object under
   # "rack.input" of the Rack environment by default.
   class TeeInput < StreamInput
     # The maximum size (in +bytes+) to buffer in memory before
     # resorting to a temporary file.  Default is 112 kilobytes.
-    @@client_body_buffer_size = Unicorn::Const::MAX_BODY # :nodoc:
+    @@client_body_buffer_size = Pitchfork::Const::MAX_BODY # :nodoc:
 
     # sets the maximum size of request bodies to buffer in memory,
     # amounts larger than this are buffered to the filesystem
@@ -31,7 +31,7 @@ module Unicorn
 
     # for Rack::TempfileReaper in rack 1.6+
     def new_tmpio # :nodoc:
-      tmpio = Unicorn::TmpIO.new
+      tmpio = Pitchfork::TmpIO.new
       (@parser.env['rack.tempfiles'] ||= []) << tmpio
       tmpio
     end

@@ -6,9 +6,9 @@ if [ "$(uname)" = "Linux" ]; then
 
 	t_begin "setup and startup" && {
 		rtmpfiles curl_err
-		unicorn_setup
-		unicorn_spawn t0006.ru -c $unicorn_config
-		unicorn_wait_start
+		pitchfork_setup
+		pitchfork_spawn t0006.ru -c $pitchfork_config
+		pitchfork_wait_start
 	}
 
 	t_begin "ensure server is responsive" && {
@@ -16,7 +16,7 @@ if [ "$(uname)" = "Linux" ]; then
 	}
 
 	t_begin "send promote signal (USR2)" && {
-		kill -USR2 $unicorn_pid
+		kill -USR2 $pitchfork_pid
 	}
 
 	t_begin "ensure server is still responsive" && {
@@ -40,7 +40,7 @@ if [ "$(uname)" = "Linux" ]; then
 	t_begin "stderr is clean" && check_stderr
 
 	t_begin "stop server" && {
-		kill $unicorn_pid
+		kill $pitchfork_pid
 	}
 
 	t_begin "current server stderr is clean" && check_stderr
@@ -51,9 +51,9 @@ else
 
 	t_begin "setup and startup" && {
 		rtmpfiles curl_err
-		unicorn_setup
-		unicorn_spawn t0006.ru -c $unicorn_config
-		unicorn_wait_start
+		pitchfork_setup
+		pitchfork_spawn t0006.ru -c $pitchfork_config
+		pitchfork_wait_start
 	}
 
 	t_begin "ensure server is responsive" && {
@@ -61,7 +61,7 @@ else
 	}
 
 	t_begin "send promote signal (USR2)" && {
-		kill -USR2 $unicorn_pid
+		kill -USR2 $pitchfork_pid
 	}
 
 	t_begin "ensure server is still responsive" && {
@@ -83,7 +83,7 @@ else
 	}
 
 	t_begin "stop server" && {
-		kill $unicorn_pid
+		kill $pitchfork_pid
 	}
 
 	t_done

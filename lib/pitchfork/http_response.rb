@@ -1,7 +1,7 @@
 # -*- encoding: binary -*-
 # :enddoc:
 
-module Unicorn
+module Pitchfork
   # Writes a Rack response to your client using the HTTP/1.1 specification.
   # You use it by simply doing:
   #
@@ -22,7 +22,7 @@ module Unicorn
 
     # writes the rack_response to socket as an HTTP response
     def http_response_write(socket, status, headers, body,
-                            req = Unicorn::HttpRequest.new)
+                            req = Pitchfork::HttpRequest.new)
       hijack = nil
 
       if headers
