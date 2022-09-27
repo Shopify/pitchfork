@@ -16,6 +16,11 @@ module Pitchfork
       @pending_workers = {} # Pending workers indexed by their `nr`.
     end
 
+    def refresh
+      @workers.each_value(&:refresh)
+      @molds.each_value(&:refresh)
+    end
+
     def register(child)
       # Children always start as workers, never molds, so we know they have a `#nr`.
       @pending_workers[child.nr] = @workers[child.nr] = child

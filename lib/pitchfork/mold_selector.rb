@@ -20,20 +20,18 @@ module Pitchfork
           return
         end
         candidate = workers.shift
-        candidate_meminfo = MemInfo.new(candidate.pid)
 
         workers.each do |worker|
-          worker_meminfo = MemInfo.new(worker.pid)
-          if worker_meminfo.shared_memory < candidate_meminfo.shared_memory
+          if worker.meminfo.shared_memory < candidate.meminfo.shared_memory
             # We suppose that a worker with a lower amount of shared memory
             # has warmed up more caches & such, hence is closer to stabilize
             # making it a better candidate.
-            candidate, candidate_meminfo = worker, worker_meminfo
+            candidate = worker
           end
         end
-        parent_meminfo = MemInfo.new(@children.mold&.pid || Process.pid)
-        cow_efficiency = candidate_meminfo.cow_efficiency(parent_meminfo)
-        logger.info("worker=#{candidate.nr} pid=#{candidate.pid} selected as new mold shared_memory_kb=#{candidate_meminfo.shared_memory} cow=#{cow_efficiency.round(1)}%")
+        parent_meminfo = @children.mold&.meminfo || MemInfo.new(Process.pid)
+        cow_efficiency = candidate.meminfo.cow_efficiency(parent_meminfo)
+        logger.info("worker=#{candidate.nr} pid=#{candidate.pid} selected as new mold shared_memory_kb=#{candidate.meminfo.shared_memory} cow=#{cow_efficiency.round(1)}%")
         candidate
       end
     end

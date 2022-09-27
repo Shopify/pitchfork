@@ -268,6 +268,7 @@ module Pitchfork
         soft_kill_each_worker(:USR1)
       when :USR2 # trigger a promotion
         if Process.pid == 1 || ChildSubreaper::AVAILABLE
+          @children.refresh
           if new_mold = @mold_selector.select(logger)
             new_mold.promote(@children.last_generation += 1)
           else
