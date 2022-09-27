@@ -268,8 +268,11 @@ module Pitchfork
         soft_kill_each_worker(:USR1)
       when :USR2 # trigger a promotion
         if Process.pid == 1 || ChildSubreaper::AVAILABLE
-          new_mold = select_mold
-          new_mold.promote(@children.last_generation += 1)
+          if new_mold = @mold_selector.select(logger)
+            new_mold.promote(@children.last_generation += 1)
+          else
+            logger.error("The mold select didn't return a candidate")
+          end
         else
           logger.error("This system doesn't support PR_SET_CHILD_SUBREAPER, no point promoting a worker")
         end
@@ -338,14 +341,11 @@ module Pitchfork
       Pitchfork::HttpRequest.check_client_connection = bool
     end
 
-    private
-
-    def select_mold
-      # This is the simplest possible algorithm, we promote the oldest worker.
-      # Later on it would make sense to use memory metrics to select the best candidate.
-      # We can even expose a callback to let users implement their own algorithm.
-      @children.workers.first
+    def mold_selector=(callback)
+      @mold_selector = callback.call.new(@children)
     end
+
+    private
 
     # wait for a signal hander to wake us up and then consume the pipe
     def master_sleep(sec)
