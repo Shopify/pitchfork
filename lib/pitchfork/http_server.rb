@@ -341,8 +341,8 @@ module Pitchfork
       Pitchfork::HttpRequest.check_client_connection = bool
     end
 
-    def mold_selector=(callback)
-      @mold_selector = callback.call.new(@children)
+    def mold_selector=(selector)
+      @mold_selector = selector.new(@children)
     end
 
     private

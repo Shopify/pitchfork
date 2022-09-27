@@ -56,7 +56,7 @@ module Pitchfork
           server.logger.info("worker=#{worker.nr} ready")
         },
       :early_hints => false,
-      :mold_selector => lambda { MoldSelector::LeastSharedMemory },
+      :mold_selector => MoldSelector::LeastSharedMemory,
       :check_client_connection => false,
       :rewindable_input => true,
       :client_body_buffer_size => Pitchfork::Const::MAX_BODY,
@@ -207,17 +207,15 @@ module Pitchfork
     #    end
     #  end
     #
-    #  mold_selector do
-    #   MyRandomMoldSelector
-    #  end
+    #  mold_selector MyRandomMoldSelector
     #
     # The class will be instiated with a +Pitchfork::Children+
     # instance as first argument. This object can be used to
     # introspect the state of the cluster and select the most
     # appropriate worker to be used as the new mold from which
     # workers will be reforked.
-    def mold_selector(*args, &block)
-      set_hook(:mold_selector, block_given? ? block : args[0])
+    def mold_selector(selector)
+      set[:mold_selector] = selector
     end
 
     # sets the timeout of worker processes to +seconds+.  Workers
