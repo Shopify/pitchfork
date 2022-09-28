@@ -57,6 +57,7 @@ module Pitchfork
         },
       :early_hints => false,
       :mold_selector => MoldSelector::LeastSharedMemory,
+      :refork_condition => nil,
       :check_client_connection => false,
       :rewindable_input => true,
       :client_body_buffer_size => Pitchfork::Const::MAX_BODY,
@@ -548,6 +549,15 @@ module Pitchfork
     # It is safe to point this to the same location a stderr_path.
     def stdout_path(path)
       set_path(:stdout_path, path)
+    end
+
+    # Defines the number of requests per-worker after which a new generation
+    # should be spawned.
+    #
+    # example:
+    #.  refork_after 50, 100, 1000
+    def refork_after(*limits)
+      set[:refork_condition] = ReforkCondition::RequestsCount.new(*limits)
     end
 
     # expands "unix:path/to/foo" to a socket relative to the current path
