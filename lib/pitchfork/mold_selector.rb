@@ -6,10 +6,10 @@ module Pitchfork
       def initialize(children)
         @children = children
       end
-    end
 
-    def select(_logger)
-      raise NotImplementedError, "Must implement #select"
+      def select(_logger)
+        raise NotImplementedError, "Must implement #select"
+      end
     end
 
     class LeastSharedMemory < Base

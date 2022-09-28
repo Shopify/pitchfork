@@ -57,6 +57,7 @@ module Pitchfork
         },
       :early_hints => false,
       :mold_selector => MoldSelector::LeastSharedMemory,
+      :refork_condition => ReforkCondition::MaxMemory.new(500_000_000),
       :check_client_connection => false,
       :rewindable_input => true,
       :client_body_buffer_size => Pitchfork::Const::MAX_BODY,
