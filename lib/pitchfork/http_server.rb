@@ -18,7 +18,7 @@ module Pitchfork
                   :listener_opts,
                   :orig_app, :config, :ready_pipe,
                   :default_middleware, :early_hints
-    attr_writer   :after_worker_exit, :after_worker_ready
+    attr_writer   :after_worker_exit, :after_worker_ready, :refork_condition
 
     attr_reader :logger
     include Pitchfork::SocketHelper
@@ -33,6 +33,9 @@ module Pitchfork
 
     # listeners we have yet to bind
     NEW_LISTENERS = []
+
+    REFORKING_AVAILABLE = ChildSubreaper::AVAILABLE || Process.pid == 1
+    MAX_SLEEP = 1 # seconds
 
     # :startdoc:
     # This Hash is considered a stable interface and changing its contents
@@ -252,7 +255,7 @@ module Pitchfork
         end
         if @respawn
           maintain_worker_count
-          shutdown_outdated_workers
+          automatically_refork_workers if REFORKING_AVAILABLE
         end
 
         master_sleep(sleep_time) if sleep
@@ -267,16 +270,7 @@ module Pitchfork
         logger.info "master done reopening logs"
         soft_kill_each_worker(:USR1)
       when :USR2 # trigger a promotion
-        if Process.pid == 1 || ChildSubreaper::AVAILABLE
-          @children.refresh
-          if new_mold = @mold_selector.select(logger)
-            new_mold.promote(@children.last_generation += 1)
-          else
-            logger.error("The mold select didn't return a candidate")
-          end
-        else
-          logger.error("This system doesn't support PR_SET_CHILD_SUBREAPER, no point promoting a worker")
-        end
+        trigger_refork
       when :TTIN
         @respawn = true
         self.worker_processes += 1
@@ -350,6 +344,8 @@ module Pitchfork
 
     # wait for a signal hander to wake us up and then consume the pipe
     def master_sleep(sec)
+      sec = MAX_SLEEP if sec > MAX_SLEEP
+
       @control_socket[0].wait(sec) or return
       case message = @control_socket[0].recvmsg_nonblock(exception: false)
       when :wait_readable, NOOP
@@ -420,6 +416,22 @@ module Pitchfork
         kill_worker(:KILL, worker.pid) # take no prisoners for timeout violations
       end
       next_sleep <= 0 ? 1 : next_sleep
+    end
+
+    def trigger_refork
+      unless REFORKING_AVAILABLE
+        logger.error("This system doesn't support PR_SET_CHILD_SUBREAPER, can't promote a worker")
+      end
+
+      unless @children.pending_promotion?
+        @children.refresh
+        if new_mold = @mold_selector.select(logger)
+          @children.promote(new_mold)
+        else
+          logger.error("The mold select didn't return a candidate")
+        end
+      else
+      end
     end
 
     def after_fork_internal
@@ -503,20 +515,34 @@ module Pitchfork
       @children.each_worker { |w| w.nr >= worker_processes and w.soft_kill(:QUIT) }
     end
 
-    def shutdown_outdated_workers
-      return unless @children.mold
+    def automatically_refork_workers
+      # If we're already in the middle of forking a new generation, we just continue
+      if @children.mold
+        # We don't shutdown any outdated worker if any worker is already being spawed
+        # or a worker is exiting. Workers are only reforked one by one to minimize the
+        # impact on capacity.
+        # In the future we may want to use a dynamic limit, e.g. 10% of workers may be down at
+        # a time.
+        return if @children.pending_workers?
+        return if @children.workers.any?(&:exiting?)
 
-      # We don't shutdown any outdated worker if any worker is already being spawed
-      # or a worker is exiting. Workers are only reforked one by one to minimize the
-      # impact on capacity.
-      # In the future we may want to use a dynamic limit, e.g. 10% of workers may be down at
-      # a time.
-      return if @children.pending_workers?
-      return if @children.workers.any?(&:exiting?)
+        if outdated_worker = @children.workers.find { |w| w.generation < @children.mold.generation }
+          logger.info("worker=#{outdated_worker.nr} pid=#{outdated_worker.pid} restarting")
+          outdated_worker.soft_kill(:QUIT)
+          return # That's all folks
+        end
+      end
 
-      if outdated_worker = @children.workers.find { |w| w.generation < @children.mold.generation }
-        logger.info("worker=#{outdated_worker.nr} pid=#{outdated_worker.pid} restarting")
-        outdated_worker.soft_kill(:QUIT)
+      # If all workers are alive and well, we can consider reforking a new generation
+      if @refork_condition
+        @children.refresh
+        if @refork_condition.met?(@children, logger)
+          logger.info("Refork condition met, scheduling a promotion")
+          unless @sig_queue.include?(:USR2)
+            @sig_queue << :USR2
+            awaken_master
+          end
+        end
       end
     end
 

@@ -14,6 +14,7 @@ module Pitchfork
       @molds = {} # Molds, index by PID.
       @mold = nil # The latest mold, if any.
       @pending_workers = {} # Pending workers indexed by their `nr`.
+      @pending_molds = {} # Worker promoted to mold, not yet acknowledged
     end
 
     def refresh
@@ -38,6 +39,7 @@ module Pitchfork
 
       if child.mold?
         @workers.delete(old_nr)
+        @pending_molds.delete(child.pid)
         @molds[child.pid] = child
         @mold = child
       end
@@ -55,6 +57,7 @@ module Pitchfork
     def reap(pid)
       if child = @children.delete(pid)
         @pending_workers.delete(child.nr)
+        @pending_molds.delete(child.nr)
         @molds.delete(child.pid)
         @workers.delete(child.nr)
         if @mold == child
@@ -64,8 +67,17 @@ module Pitchfork
       child
     end
 
+    def promote(worker)
+      @pending_molds[worker.pid] = worker
+      worker.promote(self.last_generation += 1)
+    end
+
     def pending_workers?
-      !@pending_workers.empty?
+      !(@pending_workers.empty? && @pending_molds.empty?)
+    end
+
+    def pending_promotion?
+      !@pending_molds.empty?
     end
 
     def molds
@@ -90,6 +102,14 @@ module Pitchfork
 
     def workers_count
       @workers.size
+    end
+
+    def total_pss
+      total_pss = MemInfo.new(Process.pid).pss
+      @children.each do |_, worker|
+        total_pss += worker.meminfo.pss if worker.meminfo
+      end
+      total_pss
     end
   end
 end
