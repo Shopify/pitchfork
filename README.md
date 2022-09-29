@@ -3,11 +3,11 @@
 `pitchfork` is a preforking HTTP server for Rack applications designed
 to minimize memory usage by maximizing Copy-on-Write performance.
 
-Like `unicorn` (which `pitfork` is a derivative of), is it designed to
+Like [`unicorn`](https://yhbt.net/unicorn/README.html) (which `pitchfork` is a derivative of), is it designed to
 only serve fast clients on low-latency, high-bandwidth connections and take
 advantage of features in Unix/Unix-like kernels. Slow clients should
 only be served by placing a reverse proxy capable of fully buffering
-both the the request and response in between `pitchfork` and slow clients.
+both the request and response in between `pitchfork` and slow clients.
 
 ## Disclaimer
 
@@ -29,7 +29,7 @@ any issue that may arise.
   It also does not care if your application is thread-safe or not.
 
 * Reforking: `pitchfork` can be configured to periodically promote a warmed up worker
-  as the new template from which workers are forked. This dramatically improve
+  as the new template from which workers are forked. This dramatically improves
   the proportion of shared memory, making processes use only marginally more
   memory than threads would.
 
@@ -85,7 +85,7 @@ address:port or a UNIX socket.
 
 For deployments, it can use a config file for pitchfork-specific options
 specified by the `--config-file/-c` command-line switch.  See
-`Pitfork::Configurator` for the syntax of the pitchfork-specific options.
+`Pitchfork::Configurator` for the syntax of the pitchfork-specific options.
 The default settings are designed for maximum out-of-the-box
 compatibility with existing applications.
 
@@ -95,7 +95,7 @@ supported.  Run `pitchfork -h` to see command-line options.
 ## License
 
 pitchfork is copyright 2022 Shopify Inc and all contributors.
-It is based on Uicorn 6.1.0.
+It is based on Unicorn 6.1.0.
 
 Unicorn is copyright 2009-2018 by all contributors (see logs in git).
 It is based on Mongrel 1.1.5.
