@@ -17,7 +17,7 @@ module Pitchfork
     attr_reader :master
 
     def initialize(nr, pid: nil, generation: 0)
-      build_raindrop(nr + 1)
+      build_raindrops(nr)
       @nr = nr
       @pid = pid
       @generation = generation
@@ -72,7 +72,8 @@ module Pitchfork
     def promoted!
       @mold = true
       @nr = nil
-      build_raindrop(0)
+      @drop_offset = 0
+      @tick_drop = MOLD_DROP
     end
 
     def mold?
@@ -149,12 +150,32 @@ module Pitchfork
 
     # called in the worker process
     def tick=(value) # :nodoc:
-      @raindrop[@offset] = value
+      if mold?
+        MOLD_DROP[0] = value
+      else
+        @tick_drop[@drop_offset] = value
+      end
     end
 
     # called in the master process
     def tick # :nodoc:
-      @raindrop[@offset]
+      if mold?
+        MOLD_DROP[0]
+      else
+        @tick_drop[@drop_offset]
+      end
+    end
+
+    def reset
+      @requests_drop[@drop_offset] = 0
+    end
+
+    def requests_count
+      @requests_drop[@drop_offset]
+    end
+
+    def increment_requests_count
+      @requests_drop.incr(@drop_offset)
     end
 
     # called in both the master (reaping worker) and worker (SIGQUIT handler)
@@ -183,14 +204,17 @@ module Pitchfork
       success
     end
 
+    MOLD_DROP = Raindrops.new(1)
     PER_DROP = Raindrops::PAGE_SIZE / Raindrops::SIZE
-    DROPS = []
+    TICK_DROPS = []
+    REQUEST_DROPS = []
 
-    def build_raindrop(drop_nr)
+    def build_raindrops(drop_nr)
       drop_index = drop_nr / PER_DROP
-      @raindrop = DROPS[drop_index] ||= Raindrops.new(PER_DROP)
-      @offset = drop_nr % PER_DROP
-      @raindrop[@offset] = 0
+      @drop_offset = drop_nr % PER_DROP
+      @tick_drop = TICK_DROPS[drop_index] ||= Raindrops.new(PER_DROP)
+      @requests_drop = REQUEST_DROPS[drop_index] ||= Raindrops.new(PER_DROP)
+      @tick_drop[@drop_offset] = @requests_drop[@drop_offset] = 0
     end
   end
 end

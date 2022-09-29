@@ -627,6 +627,7 @@ module Pitchfork
     # traps for USR1, USR2, and HUP may be set in the after_fork Proc
     # by the user.
     def init_worker_process(worker)
+      worker.reset
       worker.register_to_master(@control_socket[1])
       # we'll re-trap :QUIT later for graceful shutdown iff we accept clients
       exit_sigs = [ :QUIT, :TERM, :INT ]
@@ -706,6 +707,7 @@ module Pitchfork
               worker.update(client)
             else
               process_client(client)
+              worker.increment_requests_count
             end
             worker.tick = time_now.to_i
           end
