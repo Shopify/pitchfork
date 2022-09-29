@@ -6,7 +6,6 @@
 .DS_Store
 /.config
 /InstalledFiles
-/doc
 /local.mk
 /test/rbx-*
 /test/ruby-*
