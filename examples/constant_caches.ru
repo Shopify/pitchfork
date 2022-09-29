@@ -22,7 +22,14 @@ end
 
 run lambda { |env|
   meminfo = Pitchfork::MemInfo.new(Process.ppid)
-  total_pss = meminfo.pss + meminfo.children.map(&:pss).sum
+  siblings_pids = File.read("/proc/#{Process.ppid}/task/#{Process.ppid}/children").split
+  siblings = siblings_pids.map do |pid|
+    Pitchfork::MemInfo.new(pid)
+  rescue Errno::ENOENT, Errno::ESRCH # The process just died
+    nil
+  end.compact
+
+  total_pss = meminfo.pss + siblings.map(&:pss).sum
   self_info = Pitchfork::MemInfo.new(Process.pid)
 
   body = <<~EOS

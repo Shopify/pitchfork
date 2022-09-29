@@ -9,10 +9,6 @@ module Pitchfork
       update
     end
 
-    def children
-      File.read("/proc/#{@pid}/task/#{@pid}/children").split.map { |pid| MemInfo.new(pid) }
-    end
-
     def cow_efficiency(parent_meminfo)
       shared_memory.to_f / parent_meminfo.rss * 100.0
     end
