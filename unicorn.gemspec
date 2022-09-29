@@ -5,7 +5,7 @@ Gem::Specification.new do |s|
   s.version = (ENV['VERSION'] || '6.1.0').dup
   s.authors = ['unicorn hackers']
   s.summary = 'Rack HTTP server for fast clients and Unix'
-  s.description = File.read('README').split("\n\n")[1]
+  s.description = File.read('README.md').split("\n\n")[1]
   s.email = %q{unicorn-public@yhbt.net}
   s.extensions = %w(ext/unicorn_http/extconf.rb)
   s.extra_rdoc_files = IO.readlines('.document').map!(&:chomp!).keep_if do |f|
