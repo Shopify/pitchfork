@@ -1,11 +1,18 @@
-== Design
+## Design
 
-* Simplicity: Unicorn is a traditional UNIX prefork web server.
+* Simplicity: Pitchfork is a traditional UNIX prefork web server.
   No threads are used at all, this makes applications easier to debug
-  and fix.  When your application goes awry, a BOFH can just
-  "kill -9" the runaway worker process without worrying about tearing
-  all clients down, just one.  Only UNIX-like systems supporting
-  fork() and file descriptor inheritance are supported.
+  and fix.
+  
+* Resiliency: If something in goes catastophically wrong and your application
+  is dead locked or somehow stuck, once the request timeout is reached the master
+  process will take care of sending `kill -9` to the affected worker and
+  spawn a new one to replace it.
+
+* Leverage Copy-on-Write: The only real disadvantage of prefork servers is
+  their increased memory usage. But thanks to reforking, `pitchfork` is able
+  to drastically improve Copy-on-Write performance, hence reduce memory usage
+  enough that it's no longer a concern.
 
 * The Ragel+C HTTP parser is taken from Mongrel.
 
@@ -15,25 +22,24 @@
     3. write HTTP response back to the client
 
 * Like Mongrel, neither keepalive nor pipelining are supported.
-  These aren't needed since Unicorn is only designed to serve
+  These aren't needed since Pitchfork is only designed to serve
   fast, low-latency clients directly.  Do one thing, do it well;
   let nginx handle slow clients.
 
-* Configuration is purely in Ruby and eval().  Ruby is less
+* Configuration is purely in Ruby. Ruby is less
   ambiguous than YAML and lets lambdas for
-  before_fork/after_fork hooks be defined inline.  An
+  before_fork/after_fork hooks be defined inline. An
   optional, separate config_file may be used to modify supported
-  configuration changes (and also gives you plenty of rope if you RTFS
-  :>)
+  configuration changes.
 
 * One master process spawns and reaps worker processes.
 
 * The number of worker processes should be scaled to the number of
-  CPUs, memory or even spindles you have.  If you have an existing
-  Mongrel cluster on a single-threaded app, using the same amount of
-  processes should work.  Let a full-HTTP-request-buffering reverse
+  CPUs or memory you have. If you have an existing
+  Unicorn cluster on a single-threaded app, using the same amount of
+  processes should work. Let a full-HTTP-request-buffering reverse
   proxy like nginx manage concurrency to thousands of slow clients for
-  you.  Unicorn scaling should only be concerned about limits of your
+  you. Pitchfork scaling should only be concerned about limits of your
   backend system(s).
 
 * Load balancing between worker processes is done by the OS kernel.
@@ -53,25 +59,15 @@
   only be scaled to backend resources, _never_ to the number of expected
   clients like is typical with blocking prefork servers.  So while we've
   seen instances of popular prefork servers configured to run many
-  hundreds of worker processes, Unicorn deployments are typically only
-  2-4 processes per-core.
+  hundreds of worker processes, Pitchfork deployments are typically between
+  1 and 2 processes per-core.
 
-* On-demand scaling of worker processes never happens automatically.
-  Again, Unicorn is concerned about scaling to backend limits and should
-  never configured in a fashion where it could be waiting on slow
-  clients.  For extremely rare circumstances, we provide TTIN and TTOU
-  signal handlers to increment/decrement your process counts without
-  reloading.  Think of it as driving a car with manual transmission:
-  you have a lot more control if you know what you're doing.
-
-* Blocking I/O is used for clients.  This allows a simpler code path
+* Blocking I/O is used for clients. This allows a simpler code path
   to be followed within the Ruby interpreter and fewer syscalls.
-  Applications that use threads continue to work if Unicorn
-  is only serving LAN or localhost clients.
 
-* SIGKILL is used to terminate the timed-out workers from misbehaving apps
-  as reliably as possible on a UNIX system.  The default timeout is a
-  generous 60 seconds (same default as in Mongrel).
+* `SIGKILL` is used to terminate the timed-out workers from misbehaving apps
+  as reliably as possible on a UNIX system. The default timeout is a
+  generous 20 seconds.
 
 * The poor performance of select() on large FD sets is avoided
   as few file descriptors are used in each worker.

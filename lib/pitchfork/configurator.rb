@@ -29,7 +29,7 @@ module Pitchfork
 
     # Default settings for Pitchfork
     DEFAULTS = {
-      :timeout => 60,
+      :timeout => 20,
       :logger => Logger.new($stderr),
       :worker_processes => 1,
       :after_fork => lambda { |server, worker|
