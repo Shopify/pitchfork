@@ -1,15 +1,13 @@
-= Application Timeouts
+# Application Timeouts
 
 This article focuses on _application_ setup for Rack applications, but
 can be expanded to all applications that connect to external resources
 and expect short response times.
 
-This article is not specific to unicorn, but exists to discourage
-the overuse of the built-in
-{timeout}[link:Unicorn/Configurator.html#method-i-timeout] directive
-in unicorn.
+This article is not specific to `pitchfork`, but exists to discourage
+the overuse of the built-in `timeout` directive in `pitchfork`.
 
-== ALL External Resources Are Considered Unreliable
+## ALL External Resources Are Considered Unreliable
 
 Network reliability can _never_ be guaranteed.  Network failures cannot
 be detected reliably by the client (Rack application) in a reasonable
@@ -20,23 +18,17 @@ external resources.
 
 Most database adapters allow configurable timeouts.
 
-Net::HTTP and Net::SMTP in the Ruby standard library allow
+`Net::HTTP` and `Net::SMTP` in the Ruby standard library allow
 configurable timeouts.
 
-Even for things as fast as {memcached}[https://memcached.org/],
-{dalli}[https://rubygems.org/gems/dalli],
-{memcached}[https://rubygems.org/gems/memcached] and
-{memcache-client}[https://rubygems.org/gems/memcache-client] RubyGems all
-offer configurable timeouts.
+Even for things as fast as [memcached](https://memcached.org/),
+[dalli](https://rubygems.org/gems/dalli) and other memcached clients,
+all offer configurable timeouts.
 
 Consult the relevant documentation for the libraries you use on
 how to configure these timeouts.
 
-== Rolling Your Own Socket Code
-
-Use non-blocking I/O and IO.select with a timeout to wait on sockets.
-
-== Timeout module in the Ruby standard library
+## Timeout module in the Ruby standard library
 
 Ruby offers a Timeout module in its standard library.  It has several
 caveats and is not always reliable:
@@ -45,15 +37,20 @@ caveats and is not always reliable:
   this module (report these bugs to extension authors, please) but
   pure-Ruby components should be.
 
+* `Timeout` uses [`Thread#raise` which most code don't and probably can't
+  handle properly](https://www.mikeperham.com/2015/05/08/timeout-rubys-most-dangerous-api/).
+  A process in which a `Timeout.timeout` block expired
+  should be considered corrupted and should exit as soon as possible.
+
 * Long-running tasks may run inside `ensure' clauses after timeout
   fires, causing the timeout to be ineffective.
 
 The Timeout module is a second-to-last-resort solution, timeouts using
-IO.select (or similar) are more reliable.  If you depend on libraries
+`IO.select` (or similar) are more reliable. If you depend on libraries
 that do not offer timeouts when connecting to external resources, kindly
 ask those library authors to provide configurable timeouts.
 
-=== A Note About Filesystems
+### A Note About Filesystems
 
 Most operations to regular files on POSIX filesystems are NOT
 interruptable.  Thus, the "timeout" module in the Ruby standard library
@@ -68,10 +65,10 @@ Volumes mounted over NFS (and thus a potentially unreliable network)
 must be mounted with timeouts and applications must be prepared to
 handle network/server failures.
 
-== The Last Line Of Defense
+## The Last Line Of Defense
 
-The {timeout}[link:Unicorn/Configurator.html#method-i-timeout] mechanism
-in unicorn is an extreme solution that should be avoided whenever
-possible.  It will help catch bugs in your application where and when
-your application forgets to use timeouts, but it is expensive as it
-kills and respawns a worker process.
+The `timeout` mechanism in pitchfork is an extreme solution that should
+be avoided whenever possible.
+It will help preserve the platform if your application or a dependency
+has a bug that cause it to either get stuck or two slow, but it is not a
+solution to such bugs, merely a mitigation.
