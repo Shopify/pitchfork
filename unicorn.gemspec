@@ -8,9 +8,6 @@ Gem::Specification.new do |s|
   s.description = File.read('README.md').split("\n\n")[1]
   s.email = %q{unicorn-public@yhbt.net}
   s.extensions = %w(ext/unicorn_http/extconf.rb)
-  s.extra_rdoc_files = IO.readlines('.document').map!(&:chomp!).keep_if do |f|
-    File.exist?(f)
-  end
   s.files = Dir.chdir(File.expand_path('..', __FILE__)) do
     %x(git ls-files -z).split("\x0").reject { |f| f.match(%r{^(test|spec|features|bin)/}) }
   end
