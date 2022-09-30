@@ -104,3 +104,9 @@ Mongrel is copyright 2007 Zed A. Shaw and contributors.
 pitchfork is licensed under (your choice) of the GPLv2 or later
 (GPLv3+ preferred), or Ruby (1.8)-specific terms.
 See the included LICENSE file for details.
+
+## Thanks
+
+Thanks to Eric Wong and all Unicorn and Mongrel contributors over the years.
+Pitchfork would have been much harder to implement otherwise.
+
