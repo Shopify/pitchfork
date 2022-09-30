@@ -27,20 +27,20 @@ end
 ```
 
 The documentation of any database client or network library you use should be
-read with care to figure out how to disconnect it, and wether it is best to
+read with care to figure out how to disconnect it, and whether it is best to
 do it before or after fork.
 
 Since the most common Ruby application servers `Puma`, `Unicorn` and `Passenger`
 have forking at least as an option, the requirements are generally well documented.
 
-However that is novel with `Pitchfork`, is that processes can be forked more than once.
-So just because an application work fine with existing pre-fork server doesn't necessarily
+However what is novel with `Pitchfork`, is that processes can be forked more than once.
+So just because an application works fine with existing pre-fork servers doesn't necessarily
 mean it will work fine with `Pitchfork`.
 
-It's not uncommon for application not to close connection properly after fork, but to get
-away with it because these connections are lazily created when the first request is handled.
+It's not uncommon for applications to not close connections after fork, but for it to go
+unnoticed because these connections are lazily created when the first request is handled.
 
-So if you enable reforking for the first time, you may discovers some issues.
+So if you enable reforking for the first time, you may discover some issues.
 
 Also note that rather than to expose a callback, some libraries take on them to detect
 that a fork happened, and automatically close inherited connections.
@@ -48,7 +48,7 @@ that a fork happened, and automatically close inherited connections.
 ## Background Threads
 
 When a process is forked, only the main threads will stay alive in the child process.
-So any library that spawn a background thread for periodical work may need to be notified
+So any libraries that spawn a background thread for periodical work may need to be notified
 that a fork happened and that it should restart its thread.
 
 Just like with connections, some libraries take on them to automatically restart their background
