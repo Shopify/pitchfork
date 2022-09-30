@@ -129,7 +129,6 @@ module Pitchfork
 
   @socket_type = :SOCK_SEQPACKET
   def self.socketpair
-    # TODO: Explore wether we want to shrink buffers or set any other socket option
     pair = UNIXSocket.socketpair(@socket_type).map { |s| MessageSocket.new(s) }
     pair[0].close_write
     pair[1].close_read

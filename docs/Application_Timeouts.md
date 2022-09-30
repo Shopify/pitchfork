@@ -53,7 +53,7 @@ ask those library authors to provide configurable timeouts.
 ### A Note About Filesystems
 
 Most operations to regular files on POSIX filesystems are NOT
-interruptable.  Thus, the "timeout" module in the Ruby standard library
+interruptible. Thus, the "timeout" module in the Ruby standard library
 can not reliably timeout systems with massive amounts of iowait.
 
 If your app relies on the filesystem, ensure all the data your

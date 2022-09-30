@@ -342,7 +342,7 @@ module Pitchfork
 
     private
 
-    # wait for a signal hander to wake us up and then consume the pipe
+    # wait for a signal handler to wake us up and then consume the pipe
     def master_sleep(sec)
       sec = MAX_SLEEP if sec > MAX_SLEEP
 
@@ -518,7 +518,7 @@ module Pitchfork
     def automatically_refork_workers
       # If we're already in the middle of forking a new generation, we just continue
       if @children.mold
-        # We don't shutdown any outdated worker if any worker is already being spawed
+        # We don't shutdown any outdated worker if any worker is already being spawned
         # or a worker is exiting. Workers are only reforked one by one to minimize the
         # impact on capacity.
         # In the future we may want to use a dynamic limit, e.g. 10% of workers may be down at

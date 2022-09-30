@@ -1,6 +1,6 @@
 # Fork Safety
 
-Because `pitchfork` is a preforking server, your application code and libaries
+Because `pitchfork` is a preforking server, your application code and libraries
 must be fork safe.
 
 Generally code might be fork-unsafe for one of two reasons

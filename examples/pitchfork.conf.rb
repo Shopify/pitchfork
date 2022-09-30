@@ -29,7 +29,7 @@ check_client_connection false
 run_once = true
 
 before_fork do |server, worker|
-  # the following is highly recomended for Rails
+  # the following is highly recommended for Rails
   # as there's no need for the master process to hold a connection
   defined?(ActiveRecord::Base) and
     ActiveRecord::Base.connection.disconnect!

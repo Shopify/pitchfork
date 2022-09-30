@@ -140,11 +140,11 @@ wait_for_service() {
 	port=$(expr $listen : '[^:]*:\([0-9]*\)')
 	host=$(expr $listen : '\([^:][^:]*\):[0-9][0-9]*')
 
-	local attemps=$1
+	local attempts=$1
 	until attempt_to_connect "$host" "$port" > /dev/null 2>&1; do
 		sleep 0.1
-		attemps=$((attemps-1))
-		if [ "${attemps}" -le 0 ]; then
+		attempts=$((attempts-1))
+		if [ "${attempts}" -le 0 ]; then
 			return 1 # UnavailableService
 		fi
 	done
