@@ -11,9 +11,6 @@ processes are documented here as well.
 * `QUIT` - graceful shutdown, waits for workers to finish their
   current request before finishing.
 
-* `USR1` - reopen all logs owned by the master and all workers
-  See `Pitchfork::Util.reopen_logs` for what is considered a log.
-
 * `USR2` - trigger a manual refork. A worker is promoted as
   a new mold, and existing workers progressively replaced
   by fresh ones.
@@ -39,16 +36,3 @@ automatically respawned.
 
 * `QUIT` - Gracefully exit after finishing the current request.
   The master process will respawn a worker to replace this one.
-
-* `USR1` - Reopen all logs owned by the worker process.
-  See `Pitchfork::Util.reopen_logs` for what is considered a log.
-  Log files are not reopened until it is done processing
-  the current request, so multiple log lines for one request
-  (as done by Rails) will not be split across multiple logs.
-
-  It is NOT recommended to send the USR1 signal directly to workers via
-  `killall -USR1 unicorn` if you are using user/group-switching support
-  in your workers.  You will encounter incorrect file permissions and
-  workers will need to be respawned.  Sending USR1 to the master process
-  first will ensure logs have the correct permissions before the master
-  forwards the USR1 signal to workers.

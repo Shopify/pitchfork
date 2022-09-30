@@ -107,7 +107,7 @@ module Pitchfork
       @orig_app = app
       # list of signals we care about and trap in master.
       @queue_sigs = [
-        :QUIT, :INT, :TERM, :USR1, :USR2, :TTIN, :TTOU ]
+        :QUIT, :INT, :TERM, :USR2, :TTIN, :TTOU ]
     end
 
     # Runs the thing.  Returns self so you can run join on it
@@ -264,11 +264,6 @@ module Pitchfork
       when :TERM, :INT # immediate shutdown
         stop(false)
         return StopIteration
-      when :USR1 # rotate logs
-        logger.info "master reopening logs..."
-        Pitchfork::Util.reopen_logs
-        logger.info "master done reopening logs"
-        soft_kill_each_worker(:USR1)
       when :USR2 # trigger a promotion
         trigger_refork
       when :TTIN
@@ -650,7 +645,7 @@ module Pitchfork
 
     # gets rid of stuff the worker has no business keeping track of
     # to free some resources and drops all sig handlers.
-    # traps for USR1, USR2, and HUP may be set in the after_fork Proc
+    # traps for USR2, and HUP may be set in the after_fork Proc
     # by the user.
     def init_worker_process(worker)
       worker.reset
@@ -683,16 +678,6 @@ module Pitchfork
       readers
     end
 
-    def reopen_worker_logs(worker_nr)
-      logger.info "worker=#{worker_nr} reopening logs..."
-      Pitchfork::Util.reopen_logs
-      logger.info "worker=#{worker_nr} done reopening logs"
-      false
-    rescue => e
-      logger.error(e) rescue nil
-      exit!(77) # EX_NOPERM in sysexits.h
-    end
-
     if Pitchfork.const_defined?(:Waiter)
       def prep_readers(readers)
         Pitchfork::Waiter.prep_readers(readers)
@@ -710,17 +695,11 @@ module Pitchfork
     def worker_loop(worker)
       readers = init_worker_process(worker)
       waiter = prep_readers(readers)
-      reopen = false
-
-      # this only works immediately if the master sent us the signal
-      # (which is the normal case)
-      trap(:USR1) { reopen = true }
 
       ready = readers.dup
       @after_worker_ready.call(self, worker)
 
       begin
-        reopen = reopen_worker_logs(worker.nr) if reopen
         worker.tick = time_now.to_i
         while sock = ready.shift
           # Pitchfork::Worker#accept_nonblock is not like accept(2) at all,
@@ -737,7 +716,6 @@ module Pitchfork
             end
             worker.tick = time_now.to_i
           end
-          break if reopen
           return if worker.mold? # We've been promoted we can exit the loop
         end
 
@@ -745,7 +723,6 @@ module Pitchfork
         worker.tick = time_now.to_i
         waiter.get_readers(ready, readers, @timeout * 500) # to milliseconds, but halved
       rescue => e
-        redo if reopen && readers[0]
         Pitchfork.log_error(@logger, "listen loop error", e) if readers[0]
       end while readers[0]
     end
@@ -805,7 +782,6 @@ module Pitchfork
       config.load
       config.commit!(self)
       soft_kill_each_worker(:QUIT)
-      Pitchfork::Util.reopen_logs
       self.app = @orig_app
       build_app!
       logger.info "done reloading config_file=#{config.config_file}"

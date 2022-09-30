@@ -150,7 +150,7 @@ end
 
 %w(
   const socket_helper stream_input tee_input mem_info children message http_request
-  refork_condition mold_selector configurator tmpio util http_response worker http_server
+  refork_condition mold_selector configurator tmpio http_response worker http_server
 ).each do |s|
   require_relative "pitchfork/#{s}"
 end
