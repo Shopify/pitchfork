@@ -556,6 +556,9 @@ module Pitchfork
     #
     # example:
     #.  refork_after 50, 100, 1000
+    #
+    # Note that reforking is only available on Linux. Other Unix-like systems
+    # don't have this capability.
     def refork_after(*limits)
       set[:refork_condition] = ReforkCondition::RequestsCount.new(*limits)
     end
