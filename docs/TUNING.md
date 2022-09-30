@@ -1,34 +1,56 @@
-= Tuning unicorn
+# Tuning pitchfork
 
 unicorn performance is generally as good as a (mostly) Ruby web server
-can provide.  Most often the performance bottleneck is in the web
-application running on Unicorn rather than Unicorn itself.
+can provide. Most often the performance bottleneck is in the web
+application running on Pitchfork rather than Pitchfork itself.
 
-== unicorn Configuration
+## pitchfork Configuration
 
-See Unicorn::Configurator for details on the config file format.
-+worker_processes+ is the most-commonly needed tuning parameter.
+See Pitchfork::Configurator for details on the config file format.
+`worker_processes` is the most-commonly needed tuning parameter.
 
-=== Unicorn::Configurator#worker_processes
+### Pitchfork::Configurator#worker_processes
 
-* worker_processes should be scaled to the number of processes your
-  backend system(s) can support.  DO NOT scale it to the number of
+* `worker_processes` should be scaled to the number of processes your
+  backend system(s) can support. DO NOT scale it to the number of
   external network clients your application expects to be serving.
   unicorn is NOT for serving slow clients, that is the job of nginx.
 
-* worker_processes should be *at* *least* the number of CPU cores on
+* `worker_processes` should be *at* *least* the number of CPU cores on
   a dedicated server (unless you do not have enough memory).
   If your application has occasionally slow responses that are /not/
   CPU-intensive, you may increase this to workaround those inefficiencies.
 
-* Under Ruby 2.2 or later, Etc.nprocessors may be used to determine
-  the number of CPU cores present.
+* `Etc.nprocessors` may be used to determine the number of CPU cores present.
 
-* Never, ever, increase worker_processes to the point where the system
-  runs out of physical memory and hits swap.  Production servers should
-  never see heavy swap activity.
+* Never, ever, increase `worker_processes` to the point where the system
+  runs out of physical memory and hits swap. Production servers should
+  never see swap activity.
 
-=== Unicorn::Configurator#listen Options
+* Bigger is better. The more `worker_processes` you run, the more you'll
+  benefit from Copy-on-Write. If your application use 1GiB of memory after boot,
+  running `10` worker process, the relative memory usage per worker will only be
+  `~100MiB`, whereas if you only run `5` worker processes, there relative usage will be
+  `~200MiB`.
+  So if you can chose your hardware, it's preferable to use a smaller number
+  of bigger servers rather than a large number of smaller servers.
+  The same applies for containers, it's preferable to run a smaller number of larger containers.
+
+### Pitchfork::Configurator#refork_after
+
+* Reforking allows to share again memory pages that have been written into.
+
+* In general, the main source of shared memory pages invalidation in Ruby
+  is inline caches and JITed code. This means that calling a method for the
+  first time tend to degrade Copy-on-Write performance, and that over time
+  as more and more codepaths get executed at least once, less and less memory
+  is shared until it stabilize as most codepaths have been warmed up.
+
+* This is why automatic reforking is based on the number of processed requests.
+  You want to refork relatively frequently when the `pitchfork` server is fresh,
+  and then less and less frequently over time.
+
+### Pitchfork::Configurator#listen Options
 
 * Setting a very low value for the :backlog parameter in "listen"
   directives can allow failover to happen more quickly if your
@@ -55,14 +77,7 @@ See Unicorn::Configurator for details on the config file format.
 * UNIX domain sockets are slightly faster than TCP sockets, but only
   work if nginx is on the same machine.
 
-== Other unicorn settings
-
-* On POSIX-compliant filesystems, it is safe for multiple threads or
-  processes to append to one log file as long as all the processes are
-  have them unbuffered (File#sync = true) or they are
-  record(line)-buffered in userspace before any writes.
-
-== Kernel Parameters (Linux sysctl and sysfs)
+## Kernel Parameters (Linux sysctl and sysfs)
 
 WARNING: Do not change system parameters unless you know what you're doing!
 
