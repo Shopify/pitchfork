@@ -31,6 +31,8 @@ module Pitchfork
   # not rescue it explicitly, but rescue EOFError instead.
   ClientShutdown = Class.new(EOFError)
 
+  BootFailure = Class.new(StandardError)
+
   # :stopdoc:
 
   # This returns a lambda to pass in as the app, this does not "build" the

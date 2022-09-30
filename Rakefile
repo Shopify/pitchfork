@@ -44,7 +44,7 @@ namespace :test do
           sh("rm", "-rf", "trash")
           sh("mkdir", "trash")
           command = ["sh", integration_test]
-          command << "-v" if ENV["VERBOSE"]
+          command << "-v" if ENV["VERBOSE"] || ENV["CI"]
           sh(*command)
         end
       end

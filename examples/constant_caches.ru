@@ -21,7 +21,7 @@ module App
 end
 
 run lambda { |env|
-  meminfo = Pitchfork::MemInfo.new(Process.ppid)
+  parent_meminfo = Pitchfork::MemInfo.new(Process.ppid)
   siblings_pids = File.read("/proc/#{Process.ppid}/task/#{Process.ppid}/children").split
   siblings = siblings_pids.map do |pid|
     Pitchfork::MemInfo.new(pid)
@@ -29,13 +29,12 @@ run lambda { |env|
     nil
   end.compact
 
-  total_pss = meminfo.pss + siblings.map(&:pss).sum
+  total_pss = parent_meminfo.pss + siblings.map(&:pss).sum
   self_info = Pitchfork::MemInfo.new(Process.pid)
 
   body = <<~EOS
-    Parent RSS: #{meminfo.rss} kiB
-       Own PSS: #{self_info.pss} kiB
-     Total PSS: #{total_pss} kiB
+    Single Worker Memory Usage: #{(self_info.pss / 1024.0).round(1)} MiB
+    Total Cluster Memory Usage: #{(total_pss / 1024.0).round(1)} MiB
   EOS
 
   App.warmup

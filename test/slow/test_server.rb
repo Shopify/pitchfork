@@ -52,12 +52,14 @@ class TestRackAfterReply
   end
 end
 
-class WebServerTest < Minitest::Test
-
+module BaseWebServerTests
   def setup
     @valid_request = "GET / HTTP/1.1\r\nHost: www.zedshaw.com\r\nContent-Type: text/plain\r\n\r\n"
     @port = unused_port
     @tester = TestHandler.new
+  end
+
+  def start_server
     redirect_test_io do
       @server = HttpServer.new(@tester, :listeners => [ "127.0.0.1:#{@port}" ] )
       @server.start
@@ -65,16 +67,21 @@ class WebServerTest < Minitest::Test
   end
 
   def teardown
-    redirect_test_io do
-      wait_workers_ready("test_stderr.#$$.log", 1)
-      File.truncate("test_stderr.#$$.log", 0)
-      @server.stop(false)
+    if @server
+      redirect_test_io do
+        wait_workers_ready("test_stderr.#$$.log", 1)
+        File.truncate("test_stderr.#$$.log", 0)
+        @server.stop(false)
+      end
+      reset_sig_handlers
     end
-    reset_sig_handlers
   end
+end
 
-  def test_preload_app_config
-    teardown
+class WebServerStartTest < Minitest::Test
+  include BaseWebServerTests
+
+  def test_preload_app
     tmp = Tempfile.new('test_preload_app_config')
     ObjectSpace.undefine_finalizer(tmp)
     app = lambda { ||
@@ -93,14 +100,18 @@ class WebServerTest < Minitest::Test
     assert worker_pid != 0
     tmp.sysseek(0)
     loader_pid = tmp.sysread(4096).to_i
-    assert_equal $$, loader_pid
+    if HttpServer::REFORKING_AVAILABLE
+      # If reforking is available the mold is the loader
+      refute_equal $$, loader_pid
+    else
+      assert_equal $$, loader_pid
+    end
     assert worker_pid != loader_pid
   ensure
     tmp&.close!
   end
 
   def test_early_hints
-    teardown
     redirect_test_io do
       @server = HttpServer.new(TestEarlyHintsHandler.new,
                                :listeners => [ "127.0.0.1:#@port"],
@@ -120,8 +131,6 @@ class WebServerTest < Minitest::Test
   end
 
   def test_after_reply
-    teardown
-
     redirect_test_io do
       @server = HttpServer.new(TestRackAfterReply.new,
                                :listeners => [ "127.0.0.1:#@port"])
@@ -146,7 +155,6 @@ class WebServerTest < Minitest::Test
   end
 
   def test_broken_app
-    teardown
     app = lambda { |env| raise RuntimeError, "hello" }
     # [200, {}, []] }
     redirect_test_io do
@@ -157,6 +165,15 @@ class WebServerTest < Minitest::Test
     sock.syswrite("GET / HTTP/1.0\r\n\r\n")
     assert_match %r{\AHTTP/1.[01] 500\b}, sock.sysread(4096)
     assert_nil sock.close
+  end
+end
+
+class WebServerTest < Minitest::Test
+  include BaseWebServerTests
+
+  def setup
+    super
+    start_server
   end
 
   def test_simple_server

@@ -84,7 +84,9 @@ class TestCccTCPI < Minitest::Test
     if pid
       Process.kill(:QUIT, pid)
       _, status = Process.waitpid2(pid)
-      assert status.success?
+      unless $!
+        assert_predicate status, :success?
+      end
     end
     err.close! if err
     rd.close if rd
