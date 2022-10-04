@@ -62,7 +62,8 @@ end
 task :ragel do
   Dir.chdir(File.expand_path("ext/pitchfork_http", __dir__)) do
     puts "* compiling pitchfork_http.rl"
-    system("ragel", "-G2", "pitchfork_http.rl", "-o", "pitchfork_http.c") or raise "ragel #{ragel_file} failed"
+    cmd = ["ragel", "-G2", "pitchfork_http.rl", "-o", "pitchfork_http.c"]
+    system(*cmd) or raise "== #{cmd.join(' ')} failed =="
   end
 end
 
