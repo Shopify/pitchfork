@@ -68,7 +68,11 @@ class TestConfigurator < Minitest::Test
     test_struct = TestStruct.new
     cfg.commit!(test_struct)
     Pitchfork::Configurator::DEFAULTS.each do |key,value|
-      assert_equal value, test_struct.__send__(key)
+      if value.nil?
+        assert_nil test_struct.__send__(key)
+      else
+        assert_equal value, test_struct.__send__(key)
+      end
     end
   end
 
@@ -79,7 +83,11 @@ class TestConfigurator < Minitest::Test
     cfg.commit!(test_struct, :skip => skip)
     Pitchfork::Configurator::DEFAULTS.each do |key,value|
       next if skip.include?(key)
-      assert_equal value, test_struct.__send__(key)
+      if value.nil?
+        assert_nil test_struct.__send__(key)
+      else
+        assert_equal value, test_struct.__send__(key)
+      end
     end
     assert_nil test_struct.logger
   end

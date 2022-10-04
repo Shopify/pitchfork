@@ -775,34 +775,21 @@ module Pitchfork
       @children.each_worker { |worker| worker.soft_kill(signal) }
     end
 
-    def load_config!
-      loaded_app = app
-      logger.info "reloading config_file=#{config.config_file}"
-      config[:listeners].replace(@init_listeners)
-      config.load
-      config.commit!(self)
-      soft_kill_each_worker(:QUIT)
-      self.app = @orig_app
-      build_app!
-      logger.info "done reloading config_file=#{config.config_file}"
-    rescue StandardError, LoadError, SyntaxError => e
-      Pitchfork.log_error(@logger,
-          "error reloading config_file=#{config.config_file}", e)
-      self.app = loaded_app
-    end
-
     # returns an array of string names for the given listener array
     def listener_names(listeners = LISTENERS)
       listeners.map { |io| sock_name(io) }
     end
 
     def build_app!
-      if app.respond_to?(:arity) && (app.arity == 0 || app.arity == 2)
-        if defined?(Gem) && Gem.respond_to?(:refresh)
-          logger.info "Refreshing Gem list"
-          Gem.refresh
-        end
-        self.app = app.arity == 0 ? app.call : app.call(nil, self)
+      return unless app.respond_to?(:arity)
+
+      self.app = case app.arity
+      when 0
+        app.call
+      when 2
+        app.call(nil, self)
+      when 1
+        app # already a rack app
       end
     end
 
