@@ -9,7 +9,7 @@
 /local.mk
 /test/rbx-*
 /test/ruby-*
-ext/unicorn_http/Makefile
+ext/pitchfork_http/Makefile
 log/
 pkg/
 /vendor

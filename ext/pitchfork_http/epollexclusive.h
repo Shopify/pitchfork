@@ -114,10 +114,10 @@ get_readers(VALUE epio, VALUE ready, VALUE readers, VALUE timeout_msec)
 }
 #endif /* USE_EPOLL */
 
-static void init_epollexclusive(VALUE mUnicorn)
+static void init_epollexclusive(VALUE mPitchfork)
 {
 #if USE_EPOLL
-	VALUE cWaiter = rb_define_class_under(mUnicorn, "Waiter", rb_cIO);
+	VALUE cWaiter = rb_define_class_under(mPitchfork, "Waiter", rb_cIO);
 	rb_define_singleton_method(cWaiter, "prep_readers", prep_readers, 1);
 	rb_define_method(cWaiter, "get_readers", get_readers, 3);
 #endif

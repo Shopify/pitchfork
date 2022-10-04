@@ -7,7 +7,7 @@ Gem::Specification.new do |s|
   s.summary = 'Rack HTTP server for fast clients and Unix'
   s.description = File.read('README.md').split("\n\n")[1]
   s.email = %q{unicorn-public@yhbt.net}
-  s.extensions = %w(ext/unicorn_http/extconf.rb)
+  s.extensions = %w(ext/pitchfork_http/extconf.rb)
   s.files = Dir.chdir(File.expand_path('..', __FILE__)) do
     %x(git ls-files -z).split("\x0").reject { |f| f.match(%r{^(test|spec|features|bin)/}) }
   end
