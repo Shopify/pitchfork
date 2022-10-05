@@ -108,8 +108,7 @@ Unicorn is copyright 2009-2018 by all contributors (see logs in git).
 It is based on Mongrel 1.1.5.
 Mongrel is copyright 2007 Zed A. Shaw and contributors.
 
-pitchfork is licensed under (your choice) of the GPLv2 or later
-(GPLv3+ preferred), or Ruby (1.8)-specific terms.
+pitchfork is licensed under the GPLv2 or later or Ruby (1.8)-specific terms.
 See the included LICENSE file for details.
 
 ## Thanks
