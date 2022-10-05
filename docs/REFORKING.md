@@ -48,6 +48,8 @@ be shared again, and most of them won't be invalidated anymore.
 
 When you start `pitchfork` it forks the desired amount of workers:
 
+![Workers](images/workers.png)
+
 ```
 PID   COMMAND
 100   \_ pitchfork master
@@ -59,6 +61,8 @@ PID   COMMAND
 
 When a reforking is triggered, one of the workers is selected to become a `mold`, and is taken out of rotation.
 When promoted, molds no longer process any incoming HTTP requests, they become inactive:
+
+![Worker Promotion](images/worker-promotion.png)
 
 ```
 PID   COMMAND
@@ -72,6 +76,8 @@ PID   COMMAND
 When a new mold has been promoted, `pitchfork` starts a slow rollout of older workers and replace them with fresh workers
 forked from the mold:
 
+![Slow Rollout](images/slow-rollout.png)
+
 ```
 PID   COMMAND
 100   \_ pitchfork master
@@ -81,6 +87,8 @@ PID   COMMAND
 103       \_ pitchfork worker[2] (gen:0)
 104       \_ pitchfork worker[3] (gen:0)
 ```
+
+![Generation One](images/generation-1.png)
 
 ```
 PID   COMMAND
@@ -111,3 +119,5 @@ This means any descendant process that is orphaned will be re-parented as a chil
 
 With this in mind, the mold fork twice to create an orphaned process that will get re-attached to the master, effectively forking a sibling rather than a child.
 The need for `PR_SET_CHILD_SUBREAPER` is the main reason why reforking is only available on Linux. 
+
+![Double Fork with CHILD_SUBREAPER enabled](images/double-fork.png)
