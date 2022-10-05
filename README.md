@@ -60,22 +60,27 @@ gem "pitchfork"
 
 And then execute:
 
-    $ bundle install
+```bash
+$ bundle install
+```
 
 Or install it yourself as:
 
-    $ gem install pitchfork
-
+```
+$ gem install pitchfork
+```
 
 ## Usage
 
 ### Rack
 
-In APP_ROOT, run:
+In your application root directory, run:
 
-    $ bundle exec pitchfork
+```bash
+$ bundle exec pitchfork
+```
 
-`unicorn` will bind to all interfaces on TCP port 8080 by default.
+`pitchfork` will bind to all interfaces on TCP port 8080 by default.
 You may use the `--listen` switch to bind to a different
 address:port or a UNIX socket.
 
@@ -112,3 +117,7 @@ See the included LICENSE file for details.
 Thanks to Eric Wong and all Unicorn and Mongrel contributors over the years.
 Pitchfork would have been much harder to implement otherwise.
 
+Thanks to Will Jordan who implemented Puma's "fork worker" experimental feature
+which have been a significant inspiration for Pitchfork.
+
+Thanks to Peter Bui for letting us use the `pitchfork` name on Rubygems.
