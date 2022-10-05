@@ -2,7 +2,7 @@ PATH
   remote: .
   specs:
     pitchfork (0.1.0)
-      rack
+      rack (>= 2.0)
       raindrops (~> 0.7)
 
 GEM
