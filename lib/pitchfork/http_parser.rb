@@ -3,8 +3,6 @@
 # no stable API here
 require 'pitchfork/pitchfork_http'
 
-# TODO: remove redundant names
-Pitchfork.const_set(:HttpRequest, Pitchfork::HttpParser)
 module Pitchfork
   class HttpParser
 

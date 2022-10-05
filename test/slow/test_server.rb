@@ -293,13 +293,13 @@ class WebServerTest < Minitest::Test
   end
 
   def test_logger_set
-    assert_equal @server.logger, Pitchfork::HttpRequest::DEFAULTS["rack.logger"]
+    assert_equal @server.logger, Pitchfork::HttpParser::DEFAULTS["rack.logger"]
   end
 
   def test_logger_changed
     tmp = Logger.new($stdout)
     @server.logger = tmp
-    assert_equal tmp, Pitchfork::HttpRequest::DEFAULTS["rack.logger"]
+    assert_equal tmp, Pitchfork::HttpParser::DEFAULTS["rack.logger"]
   end
 
   def test_bad_client_400

@@ -168,7 +168,7 @@ module Pitchfork
     end
 
     def logger=(obj)
-      Pitchfork::HttpRequest::DEFAULTS["rack.logger"] = @logger = obj
+      Pitchfork::HttpParser::DEFAULTS["rack.logger"] = @logger = obj
     end
 
     # add a given address to the +listeners+ set, idempotently
@@ -305,11 +305,11 @@ module Pitchfork
     end
 
     def rewindable_input
-      Pitchfork::HttpRequest.input_class.method_defined?(:rewind)
+      Pitchfork::HttpParser.input_class.method_defined?(:rewind)
     end
 
     def rewindable_input=(bool)
-      Pitchfork::HttpRequest.input_class = bool ?
+      Pitchfork::HttpParser.input_class = bool ?
                                   Pitchfork::TeeInput : Pitchfork::StreamInput
     end
 
@@ -322,11 +322,11 @@ module Pitchfork
     end
 
     def check_client_connection
-      Pitchfork::HttpRequest.check_client_connection
+      Pitchfork::HttpParser.check_client_connection
     end
 
     def check_client_connection=(bool)
-      Pitchfork::HttpRequest.check_client_connection = bool
+      Pitchfork::HttpParser.check_client_connection = bool
     end
 
     private
@@ -604,7 +604,7 @@ module Pitchfork
     # once a client is accepted, it is processed in its entirety here
     # in 3 easy steps: read request, call app, write app response
     def process_client(client)
-      @request = Pitchfork::HttpRequest.new
+      @request = Pitchfork::HttpParser.new
       env = @request.read(client)
 
       if early_hints

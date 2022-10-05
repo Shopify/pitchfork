@@ -218,7 +218,7 @@ static int is_chunked(VALUE v)
     return 1;
 
   /*
-   * call Ruby function in pitchfork/http_request.rb to deal with unlikely
+   * call Ruby function in pitchfork/http_parser.rb to deal with unlikely
    * comma-delimited case
    */
   return rb_funcall(cHttpParser, id_is_chunked_p, 1, v) != Qfalse;

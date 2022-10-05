@@ -22,7 +22,7 @@ module Pitchfork
 
     # writes the rack_response to socket as an HTTP response
     def http_response_write(socket, status, headers, body,
-                            req = Pitchfork::HttpRequest.new)
+                            req = Pitchfork::HttpParser.new)
       hijack = nil
 
       if headers

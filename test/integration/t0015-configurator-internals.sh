@@ -5,7 +5,7 @@ t_plan 4 "configurator internals tests (from FAQ)"
 t_begin "setup and start" && {
 	pitchfork_setup
 	cat >> $pitchfork_config <<EOF
-HttpRequest::DEFAULTS["rack.url_scheme"] = "https"
+HttpParser::DEFAULTS["rack.url_scheme"] = "https"
 Configurator::DEFAULTS[:logger].formatter = Logger::Formatter.new
 EOF
 	pitchfork_spawn -c $pitchfork_config env.ru

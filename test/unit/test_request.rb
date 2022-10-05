@@ -17,7 +17,7 @@ class RequestTest < Minitest::Test
   end
 
   def setup
-    @request = HttpRequest.new
+    @request = HttpParser.new
     @app = lambda do |env|
       [ 200, { 'content-length' => '0', 'content-type' => 'text/plain' }, [] ]
     end

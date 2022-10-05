@@ -151,7 +151,7 @@ end
 # :enddoc:
 
 %w(
-  const socket_helper stream_input tee_input mem_info children message http_request
+  const socket_helper stream_input tee_input mem_info children message http_parser
   refork_condition mold_selector configurator tmpio http_response worker http_server
 ).each do |s|
   require_relative "pitchfork/#{s}"
