@@ -73,7 +73,7 @@ class TestCccTCPI < Minitest::Test
     pid = nil
     Process.kill(:QUIT, kpid)
     _, status = Process.waitpid2(kpid)
-    assert status.success?
+    assert_predicate status, :success?
     reqs = rd.read.to_i
     warn "server got #{reqs} requests with #{nr} CCC aborted\n" if $DEBUG
     assert_operator reqs, :<, nr

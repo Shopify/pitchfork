@@ -296,14 +296,14 @@ module Pitchfork
       limit = time_now + timeout
       until @children.workers.empty? || time_now > limit
         if graceful
-          soft_kill_each_worker(:QUIT)
+          soft_kill_each_child(:QUIT)
         else
-          kill_each_worker(:TERM)
+          kill_each_child(:TERM)
         end
         sleep(0.1)
         reap_all_workers
       end
-      kill_each_worker(:KILL)
+      kill_each_child(:KILL)
     end
 
     def rewindable_input
@@ -767,12 +767,12 @@ module Pitchfork
     end
 
     # delivers a signal to each worker
-    def kill_each_worker(signal)
-      @children.each_worker { |w| kill_worker(signal, w.pid) }
+    def kill_each_child(signal)
+      @children.each { |w| kill_worker(signal, w.pid) }
     end
 
-    def soft_kill_each_worker(signal)
-      @children.each_worker { |worker| worker.soft_kill(signal) }
+    def soft_kill_each_child(signal)
+      @children.each { |worker| worker.soft_kill(signal) }
     end
 
     # returns an array of string names for the given listener array

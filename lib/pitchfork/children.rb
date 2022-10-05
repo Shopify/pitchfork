@@ -84,6 +84,10 @@ module Pitchfork
       @molds.values
     end
 
+    def each(&block)
+      @children.each_value(&block)
+    end
+
     def each_worker(&block)
       @workers.each_value(&block)
     end
