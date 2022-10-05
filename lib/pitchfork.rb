@@ -100,7 +100,7 @@ module Pitchfork
   def self.listener_names
     Pitchfork::HttpServer::LISTENERS.map do |io|
       Pitchfork::SocketHelper.sock_name(io)
-    end + Pitchfork::HttpServer::NEW_LISTENERS
+    end
   end
 
   def self.log_error(logger, prefix, exc)

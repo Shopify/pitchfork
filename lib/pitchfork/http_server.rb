@@ -31,9 +31,6 @@ module Pitchfork
 
     NOOP = '.'
 
-    # listeners we have yet to bind
-    NEW_LISTENERS = []
-
     REFORKING_AVAILABLE = ChildSubreaper::AVAILABLE || Process.pid == 1
     MAX_SLEEP = 1 # seconds
 
@@ -115,7 +112,6 @@ module Pitchfork
     def start
       ChildSubreaper.enable
 
-      inherit_listeners!
       # This socketpair is used to wake us up from select(2) in #join when signals
       # are trapped.  See trap_deferred.
       # It's also used by newly spawned children to send their soft_signal pipe
@@ -129,7 +125,7 @@ module Pitchfork
       @queue_sigs.each { |sig| trap(sig) { @sig_queue << sig; awaken_master } }
       trap(:CHLD) { awaken_master }
 
-      bind_new_listeners!
+      bind_listeners!
       if REFORKING_AVAILABLE
         spawn_initial_mold
         wait_for_pending_workers
@@ -817,49 +813,14 @@ module Pitchfork
             ]).concat(START_CTX[:argv]).join(' ')
     end
 
-    def inherit_listeners!
-      # inherit sockets from parents, they need to be plain Socket objects
-      # before they become UNIXServer or TCPServer
-      inherited = ENV['UNICORN_FD'].to_s.split(',')
-
-      # emulate sd_listen_fds() for systemd
-      sd_pid, sd_fds = ENV.values_at('LISTEN_PID', 'LISTEN_FDS')
-      if sd_pid.to_i == $$ # n.b. $$ can never be zero
-        # 3 = SD_LISTEN_FDS_START
-        inherited.concat((3...(3 + sd_fds.to_i)).to_a)
-      end
-      # to ease debugging, we will not unset LISTEN_PID and LISTEN_FDS
-
-      inherited.map! do |fd|
-        io = Socket.for_fd(fd.to_i)
-        io.autoclose = false
-        io = server_cast(io)
-        set_server_sockopt(io, listener_opts[sock_name(io)])
-        logger.info "inherited addr=#{sock_name(io)} fd=#{io.fileno}"
-        io
-      end
-
-      config_listeners = config[:listeners].dup
-      LISTENERS.replace(inherited)
-
-      # we start out with generic Socket objects that get cast to either
-      # TCPServer or UNIXServer objects; but since the Socket
-      # objects share the same OS-level file descriptor as the higher-level
-      # *Server objects; we need to prevent Socket objects from being
-      # garbage-collected
-      config_listeners -= listener_names
-      if config_listeners.empty? && LISTENERS.empty?
-        config_listeners << Pitchfork::Const::DEFAULT_LISTEN
+    def bind_listeners!
+      listeners = config[:listeners].dup
+      if listeners.empty?
+        listeners << Pitchfork::Const::DEFAULT_LISTEN
         @init_listeners << Pitchfork::Const::DEFAULT_LISTEN
         START_CTX[:argv] << "-l#{Pitchfork::Const::DEFAULT_LISTEN}"
       end
-      NEW_LISTENERS.replace(config_listeners)
-    end
-
-    # call only after calling inherit_listeners!
-    # This binds any listeners we did NOT inherit from the parent
-    def bind_new_listeners!
-      NEW_LISTENERS.each { |addr| listen(addr) }.clear
+      listeners.each { |addr| listen(addr) }
       raise ArgumentError, "no listeners" if LISTENERS.empty?
     end
 

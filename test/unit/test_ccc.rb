@@ -9,11 +9,14 @@ class TestCccTCPI < Minitest::Test
   def test_ccc_tcpi
     start_pid = $$
     host = '127.0.0.1'
-    srv = TCPServer.new(host, 0)
-    port = srv.addr[1]
+    port = unused_port
+
     rd, wr = IO.pipe
     sleep_pipe = IO.pipe
+    ready_read, ready_write = IO.pipe
+
     pid = fork do
+      ready_read.close
       sleep_pipe[1].close
       reqs = 0
       rd.close
@@ -30,16 +33,21 @@ class TestCccTCPI < Minitest::Test
 
         [ 200, [ %w(content-length 0),  %w(content-type text/plain) ], [] ]
       end
-      ENV['UNICORN_FD'] = srv.fileno.to_s
       opts = {
         listeners: [ "#{host}:#{port}" ],
         worker_processes: 1,
         check_client_connection: true,
       }
       uni = Pitchfork::HttpServer.new(app, opts)
-      uni.start.join
+      uni.start
+      ready_write.write("ready\n")
+      ready_write.close
+      uni.join
     end
     wr.close
+    ready_write.close
+
+    ready_read.wait(2)
 
     # make sure the server is running, at least
     client = tcp_socket(host, port)
@@ -78,7 +86,6 @@ class TestCccTCPI < Minitest::Test
     assert_operator reqs, :>=, 2, 'first 2 requests got through, at least'
   ensure
     return if start_pid != $$
-    srv.close if srv
     if pid
       Process.kill(:QUIT, pid)
       _, status = Process.waitpid2(pid)
