@@ -54,9 +54,25 @@ that a fork happened and that it should restart its thread.
 Just like with connections, some libraries take on them to automatically restart their background
 thread when they detect a fork happened.
 
+# Refork Safety
+
+Some code might happen to work without issue in other forking servers such as Unicorn or Puma,
+but not work in Pitchfork when reforking is enabled.
+
+This is because it is not uncommon for network connections or background threads to only be
+initialized upon the first request. As such they're not inherited on the first fork.
+
+However when reforking is enabled, new processes as forked out of warmed up process, as such
+any lazily created connection is much more likely to have been created.
+
+As such, if you enable reforking for the first time, it is heavily recommended to first do it
+in some sort of staging environment, or on a small subset of production servers as to limit the
+impact of discovering such bug.
+
 ## Known Incompatible Gems
 
 - [The `grpc` isn't fork safe](https://github.com/grpc/grpc/issues/8798) and doesn't provide any before or after fork callback to re-establish connection.
+  It can only be used in forking environment if the client is never used in the parent before fork.
   If you application uses `grpc`, you shouldn't enable reforking.
   But frankly, that gem is such a tire fire, you shouldn't use it regardless.
   If you really have to consume a gRPC API, you can consider `grpc_kit` as a replacement.

@@ -83,8 +83,8 @@ lower memory usage.
 However `pitchfork` solves this with its reforking feature. If enabled and properly configured
 it very significantly increase Copy-on-Write performance, closing the gap with threaded servers.
 
-## Assume Modern Depoyment Methods
+## Assume Modern Deployment Methods
 
 Pitchfork assumes it is deployed using modern tools such as either containers or
 advanced init systems such as systemd. As such it doesn't provide classic daemon
-functionaly like pidfile management, log rediction and reopening, config reloading etc.
+functionallty like pidfile management, log rediction and reopening, config reloading etc.

@@ -84,8 +84,10 @@ address:port or a UNIX socket.
 `pitchfork` will look for the config.ru file used by rackup in APP_ROOT.
 
 For deployments, it can use a config file for pitchfork-specific options
-specified by the `--config-file/-c` command-line switch.  See
-`Pitchfork::Configurator` for the syntax of the pitchfork-specific options.
+specified by the `--config-file/-c` command-line switch.
+See the [configuration documentation](docs/CONFIGURATION.md) for the syntax
+of the pitchfork-specific options.
+
 The default settings are designed for maximum out-of-the-box
 compatibility with existing applications.
 

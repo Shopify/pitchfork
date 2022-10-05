@@ -2,21 +2,11 @@
 
 module Pitchfork
   module MoldSelector
-    class Base
-      def initialize(children)
-        @children = children
-      end
-    end
-
-    def select(_logger)
-      raise NotImplementedError, "Must implement #select"
-    end
-
-    class LeastSharedMemory < Base
-      def select(logger)
-        workers = @children.fresh_workers
+    class LeastSharedMemory
+      def call(server)
+        workers = server.children.fresh_workers
         if workers.empty?
-          logger.info("No current generation workers yet")
+          server.logger.info("No current generation workers yet")
           return
         end
         candidate = workers.shift
@@ -29,9 +19,9 @@ module Pitchfork
             candidate = worker
           end
         end
-        parent_meminfo = @children.mold&.meminfo || MemInfo.new(Process.pid)
+        parent_meminfo = server.children.mold&.meminfo || MemInfo.new(Process.pid)
         cow_efficiency = candidate.meminfo.cow_efficiency(parent_meminfo)
-        logger.info("worker=#{candidate.nr} pid=#{candidate.pid} selected as new mold shared_memory_kb=#{candidate.meminfo.shared_memory} cow=#{cow_efficiency.round(1)}%")
+        server.logger.info("worker=#{candidate.nr} pid=#{candidate.pid} selected as new mold shared_memory_kb=#{candidate.meminfo.shared_memory} cow=#{cow_efficiency.round(1)}%")
         candidate
       end
     end

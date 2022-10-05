@@ -3,8 +3,8 @@
 module Pitchfork
   module ReforkCondition
     class RequestsCount
-      def initialize(*request_counts)
-        @limits = request_counts.flatten
+      def initialize(request_counts)
+        @limits = request_counts
       end
 
       def met?(children, logger)

@@ -15,10 +15,10 @@ module Pitchfork
     # :stopdoc:
     attr_accessor :app, :timeout, :worker_processes,
                   :before_fork, :after_fork,
-                  :listener_opts,
+                  :listener_opts, :children,
                   :orig_app, :config, :ready_pipe,
                   :default_middleware, :early_hints
-    attr_writer   :after_worker_exit, :after_worker_ready, :refork_condition
+    attr_writer   :after_worker_exit, :after_worker_ready, :refork_condition, :mold_selector
 
     attr_reader :logger
     include Pitchfork::SocketHelper
@@ -334,10 +334,6 @@ module Pitchfork
       Pitchfork::HttpRequest.check_client_connection = bool
     end
 
-    def mold_selector=(selector)
-      @mold_selector = selector.new(@children)
-    end
-
     private
 
     # wait for a signal handler to wake us up and then consume the pipe
@@ -423,7 +419,7 @@ module Pitchfork
 
       unless @children.pending_promotion?
         @children.refresh
-        if new_mold = @mold_selector.select(logger)
+        if new_mold = @mold_selector.call(self)
           @children.promote(new_mold)
         else
           logger.error("The mold select didn't return a candidate")
