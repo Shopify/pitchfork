@@ -122,7 +122,7 @@ static VALUE uncommon_field(const char *field, size_t flen)
   memcpy(RSTRING_PTR(f) + HTTP_PREFIX_LEN, field, flen);
   assert(*(RSTRING_PTR(f) + RSTRING_LEN(f)) == '\0' &&
          "string didn't end with \\0"); /* paranoia */
-  return HASH_ASET_DEDUPE ? f : str_dd_freeze(f);
+  return f;
 }
 
 #endif /* common_field_optimization_h */

@@ -19,19 +19,5 @@ rescue NoMethodError
   message("no, String#-@ not available\n")
 end
 
-message('checking if Hash#[]= (rb_hash_aset) dedupes... ')
-h = {}
-x = {}
-r = rand.to_s
-h[%W(#{r}).join('')] = :foo
-x[%W(#{r}).join('')] = :foo
-if x.keys[0].equal?(h.keys[0])
-  $CPPFLAGS += ' -DHASH_ASET_DEDUPE=1 '
-  message("yes\n")
-else
-  $CPPFLAGS += ' -DHASH_ASET_DEDUPE=0 '
-  message("no, needs Ruby 2.6+\n")
-end
-
 have_func('epoll_create1', %w(sys/epoll.h))
 create_makefile("pitchfork_http")
