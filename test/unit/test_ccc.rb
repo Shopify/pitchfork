@@ -11,7 +11,6 @@ class TestCccTCPI < Minitest::Test
     host = '127.0.0.1'
     srv = TCPServer.new(host, 0)
     port = srv.addr[1]
-    err = Tempfile.new('pitchfork_ccc')
     rd, wr = IO.pipe
     sleep_pipe = IO.pipe
     pid = fork do
@@ -34,7 +33,6 @@ class TestCccTCPI < Minitest::Test
       ENV['UNICORN_FD'] = srv.fileno.to_s
       opts = {
         listeners: [ "#{host}:#{port}" ],
-        stderr_path: err.path,
         worker_processes: 1,
         check_client_connection: true,
       }
@@ -88,7 +86,6 @@ class TestCccTCPI < Minitest::Test
         assert_predicate status, :success?
       end
     end
-    err.close! if err
     rd.close if rd
   end
 end

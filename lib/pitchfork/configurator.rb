@@ -42,9 +42,9 @@ module Pitchfork
           m = if worker.nil?
             "repead unknown process (#{status.inspect})"
           elsif worker.mold?
-            "mold gen=#{worker.generation rescue 'unknown'} reaped (#{status.inspect})"
+            "mold pid=#{worker.pid rescue 'unknown'} gen=#{worker.generation rescue 'unknown'} reaped (#{status.inspect})"
           else
-            "worker=#{worker.nr rescue 'unknown'} gen=#{worker.generation rescue 'unknown'} reaped (#{status.inspect})"
+            "worker=#{worker.nr rescue 'unknown'} pid=#{worker.pid rescue 'unknown'} gen=#{worker.generation rescue 'unknown'} reaped (#{status.inspect})"
           end
           if status.success?
             server.logger.info(m)
@@ -90,14 +90,6 @@ module Pitchfork
 
       RACKUP[:no_default_middleware] and
         set[:default_middleware] = false
-
-      # ensure paths are correctly set.
-      [ :stderr_path, :stdout_path ].each do |var|
-        String === (path = set[var]) or next
-        path = File.expand_path(path)
-        File.writable?(path) || File.writable?(File.dirname(path)) or \
-              raise ArgumentError, "directory for #{var}=#{path} not writable"
-      end
     end
 
     def commit!(server, options = {}) #:nodoc:
@@ -131,8 +123,7 @@ module Pitchfork
     # * warn
     # * error
     # * fatal
-    # The default Logger will log its output to the path specified
-    # by +stderr_path+.
+    # The default Logger will log its output to STDERR.
     def logger(obj)
       %w(debug info warn error fatal).each do |m|
         obj.respond_to?(m) and next
@@ -527,28 +518,6 @@ module Pitchfork
     # This option cannot be used in conjunction with :tcp_nopush.
     def check_client_connection(bool)
       set_bool(:check_client_connection, bool)
-    end
-
-    # Allow redirecting $stderr to a given path.  Unlike doing this from
-    # the shell, this allows the pitchfork process to know the path its
-    # writing to and rotate the file if it is used for logging.  The
-    # file will be opened with the File::APPEND flag and writes
-    # synchronized to the kernel (but not necessarily to _disk_) so
-    # multiple processes can safely append to it.
-    #
-    # If you are daemonizing and using the default +logger+, it is important
-    # to specify this as errors will otherwise be lost to /dev/null.
-    # Some applications/libraries may also triggering warnings that go to
-    # stderr, and they will end up here.
-    def stderr_path(path)
-      set_path(:stderr_path, path)
-    end
-
-    # Same as stderr_path, except for $stdout.  Not many Rack applications
-    # write to $stdout, but any that do will have their output written here.
-    # It is safe to point this to the same location a stderr_path.
-    def stdout_path(path)
-      set_path(:stdout_path, path)
     end
 
     # Defines the number of requests per-worker after which a new generation

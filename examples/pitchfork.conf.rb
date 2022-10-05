@@ -12,11 +12,6 @@ listen 8080, :tcp_nopush => true
 # nuke workers after 30 seconds instead of 60 seconds (the default)
 timeout 30
 
-# By default, the Pitchfork logger will write to stderr.
-# Additionally, ome applications/frameworks log to stderr or stdout.
-stderr_path "/path/to/app/shared/log/pitchfork.stderr.log"
-stdout_path "/path/to/app/shared/log/pitchfork.stdout.log"
-
 # Enable this flag to have pitchfork test client connections by writing the
 # beginning of the HTTP headers before calling the application.  This
 # prevents calling the application for connections that have disconnected

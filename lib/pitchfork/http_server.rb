@@ -108,7 +108,6 @@ module Pitchfork
       # list of signals we care about and trap in master.
       @queue_sigs = [
         :QUIT, :INT, :TERM, :USR2, :TTIN, :TTOU ]
-
       Worker.preallocate_drops(worker_processes)
     end
 
@@ -176,9 +175,6 @@ module Pitchfork
 
       (set_names - cur_names).each { |addr| listen(addr) }
     end
-
-    def stdout_path=(path); redirect_io($stdout, path); end
-    def stderr_path=(path); redirect_io($stderr, path); end
 
     def logger=(obj)
       Pitchfork::HttpRequest::DEFAULTS["rack.logger"] = @logger = obj
@@ -415,9 +411,9 @@ module Pitchfork
         end
         next_sleep = 0
         if worker.mold?
-          logger.error "mold PID:#{worker.pid} timeout (#{diff}s > #{@timeout}s), killing"
+          logger.error "mold pid=#{worker.pid} timeout (#{diff}s > #{@timeout}s), killing"
         else
-          logger.error "worker=#{worker.nr} PID:#{worker.pid} timeout (#{diff}s > #{@timeout}s), killing"
+          logger.error "worker=#{worker.nr} pid=#{worker.pid} timeout (#{diff}s > #{@timeout}s), killing"
         end
         kill_worker(:KILL, worker.pid) # take no prisoners for timeout violations
       end
@@ -819,11 +815,6 @@ module Pitchfork
     def proc_name(tag)
       $0 = ([ File.basename(START_CTX[0]), tag
             ]).concat(START_CTX[:argv]).join(' ')
-    end
-
-    def redirect_io(io, path)
-      File.open(path, 'ab') { |fp| io.reopen(fp) } if path
-      io.sync = true
     end
 
     def inherit_listeners!

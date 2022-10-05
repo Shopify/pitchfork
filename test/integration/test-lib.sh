@@ -113,8 +113,6 @@ pitchfork_setup () {
 	rtmpfiles pitchfork_config pid r_err r_out fifo tmp ok
 	cat > $pitchfork_config <<EOF
 listen "$listen"
-stderr_path "$r_err"
-stdout_path "$r_out"
 EOF
 }
 
@@ -154,7 +152,7 @@ wait_for_service() {
 
 pitchfork_spawn () {
 	(
-		pitchfork "$@" &
+		pitchfork "$@" 2>"$r_err" 1>"$r_out" &
 		echo "$!" > "$pid"
 	) &
 	wait
