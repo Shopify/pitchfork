@@ -1,6 +1,7 @@
 #ifndef common_field_optimization
 #define common_field_optimization
 #include "ruby.h"
+#include "ruby/encoding.h"
 #include "c_util.h"
 
 struct common_field {
@@ -60,21 +61,22 @@ static struct common_field common_http_fields[] = {
 #define HTTP_PREFIX_LEN (sizeof(HTTP_PREFIX) - 1)
 static ID id_uminus;
 
-/* this dedupes under Ruby 2.5+ (December 2017) */
-static VALUE str_dd_freeze(VALUE str)
-{
-  if (STR_UMINUS_DEDUPE)
-    return rb_funcall(str, id_uminus, 0);
-
-  /* freeze,since it speeds up older MRI slightly */
-  OBJ_FREEZE(str);
-  return str;
-}
-
+#ifdef HAVE_RB_ENC_INTERNED_STR
 static VALUE str_new_dd_freeze(const char *ptr, long len)
 {
-  return str_dd_freeze(rb_str_new(ptr, len));
+  if (RB_ENC_INTERNED_STR_NULL_CHECK && len == 0) {
+      return rb_enc_interned_str("", len, rb_ascii8bit_encoding());
+  } else {
+      return rb_enc_interned_str(ptr, len, rb_ascii8bit_encoding());
+  }
 }
+#else
+static VALUE str_new_dd_freeze(const char *ptr, long len)
+{
+  VALUE str = rb_str_new(ptr, len);
+  return rb_funcall(str, id_uminus, 0);
+}
+#endif
 
 /* this function is not performance-critical, called only at load time */
 static void init_common_fields(void)
