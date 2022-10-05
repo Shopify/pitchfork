@@ -1,4 +1,4 @@
-require "pitchfork/mem_info"
+require_relative "../lib/pitchfork/mem_info"
 
 module App
   CONST_NUM = Integer(ENV.fetch("NUM", 100_000))
