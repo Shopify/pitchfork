@@ -20,7 +20,6 @@ Gem::Specification.new do |s|
 
   s.add_dependency(%q<raindrops>, '~> 0.7')
   s.add_dependency(%q<rack>)
-  s.add_dependency(%q<child_subreaper>) # TODO: it's so small we should merge it.
 
   # Note: To avoid ambiguity, we intentionally avoid the SPDX-compatible
   # 'Ruby' here since Ruby 1.9.3 switched to BSD-2-Clause, but we

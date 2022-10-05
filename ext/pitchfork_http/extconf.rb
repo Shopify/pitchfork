@@ -3,6 +3,8 @@ require 'mkmf'
 
 have_func("rb_hash_clear", "ruby.h") or abort 'Ruby 2.0+ required'
 
+have_const("PR_SET_CHILD_SUBREAPER", "sys/prctl.h")
+
 message('checking if String#-@ (str_uminus) dedupes... ')
 begin
   a = -(%w(t e s t).join)

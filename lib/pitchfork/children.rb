@@ -1,5 +1,4 @@
 # -*- encoding: binary -*-
-require 'child_subreaper'
 
 module Pitchfork
   # This class keep tracks of the state of all the master children.

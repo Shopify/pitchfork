@@ -1,5 +1,5 @@
 # -*- encoding: binary -*-
-require 'child_subreaper'
+require 'pitchfork/pitchfork_http'
 
 module Pitchfork
   # This is the process manager of Pitchfork. This manages worker
@@ -26,7 +26,7 @@ module Pitchfork
 
     NOOP = '.'
 
-    REFORKING_AVAILABLE = ChildSubreaper::AVAILABLE || Process.pid == 1
+    REFORKING_AVAILABLE = Pitchfork::CHILD_SUBREAPER_AVAILABLE || Process.pid == 1
     MAX_SLEEP = 1 # seconds
 
     # :startdoc:
@@ -105,7 +105,7 @@ module Pitchfork
 
     # Runs the thing.  Returns self so you can run join on it
     def start
-      ChildSubreaper.enable
+      Pitchfork.enable_child_subreaper # noop if not supported
 
       # This socketpair is used to wake us up from select(2) in #join when signals
       # are trapped.  See trap_deferred.

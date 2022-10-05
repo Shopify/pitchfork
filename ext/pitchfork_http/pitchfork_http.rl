@@ -13,6 +13,7 @@
 #include "global_variables.h"
 #include "c_util.h"
 #include "epollexclusive.h"
+#include "child_subreaper.h"
 
 void init_pitchfork_httpdate(void);
 
@@ -1021,5 +1022,6 @@ void Init_pitchfork_http(void)
   id_is_chunked_p = rb_intern("is_chunked?");
 
   init_epollexclusive(mPitchfork);
+  init_child_subreaper(mPitchfork);
 }
 #undef SET_GLOBAL

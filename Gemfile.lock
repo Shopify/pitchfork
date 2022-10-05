@@ -2,14 +2,12 @@ PATH
   remote: .
   specs:
     pitchfork (0.1.0)
-      child_subreaper
       rack
       raindrops (~> 0.7)
 
 GEM
   remote: https://rubygems.org/
   specs:
-    child_subreaper (0.1.0)
     minitest (5.16.3)
     rack (3.0.0)
     raindrops (0.20.0)
