@@ -27,6 +27,12 @@ module Pitchfork
       @pending_workers[child.nr] = @workers[child.nr] = child
     end
 
+    def register_mold(mold)
+      @pending_molds[mold.pid] = mold
+      @children[mold.pid] = mold
+      @mold = mold
+    end
+
     def fetch(pid)
       @children.fetch(pid)
     end
@@ -57,7 +63,7 @@ module Pitchfork
     def reap(pid)
       if child = @children.delete(pid)
         @pending_workers.delete(child.nr)
-        @pending_molds.delete(child.nr)
+        @pending_molds.delete(child.pid)
         @molds.delete(child.pid)
         @workers.delete(child.nr)
         if @mold == child

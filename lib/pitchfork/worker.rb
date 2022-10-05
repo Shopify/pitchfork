@@ -17,13 +17,17 @@ module Pitchfork
     attr_reader :master
 
     def initialize(nr, pid: nil, generation: 0)
-      build_raindrops(nr)
       @nr = nr
       @pid = pid
       @generation = generation
       @mold = false
       @to_io = @master = nil
       @exiting = false
+      if nr
+        build_raindrops(nr)
+      else
+        promoted!
+      end
     end
 
     def meminfo
@@ -50,7 +54,7 @@ module Pitchfork
     end
 
     def register_to_master(control_socket)
-      @to_io, @master = Pitchfork.socketpair
+      create_socketpair!
       message = Message::WorkerSpawned.new(@nr, Process.pid, generation, @master)
       control_socket.sendmsg(message)
       @master.close
@@ -126,9 +130,7 @@ module Pitchfork
           return false
         when nil # EOF master died, but we are at a safe place to exit
           fake_sig(:QUIT)
-        end
-
-        case buf
+          return false
         when Message::SoftKill
           # trigger the signal handler
           fake_sig(buf.signum)
@@ -184,6 +186,14 @@ module Pitchfork
       @to_io.close if @to_io
     end
 
+    def create_socketpair!
+      @to_io, @master = Pitchfork.socketpair
+    end
+
+    def after_fork_in_child
+      @master.close
+    end
+
     private
 
     def pipe=(socket)
@@ -208,6 +218,20 @@ module Pitchfork
     PER_DROP = Raindrops::PAGE_SIZE / Raindrops::SIZE
     TICK_DROPS = []
     REQUEST_DROPS = []
+
+    class << self
+      # Since workers are created from another process, we have to
+      # pre-allocate the drops so they are shared between everyone.
+      #
+      # However this doesn't account for TTIN signals that increase the
+      # number of workers, but we should probably remove that feature too.
+      def preallocate_drops(workers_count)
+        0.upto(workers_count / PER_DROP) do |i|
+          TICK_DROPS[i] = Raindrops.new(PER_DROP)
+          REQUEST_DROPS[i] = Raindrops.new(PER_DROP)
+        end
+      end
+    end
 
     def build_raindrops(drop_nr)
       drop_index = drop_nr / PER_DROP

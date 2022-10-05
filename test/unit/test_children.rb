@@ -67,5 +67,17 @@ module Pitchfork
       assert_nil @children.mold
       assert_equal [], @children.molds
     end
+
+    def test_reap_pending_mold
+      mold = Worker.new(nil)
+      @children.register_mold(mold)
+      assert_predicate @children, :pending_workers?
+
+      assert_equal mold, @children.reap(mold.pid)
+      refute_predicate @children, :pending_workers?
+      assert_nil @children.mold
+      assert_equal [], @children.molds
+      assert_nil @children.reap(mold.pid)
+    end
   end
 end

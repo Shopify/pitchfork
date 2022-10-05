@@ -108,6 +108,8 @@ module Pitchfork
       # list of signals we care about and trap in master.
       @queue_sigs = [
         :QUIT, :INT, :TERM, :USR2, :TTIN, :TTOU ]
+
+      Worker.preallocate_drops(worker_processes)
     end
 
     # Runs the thing.  Returns self so you can run join on it
@@ -128,14 +130,23 @@ module Pitchfork
       @queue_sigs.each { |sig| trap(sig) { @sig_queue << sig; awaken_master } }
       trap(:CHLD) { awaken_master }
 
-      build_app!
       bind_new_listeners!
+      if REFORKING_AVAILABLE
+        spawn_initial_mold
+        wait_for_pending_workers
+        unless @children.mold
+          raise BootFailure, "The initial mold failed to boot"
+        end
+      else
+        build_app!
+      end
 
       spawn_missing_workers
       # We could just return here as we'd register them later in #join.
       # However a good part of the test suite assumes #start only return
       # once all initial workers are spawned.
       wait_for_pending_workers
+
       self
     end
 
@@ -470,6 +481,18 @@ module Pitchfork
       worker
     end
 
+    def spawn_initial_mold
+      mold = Worker.new(nil)
+      mold.create_socketpair!
+      mold.pid = fork do
+        after_fork_internal
+        mold.after_fork_in_child
+        build_app!
+        mold_loop(mold)
+      end
+      @children.register_mold(mold)
+    end
+
     def spawn_missing_workers
       worker_nr = -1
       until (worker_nr += 1) == @worker_processes
@@ -500,7 +523,6 @@ module Pitchfork
         if monitor_loop(false) == StopIteration
           break
         end
-        maintain_worker_count
       end
     end
 
@@ -730,9 +752,9 @@ module Pitchfork
     def mold_loop(mold)
       readers = init_mold_process(mold)
       waiter = prep_readers(readers)
+      mold.acknowlege_promotion(@control_socket[1])
 
       ready = readers.dup
-      mold.acknowlege_promotion(@control_socket[1])
       # TODO: mold ready callback?
 
       begin
@@ -740,9 +762,10 @@ module Pitchfork
         while sock = ready.shift
           # Pitchfork::Worker#accept_nonblock is not like accept(2) at all,
           # but that will return false
-          case message = sock.accept_nonblock(exception: false)
+          message = sock.accept_nonblock(exception: false)
+          case message
           when false
-            # no message
+            # no message, keep looping
           when Message::SpawnWorker
             spawn_worker(Worker.new(message.nr, generation: mold.generation), detach: true)
           else
