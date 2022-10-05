@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    unicorn (6.1.0)
+    pitchfork (0.1.0)
       child_subreaper
       rack
       raindrops (~> 0.7)
@@ -24,9 +24,9 @@ PLATFORMS
 
 DEPENDENCIES
   minitest
+  pitchfork!
   rake
   rake-compiler
-  unicorn!
 
 BUNDLED WITH
    2.3.22

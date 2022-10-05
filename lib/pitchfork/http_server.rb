@@ -6,11 +6,6 @@ module Pitchfork
   # processes which in turn handle the I/O and application process.
   # Listener sockets are started in the master process and shared with
   # forked worker children.
-  #
-  # Users do not need to know the internals of this class, but reading the
-  # {source}[https://yhbt.net/pitchfork.git/tree/lib/pitchfork/http_server.rb]
-  # is education for programmers wishing to learn how pitchfork works.
-  # See Pitchfork::Configurator for information on how to configure pitchfork.
   class HttpServer
     # :stopdoc:
     attr_accessor :app, :timeout, :worker_processes,
