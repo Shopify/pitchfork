@@ -3,7 +3,7 @@
 `pitchfork` is a preforking HTTP server for Rack applications designed
 to minimize memory usage by maximizing Copy-on-Write performance.
 
-Like [`unicorn`](https://yhbt.net/unicorn/README.html) (which `pitchfork` is a derivative of), it is designed to
+Like [`unicorn`](https://yhbt.net/unicorn/README.html) (of which `pitchfork` is a derivative), it is designed to
 only serve fast clients on low-latency, high-bandwidth connections and take
 advantage of features in Unix/Unix-like kernels. Slow clients should
 only be served by placing a reverse proxy capable of fully buffering
