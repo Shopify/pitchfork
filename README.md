@@ -99,6 +99,16 @@ compatibility with existing applications.
 Most command-line options for other Rack applications (above) are also
 supported.  Run `pitchfork -h` to see command-line options.
 
+## Relation to Unicorn
+
+Pitchfork initially started as a Unicorn patch, however some of Unicorn features
+as well as Unicorn policy of supporting extremely old Ruby version made it challenging.
+
+Forking was the occasion to significantly reduce the complexity.
+
+However some large parts of Pitchfork like the HTTP parser are still mostly unchanged from Unicorn, and Unicorn
+is fairly stable these days. As such we aim to backport any Unicorn patches that may apply to Pitchfork and vice versa.
+
 ## License
 
 pitchfork is copyright 2022 Shopify Inc and all contributors.
