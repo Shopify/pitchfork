@@ -11,4 +11,4 @@ else
 end
 
 have_func('epoll_create1', %w(sys/epoll.h))
-create_makefile("pitchfork_http")
+create_makefile("pitchfork/pitchfork_http")
