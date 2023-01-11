@@ -20,6 +20,18 @@ module Pitchfork
         "#{code} #{STATUS_CODES[code]}\r\n\r\n"
     end
 
+    def append_header(buf, key, value)
+      case value
+      when Array # Rack 3
+        value.each { |v| buf << "#{key}: #{v}\r\n" }
+      when /\n/ # Rack 2
+        # avoiding blank, key-only cookies with /\n+/
+        value.split(/\n+/).each { |v| buf << "#{key}: #{v}\r\n" }
+      else
+        buf << "#{key}: #{value}\r\n"
+      end
+    end
+
     # writes the rack_response to socket as an HTTP response
     def http_response_write(socket, status, headers, body,
                             req = Pitchfork::HttpParser.new)
@@ -41,12 +53,7 @@ module Pitchfork
             # key in Rack < 1.5
             hijack = value
           else
-            if value =~ /\n/
-              # avoiding blank, key-only cookies with /\n+/
-              value.split(/\n+/).each { |v| buf << "#{key}: #{v}\r\n" }
-            else
-              buf << "#{key}: #{value}\r\n"
-            end
+            append_header(buf, key, value)
           end
         end
         socket.write(buf << "\r\n".freeze)
