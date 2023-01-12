@@ -10,6 +10,7 @@ t_begin "setup and start" && {
 
 t_begin "check exit status with Rack::Lint not present" && {
 	echo "Paarth: $(curl -sf -o/dev/null -w'%{http_code}' http://$listen/)"
+	echo "Paarth: $(curl -s http://$listen/)"
 	test 42 -eq "$(curl -sf -o/dev/null -w'%{http_code}' http://$listen/)"
 }
 
