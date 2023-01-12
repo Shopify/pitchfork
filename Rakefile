@@ -34,22 +34,33 @@ namespace :test do
   # preferable to edit the test suite as little as possible.
   task integration: :compile do
     File.write("test/integration/random_blob", File.read("/dev/random", 1_000_000))
-    lib = File.expand_path("lib", __dir__)
     path = "#{File.expand_path("exe", __dir__)}:#{ENV["PATH"]}"
     old_path = ENV["PATH"]
     ENV["PATH"] = "#{path}:#{old_path}"
     begin
       Dir.chdir("test/integration") do
         Dir["t[0-9]*.sh"].each do |integration_test|
-          sh("rm", "-rf", "trash")
-          sh("mkdir", "trash")
-          command = ["sh", integration_test]
-          command << "-v" if ENV["VERBOSE"] || ENV["CI"]
-          sh(*command)
+          run_integration_test(integration_test)
         end
       end
     ensure
       ENV["PATH"] = old_path
+    end
+  end
+end
+
+def run_integration_test(integration_test)
+  sh("rm", "-rf", "trash")
+  sh("mkdir", "trash")
+  command = ["sh", integration_test]
+  command << "-v" if ENV["VERBOSE"] || ENV["CI"]
+  sh(*command) do |ok, res|
+    return if ok
+
+    Dir["trash/#{integration_test}*.r_err"].each do |r_err|
+      sh("cat", r_err)
+
+      raise "#{command.join(' ')} failed =="
     end
   end
 end
