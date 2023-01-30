@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.1.2
+
 - Improve Ruby 3.2 and Rack 3 compatibility.
 
 # 0.1.1
