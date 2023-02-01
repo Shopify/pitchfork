@@ -31,28 +31,31 @@ module Pitchfork
       :logger => Logger.new($stderr),
       :worker_processes => 1,
       :after_fork => lambda { |server, worker|
-          server.logger.info("worker=#{worker.nr} gen=#{worker.generation} pid=#{$$} spawned")
-        },
+        server.logger.info("worker=#{worker.nr} gen=#{worker.generation} pid=#{$$} spawned")
+      },
       :before_fork => lambda { |server, worker|
-          server.logger.info("worker=#{worker.nr} gen=#{worker.generation} spawning...")
-        },
+        server.logger.info("worker=#{worker.nr} gen=#{worker.generation} spawning...")
+      },
+      :after_promotion => lambda { |server, worker|
+        server.logger.info("gen=#{worker.generation} pid=#{$$} promoted")
+      },
       :after_worker_exit => lambda { |server, worker, status|
-          m = if worker.nil?
-            "repead unknown process (#{status.inspect})"
-          elsif worker.mold?
-            "mold pid=#{worker.pid rescue 'unknown'} gen=#{worker.generation rescue 'unknown'} reaped (#{status.inspect})"
-          else
-            "worker=#{worker.nr rescue 'unknown'} pid=#{worker.pid rescue 'unknown'} gen=#{worker.generation rescue 'unknown'} reaped (#{status.inspect})"
-          end
-          if status.success?
-            server.logger.info(m)
-          else
-            server.logger.error(m)
-          end
-        },
+        m = if worker.nil?
+          "repead unknown process (#{status.inspect})"
+        elsif worker.mold?
+          "mold pid=#{worker.pid rescue 'unknown'} gen=#{worker.generation rescue 'unknown'} reaped (#{status.inspect})"
+        else
+          "worker=#{worker.nr rescue 'unknown'} pid=#{worker.pid rescue 'unknown'} gen=#{worker.generation rescue 'unknown'} reaped (#{status.inspect})"
+        end
+        if status.success?
+          server.logger.info(m)
+        else
+          server.logger.error(m)
+        end
+      },
       :after_worker_ready => lambda { |server, worker|
-          server.logger.info("worker=#{worker.nr} ready")
-        },
+        server.logger.info("worker=#{worker.nr} ready")
+      },
       :early_hints => false,
       :mold_selector => MoldSelector::LeastSharedMemory.new,
       :refork_condition => nil,
@@ -129,6 +132,10 @@ module Pitchfork
 
     def after_fork(*args, &block)
       set_hook(:after_fork, block_given? ? block : args[0])
+    end
+
+    def after_promotion(*args, &block)
+      set_hook(:after_promotion, block_given? ? block : args[0])
     end
 
     def after_worker_ready(*args, &block)
