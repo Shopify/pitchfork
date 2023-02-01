@@ -9,7 +9,7 @@ module Pitchfork
   class HttpServer
     # :stopdoc:
     attr_accessor :app, :timeout, :worker_processes,
-                  :before_fork, :after_fork,
+                  :before_fork, :after_fork, :after_promotion,
                   :listener_opts, :children,
                   :orig_app, :config, :ready_pipe,
                   :default_middleware, :early_hints
@@ -667,6 +667,7 @@ module Pitchfork
 
     def init_mold_process(worker)
       proc_name "mold (gen: #{worker.generation})"
+      after_promotion.call(self, worker)
       readers = [worker]
       trap(:QUIT) { nuke_listeners!(readers) }
       readers

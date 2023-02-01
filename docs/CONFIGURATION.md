@@ -263,6 +263,19 @@ end
 Called in the worker after forking. Generally used to close inherited connections
 or to restart backgrounds threads for libraries that don't do it automatically.
 
+### `after_promotion`
+
+```ruby
+after_promotion do |server, mold|
+  NetworkClient.disconnect!
+  4.times { GC.start } # promote surviving objects to oldgen
+  GC.compact
+end
+```
+
+Called in the worker after it was promoted into a mold. Generally used to shutdown
+open connections and file descriptors, as well as to perform memory optimiations
+such as compacting the heap, trimming memory etc.
 
 ### `after_worker_ready`
 
