@@ -224,7 +224,7 @@ static int is_chunked(VALUE v)
   return rb_funcall(cHttpParser, id_is_chunked_p, 1, v) != Qfalse;
 }
 
-static void write_value(struct http_parser *hp,
+static void write_value(VALUE self, struct http_parser *hp,
                         const char *buffer, const char *p)
 {
   VALUE f = find_common_field(PTR_TO(start.field), hp->s.field_len);
@@ -244,7 +244,7 @@ static void write_value(struct http_parser *hp,
      * rack env variable.
      */
     if (CONST_MEM_EQ("VERSION", field, flen)) {
-      hp->cont = Qnil;
+      RB_OBJ_WRITE(self, &hp->cont, Qnil);
       return;
     }
     f = uncommon_field(field, flen);
@@ -296,16 +296,16 @@ static void write_value(struct http_parser *hp,
 
   e = rb_hash_aref(hp->env, f);
   if (NIL_P(e)) {
-    hp->cont = rb_hash_aset(hp->env, f, v);
+    RB_OBJ_WRITE(self, &hp->cont, rb_hash_aset(hp->env, f, v));
   } else if (f == g_http_host) {
     /*
      * ignored, absolute URLs in REQUEST_URI take precedence over
      * the Host: header (ref: rfc 2616, section 5.2.1)
      */
-     hp->cont = Qnil;
+    RB_OBJ_WRITE(self, &hp->cont, Qnil);
   } else {
     rb_str_buf_cat(e, ",", 1);
-    hp->cont = rb_str_buf_append(e, v);
+    RB_OBJ_WRITE(self, &hp->cont, rb_str_buf_append(e, v));
   }
 }
 
@@ -321,7 +321,7 @@ static void write_value(struct http_parser *hp,
   action downcase_char { downcase_char(deconst(fpc)); }
   action write_field { hp->s.field_len = LEN(start.field, fpc); }
   action start_value { MARK(mark, fpc); }
-  action write_value { write_value(hp, buffer, fpc); }
+  action write_value { write_value(self, hp, buffer, fpc); }
   action write_cont_value { write_cont_value(hp, buffer, fpc); }
   action request_method { request_method(hp, PTR_TO(mark), LEN(mark, fpc)); }
   action scheme {
@@ -439,7 +439,7 @@ static void http_parser_init(struct http_parser *hp)
 
 /** exec **/
 static void
-http_parser_execute(struct http_parser *hp, char *buffer, size_t len)
+http_parser_execute(VALUE self, struct http_parser *hp, char *buffer, size_t len)
 {
   const char *p, *pe;
   int cs = hp->cs;
@@ -485,9 +485,13 @@ static size_t hp_memsize(const void *ptr)
 }
 
 static const rb_data_type_t hp_type = {
-  "pitchfork_http",
-  { hp_mark, RUBY_TYPED_DEFAULT_FREE, hp_memsize, /* reserved */ },
-  /* parent, data, [ flags ] */
+    .wrap_struct_name = "pitchfork_http_parser",
+    .function = {
+        .dmark = hp_mark,
+        .dfree = RUBY_TYPED_DEFAULT_FREE,
+        .dsize = hp_memsize,
+    },
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
 
 static struct http_parser *data_get(VALUE self)
@@ -618,8 +622,8 @@ static VALUE HttpParser_init(VALUE self)
   struct http_parser *hp = data_get(self);
 
   http_parser_init(hp);
-  hp->buf = rb_str_new(NULL, 0);
-  hp->env = rb_hash_new();
+  RB_OBJ_WRITE(self, &hp->buf, rb_str_new(NULL, 0));
+  RB_OBJ_WRITE(self, &hp->env, rb_hash_new());
 
   return self;
 }
@@ -700,7 +704,7 @@ static VALUE HttpParser_parse(VALUE self)
   if (HP_FL_TEST(hp, TO_CLEAR))
     HttpParser_clear(self);
 
-  http_parser_execute(hp, RSTRING_PTR(data), RSTRING_LEN(data));
+  http_parser_execute(self, hp, RSTRING_PTR(data), RSTRING_LEN(data));
   if (hp->offset > MAX_HEADER_LEN)
     parser_raise(e413, "HTTP header is too large");
 
@@ -756,8 +760,8 @@ static VALUE HttpParser_headers(VALUE self, VALUE env, VALUE buf)
 {
   struct http_parser *hp = data_get(self);
 
-  hp->env = env;
-  hp->buf = buf;
+  RB_OBJ_WRITE(self, &hp->buf, buf);
+  RB_OBJ_WRITE(self, &hp->env, env);
 
   return HttpParser_parse(self);
 }
@@ -885,9 +889,9 @@ static VALUE HttpParser_filter_body(VALUE self, VALUE dst, VALUE src)
       rb_str_resize(dst, srclen); /* we can never copy more than srclen bytes */
 
       hp->s.dest_offset = 0;
-      hp->cont = dst;
-      hp->buf = src;
-      http_parser_execute(hp, srcptr, srclen);
+      RB_OBJ_WRITE(self, &hp->cont, dst);
+      RB_OBJ_WRITE(self, &hp->buf, src);
+      http_parser_execute(self, hp, srcptr, srclen);
       if (hp->cs == http_parser_error)
         parser_raise(eHttpParserError, "Invalid HTTP format, parsing fails.");
 
@@ -917,7 +921,7 @@ static VALUE HttpParser_filter_body(VALUE self, VALUE dst, VALUE src)
        * This causes copy-on-write behavior to be triggered anyways
        * when the +src+ buffer is modified (when reading off the socket).
        */
-      hp->buf = src;
+      RB_OBJ_WRITE(self, &hp->buf, src);
       memcpy(RSTRING_PTR(dst), srcptr, nr);
       hp->len.content -= nr;
       if (hp->len.content == 0) {
