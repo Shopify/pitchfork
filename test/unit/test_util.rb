@@ -1,10 +1,8 @@
 # -*- encoding: binary -*-
 
-require './test/test_helper'
-require 'tempfile'
+require 'test_helper'
 
-class TestUtil < Minitest::Test
-
+class TestUtil < Pitchfork::Test
   EXPECT_FLAGS = File::WRONLY | File::APPEND
 
   def test_socketpair

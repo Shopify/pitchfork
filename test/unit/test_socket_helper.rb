@@ -1,9 +1,8 @@
 # -*- encoding: binary -*-
 
-require './test/test_helper'
-require 'tempfile'
+require 'test_helper'
 
-class TestSocketHelper < Minitest::Test
+class TestSocketHelper < Pitchfork::Test
   include Pitchfork::SocketHelper
   attr_reader :logger
   GET_SLASH = "GET / HTTP/1.0\r\n\r\n".freeze

@@ -1,11 +1,6 @@
-require 'socket'
-require 'pitchfork'
-require 'io/wait'
-require 'tempfile'
-require 'minitest/autorun'
-require './test/test_helper'
+require 'test_helper'
 
-class TestCccTCPI < Minitest::Test
+class TestCccTCPI < Pitchfork::Test
   def test_ccc_tcpi
     start_pid = $$
     host = '127.0.0.1'
