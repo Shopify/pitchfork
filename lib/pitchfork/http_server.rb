@@ -130,7 +130,7 @@ module Pitchfork
       else
         build_app!
         bind_listeners!
-        after_promotion.call(self, Worker.new(pid: $$).promoted!)
+        after_promotion.call(self, Worker.new(nil, pid: $$).promoted!)
       end
 
       if sync
@@ -500,9 +500,11 @@ module Pitchfork
         end
         worker = Pitchfork::Worker.new(worker_nr)
 
-        if !@children.mold || !@children.mold.spawn_worker(worker)
-          # If there's no mold, or the mold was somehow unreachable
-          # we fallback to spawning the missing workers ourselves.
+        if REFORKING_AVAILABLE
+          unless @children.mold&.spawn_worker(worker)
+            @logger.error("Failed to send a spawn_woker command")
+          end
+        else
           spawn_worker(worker, detach: false)
         end
         # We could directly register workers when we spawn from the
