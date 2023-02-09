@@ -9,7 +9,7 @@ module Pitchfork
   class HttpServer
     # :stopdoc:
     attr_accessor :app, :timeout, :worker_processes,
-                  :before_fork, :after_fork, :after_promotion,
+                  :after_fork, :after_promotion,
                   :listener_opts, :children,
                   :orig_app, :config, :ready_pipe,
                   :default_middleware, :early_hints
@@ -60,6 +60,7 @@ module Pitchfork
     # HttpServer.run.join to join the thread that's processing
     # incoming requests on the socket.
     def initialize(app, options = {})
+      @exit_status = 0
       @app = app
       @respawn = false
       @last_check = time_now
@@ -129,6 +130,7 @@ module Pitchfork
       else
         build_app!
         bind_listeners!
+        after_promotion.call(self, Worker.new(pid: $$).promoted!)
       end
 
       if sync
@@ -239,10 +241,19 @@ module Pitchfork
       end
       stop # gracefully shutdown all workers on our way out
       logger.info "master complete"
+      @exit_status
     end
 
     def monitor_loop(sleep = true)
       reap_all_workers
+
+      if REFORKING_AVAILABLE && @respawn && @children.molds.empty?
+        logger.info("No mold alive, shutting down")
+        @exit_status = 1
+        @sig_queue << :QUIT
+        @respawn = false
+      end
+
       case message = @sig_queue.shift
       when nil
         # avoid murdering workers after our master process (or the
@@ -356,7 +367,7 @@ module Pitchfork
 
     # reaps all unreaped workers
     def reap_all_workers
-      begin
+      loop do
         wpid, status = Process.waitpid2(-1, Process::WNOHANG)
         wpid or return
         worker = @children.reap(wpid) and worker.close rescue nil
@@ -367,7 +378,7 @@ module Pitchfork
         end
       rescue Errno::ECHILD
         break
-      end while true
+      end
     end
 
     def listener_sockets
@@ -440,7 +451,7 @@ module Pitchfork
     end
 
     def spawn_worker(worker, detach:)
-      before_fork.call(self, worker)
+      logger.info("worker=#{worker.nr} gen=#{worker.generation} spawning...")
 
       pid = fork do
         # We double fork so that the new worker is re-attached back
@@ -731,9 +742,7 @@ module Pitchfork
       readers = init_mold_process(mold)
       waiter = prep_readers(readers)
       mold.acknowlege_promotion(@control_socket[1])
-
       ready = readers.dup
-      # TODO: mold ready callback?
 
       begin
         mold.tick = time_now.to_i
@@ -745,7 +754,11 @@ module Pitchfork
           when false
             # no message, keep looping
           when Message::SpawnWorker
-            spawn_worker(Worker.new(message.nr, generation: mold.generation), detach: true)
+            begin
+              spawn_worker(Worker.new(message.nr, generation: mold.generation), detach: true)
+            rescue => error
+              raise BootFailure, error.message
+            end
           else
             logger.error("Unexpected mold message #{message.inspect}")
           end
@@ -755,7 +768,7 @@ module Pitchfork
         mold.tick = time_now.to_i
         waiter.get_readers(ready, readers, @timeout * 500) # to milliseconds, but halved
       rescue => e
-        Pitchfork.log_error(@logger, "listen loop error", e) if readers[0]
+        Pitchfork.log_error(@logger, "mold loop error", e) if readers[0]
       end while readers[0]
     end
 
