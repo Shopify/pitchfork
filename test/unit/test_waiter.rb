@@ -1,4 +1,5 @@
 require 'test_helper'
+require 'pitchfork/select_waiter'
 
 class TestSelectWaiter < Pitchfork::Test
   def test_select_timeout # n.b. this is level-triggered
