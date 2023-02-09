@@ -7,7 +7,7 @@ module Pitchfork
   # releases of pitchfork.  Knowledge of this class is generally not
   # not needed for most users of pitchfork.
   #
-  # Some users may want to access it in the before_fork/after_fork hooks.
+  # Some users may want to access it in the after_promotion/after_fork hooks.
   # See the Pitchfork::Configurator RDoc for examples.
   class Worker
     # :stopdoc:
@@ -78,6 +78,7 @@ module Pitchfork
       @nr = nil
       @drop_offset = 0
       @tick_drop = MOLD_DROP
+      self
     end
 
     def mold?

@@ -1,8 +1,7 @@
-require 'minitest/autorun'
-require 'pitchfork'
+require 'test_helper'
 require 'pitchfork/select_waiter'
-class TestSelectWaiter < Minitest::Test
 
+class TestSelectWaiter < Pitchfork::Test
   def test_select_timeout # n.b. this is level-triggered
     sw = Pitchfork::SelectWaiter.new
     IO.pipe do |r,w|

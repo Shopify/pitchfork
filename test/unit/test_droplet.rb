@@ -1,7 +1,6 @@
-require 'minitest/autorun'
-require 'pitchfork'
+require 'test_helper'
 
-class TestDroplet < Minitest::Test
+class TestDroplet < Pitchfork::Test
   def test_create_many_droplets
     now = Time.now.to_i
     (0..1024).each do |i|

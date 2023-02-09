@@ -1,9 +1,8 @@
 # -*- encoding: binary -*-
-
-require './test/test_helper'
+require 'test_helper'
 
 module Pitchfork
-  class TestChildren < Minitest::Test
+  class TestChildren < Pitchfork::Test
     def setup
       @children = Children.new
     end

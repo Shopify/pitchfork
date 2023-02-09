@@ -1,12 +1,10 @@
 # -*- encoding: binary -*-
 
 # Copyright (c) 2009 Eric Wong
-require './test/test_helper'
-require 'digest/md5'
+require 'test_helper'
 
-include Pitchfork
-
-class UploadTest < Minitest::Test
+class UploadTest < Pitchfork::Test
+  include Pitchfork
 
   def setup
     @addr = ENV['UNICORN_TEST_ADDR'] || '127.0.0.1'

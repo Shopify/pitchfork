@@ -1,10 +1,8 @@
 # -*- encoding: binary -*-
 
-require 'minitest/autorun'
-require 'digest/sha1'
-require 'pitchfork'
+require 'test_helper'
 
-class TestStreamInput < Minitest::Test
+class TestStreamInput < Pitchfork::Test
   def setup
     @env = {}
     @rd, @wr = UNIXSocket.pair

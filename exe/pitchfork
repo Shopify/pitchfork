@@ -113,4 +113,4 @@ if $DEBUG
   })
 end
 
-Pitchfork::HttpServer.new(app, options).start.join
+exit(Pitchfork::HttpServer.new(app, options).start(false).join)

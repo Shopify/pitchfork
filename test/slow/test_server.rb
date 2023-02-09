@@ -7,52 +7,49 @@
 # Additional work donated by contributors.  See git history
 # for more information.
 
-require './test/test_helper'
-
-include Pitchfork
-
-class TestHandler
-
-  def call(env)
-    while env['rack.input'].read(4096)
-    end
-    [200, { 'content-type' => 'text/plain' }, ['hello!\n']]
-  rescue Pitchfork::ClientShutdown, Pitchfork::HttpParserError => e
-    $stderr.syswrite("#{e.class}: #{e.message} #{e.backtrace.empty?}\n")
-    raise e
-  end
-end
-
-class TestEarlyHintsHandler
-  def call(env)
-    while env['rack.input'].read(4096)
-    end
-    env['rack.early_hints'].call(
-      "Link" => "</style.css>; rel=preload; as=style\n</script.js>; rel=preload"
-    )
-    [200, { 'content-type' => 'text/plain' }, ['hello!\n']]
-  end
-end
-
-class TestRackAfterReply
-  def initialize
-    @called = false
-  end
-
-  def call(env)
-    while env['rack.input'].read(4096)
-    end
-
-    env["rack.after_reply"] << -> { @called = true }
-
-    [200, { 'content-type' => 'text/plain' }, ["after_reply_called: #{@called}"]]
-  rescue Pitchfork::ClientShutdown, Pitchfork::HttpParserError => e
-    $stderr.syswrite("#{e.class}: #{e.message} #{e.backtrace.empty?}\n")
-    raise e
-  end
-end
+require 'test_helper'
 
 module BaseWebServerTests
+  class TestHandler
+    def call(env)
+      while env['rack.input'].read(4096)
+      end
+      [200, { 'content-type' => 'text/plain' }, ['hello!\n']]
+    rescue Pitchfork::ClientShutdown, Pitchfork::HttpParserError => e
+      $stderr.syswrite("#{e.class}: #{e.message} #{e.backtrace.empty?}\n")
+      raise e
+    end
+  end
+
+  class TestEarlyHintsHandler
+    def call(env)
+      while env['rack.input'].read(4096)
+      end
+      env['rack.early_hints'].call(
+        "Link" => "</style.css>; rel=preload; as=style\n</script.js>; rel=preload"
+      )
+      [200, { 'content-type' => 'text/plain' }, ['hello!\n']]
+    end
+  end
+
+  class TestRackAfterReply
+    def initialize
+      @called = false
+    end
+
+    def call(env)
+      while env['rack.input'].read(4096)
+      end
+
+      env["rack.after_reply"] << -> { @called = true }
+
+      [200, { 'content-type' => 'text/plain' }, ["after_reply_called: #{@called}"]]
+    rescue Pitchfork::ClientShutdown, Pitchfork::HttpParserError => e
+      $stderr.syswrite("#{e.class}: #{e.message} #{e.backtrace.empty?}\n")
+      raise e
+    end
+  end
+
   def setup
     @valid_request = "GET / HTTP/1.1\r\nHost: www.zedshaw.com\r\nContent-Type: text/plain\r\n\r\n"
     @port = unused_port
@@ -61,7 +58,7 @@ module BaseWebServerTests
 
   def start_server
     redirect_test_io do
-      @server = HttpServer.new(@tester, :listeners => [ "127.0.0.1:#{@port}" ] )
+      @server = Pitchfork::HttpServer.new(@tester, :listeners => [ "127.0.0.1:#{@port}" ] )
       @server.start
     end
   end
@@ -78,7 +75,7 @@ module BaseWebServerTests
   end
 end
 
-class WebServerStartTest < Minitest::Test
+class WebServerStartTest < Pitchfork::Test
   include BaseWebServerTests
 
   def test_preload_app
@@ -92,7 +89,7 @@ class WebServerStartTest < Minitest::Test
     }
 
     redirect_test_io do
-      @server = HttpServer.new(app, :listeners => [ "127.0.0.1:#@port"])
+      @server = Pitchfork::HttpServer.new(app, :listeners => [ "127.0.0.1:#@port"])
       @server.start
     end
     results = hit(["http://localhost:#@port/"])
@@ -100,7 +97,7 @@ class WebServerStartTest < Minitest::Test
     assert worker_pid != 0
     tmp.sysseek(0)
     loader_pid = tmp.sysread(4096).to_i
-    if HttpServer::REFORKING_AVAILABLE
+    if Pitchfork::HttpServer::REFORKING_AVAILABLE
       # If reforking is available the mold is the loader
       refute_equal $$, loader_pid
     else
@@ -113,7 +110,7 @@ class WebServerStartTest < Minitest::Test
 
   def test_early_hints
     redirect_test_io do
-      @server = HttpServer.new(TestEarlyHintsHandler.new,
+      @server = Pitchfork::HttpServer.new(TestEarlyHintsHandler.new,
                                :listeners => [ "127.0.0.1:#@port"],
                                :early_hints => true)
       @server.start
@@ -132,7 +129,7 @@ class WebServerStartTest < Minitest::Test
 
   def test_after_reply
     redirect_test_io do
-      @server = HttpServer.new(TestRackAfterReply.new,
+      @server = Pitchfork::HttpServer.new(TestRackAfterReply.new,
                                :listeners => [ "127.0.0.1:#@port"])
       @server.start
     end
@@ -158,7 +155,7 @@ class WebServerStartTest < Minitest::Test
     app = lambda { |env| raise RuntimeError, "hello" }
     # [200, {}, []] }
     redirect_test_io do
-      @server = HttpServer.new(app, :listeners => [ "127.0.0.1:#@port"] )
+      @server = Pitchfork::HttpServer.new(app, :listeners => [ "127.0.0.1:#@port"] )
       @server.start
     end
     sock = tcp_socket('127.0.0.1', @port)
@@ -168,7 +165,7 @@ class WebServerStartTest < Minitest::Test
   end
 end
 
-class WebServerTest < Minitest::Test
+class WebServerTest < Pitchfork::Test
   include BaseWebServerTests
 
   def setup
@@ -338,9 +335,5 @@ class WebServerTest < Minitest::Test
                   Errno::EBADF) {
       do_test(long, Pitchfork::Const::CHUNK_SIZE * 2 - 400)
     }
-  end
-
-  def test_listener_names
-    assert_equal [ "127.0.0.1:#@port" ], Pitchfork.listener_names
   end
 end

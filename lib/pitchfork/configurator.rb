@@ -33,9 +33,6 @@ module Pitchfork
       :after_fork => lambda { |server, worker|
         server.logger.info("worker=#{worker.nr} gen=#{worker.generation} pid=#{$$} spawned")
       },
-      :before_fork => lambda { |server, worker|
-        server.logger.info("worker=#{worker.nr} gen=#{worker.generation} spawning...")
-      },
       :after_promotion => lambda { |server, worker|
         server.logger.info("gen=#{worker.generation} pid=#{$$} promoted")
       },
@@ -124,10 +121,6 @@ module Pitchfork
       end
 
       set[:logger] = obj
-    end
-
-    def before_fork(*args, &block)
-      set_hook(:before_fork, block_given? ? block : args[0])
     end
 
     def after_fork(*args, &block)

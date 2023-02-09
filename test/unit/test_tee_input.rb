@@ -1,10 +1,8 @@
 # -*- encoding: binary -*-
 
-require 'minitest/autorun'
-require 'digest/sha1'
-require 'pitchfork'
+require 'test_helper'
 
-class TestTeeInput < Minitest::Test
+class TestTeeInput < Pitchfork::Test
   class TeeInput < Pitchfork::TeeInput
     attr_accessor :tmp, :len
   end

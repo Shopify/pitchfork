@@ -5,10 +5,9 @@
 # the GPLv2+ (GPLv3+ preferred)
 #
 # Ensure we stay sane in the face of signals being sent to us
+require 'test_helper'
 
-require './test/test_helper'
-
-class SignalsTest < Minitest::Test
+class SignalsTest < Pitchfork::Test
   include Pitchfork
 
   class Dd

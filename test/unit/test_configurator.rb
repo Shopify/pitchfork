@@ -1,12 +1,9 @@
 # -*- encoding: binary -*-
+require 'test_helper'
 
-require 'minitest/autorun'
-require 'tempfile'
-require 'pitchfork'
-
-TestStruct = Struct.new(
-  *(Pitchfork::Configurator::DEFAULTS.keys + %w(listener_opts listeners)))
-class TestConfigurator < Minitest::Test
+class TestConfigurator < Pitchfork::Test
+  TestStruct = Struct.new(
+    *(Pitchfork::Configurator::DEFAULTS.keys + %w(listener_opts listeners)))
 
   def test_config_init
     Pitchfork::Configurator.new {}

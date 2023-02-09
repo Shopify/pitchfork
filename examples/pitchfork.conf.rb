@@ -23,9 +23,9 @@ check_client_connection false
 # local variable to guard against running a hook multiple times
 run_once = true
 
-before_fork do |server, worker|
+after_promotion do |server, worker|
   # the following is highly recommended for Rails
-  # as there's no need for the master process to hold a connection
+  # as there's no need for the mold process to hold a connection
   defined?(ActiveRecord::Base) and
     ActiveRecord::Base.connection.disconnect!
 
