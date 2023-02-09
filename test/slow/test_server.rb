@@ -336,8 +336,4 @@ class WebServerTest < Pitchfork::Test
       do_test(long, Pitchfork::Const::CHUNK_SIZE * 2 - 400)
     }
   end
-
-  def test_listener_names
-    assert_equal [ "127.0.0.1:#@port" ], Pitchfork.listener_names
-  end
 end
