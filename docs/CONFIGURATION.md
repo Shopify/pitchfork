@@ -238,19 +238,26 @@ application that are used in hooks.
 `pitchfork` also don't attempt to rescue hook errors. Raising from a worker hook will crash the worker,
 and raising from a master hook will bring the whole cluster down.
 
-### `before_fork`
+### `after_promotion`
 
 ```ruby
-before_fork do |server, worker|
+after_promotion do |server, mold|
   Database.disconnect!
 end
 ```
 
-Called in the context of the parent or mold.
+Called in the context of the mold when initially spawned or promotted.
+
+It's usage is similar to a `before_fork` callback found on other servers
+but it is called once on promotion rather than before forking each worker.
+
 For most protocols connections can be closed after fork, but some
 stateful protocols require to close connections before fork.
 
 That is the case for instance of many SQL databases protocols.
+
+This is also the callback in which memory optimizations, such as
+heap compaction should be done.
 
 ### `after_fork`
 
