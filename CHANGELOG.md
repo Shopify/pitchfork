@@ -1,5 +1,7 @@
 # Unreleased
 
+- Fork workers and molds with a clean stack to allow more generations. (#30)
+
 # 0.1.2
 
 - Improve Ruby 3.2 and Rack 3 compatibility.

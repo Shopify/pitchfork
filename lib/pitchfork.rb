@@ -146,6 +146,25 @@ module Pitchfork
       raise
     end
   end
+
+  def self.clean_fork(&block)
+    # We fork from a thread to start with a clean stack.
+    # If we didn't the base stack would grow after each refork
+    # putting an effective limit on the number of generations.
+    parent_thread = Thread.current
+    Thread.new do
+      current_thread = Thread.current
+      # We copy over any thread state it might have
+      parent_thread.keys.each do |key|
+        current_thread[key] = parent_thread[key]
+      end
+      parent_thread.thread_variables.each do |variable|
+        current_thread.thread_variable_set(variable, parent_thread.thread_variable_get(variable))
+      end
+
+      fork(&block)
+    end.value
+  end
   # :startdoc:
 end
 # :enddoc:
