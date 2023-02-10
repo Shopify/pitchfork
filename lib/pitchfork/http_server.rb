@@ -453,7 +453,7 @@ module Pitchfork
     def spawn_worker(worker, detach:)
       logger.info("worker=#{worker.nr} gen=#{worker.generation} spawning...")
 
-      pid = fork do
+      pid = Pitchfork.clean_fork do
         # We double fork so that the new worker is re-attached back
         # to the master.
         # This requires either PR_SET_CHILD_SUBREAPER which is exclusive to Linux 3.4
@@ -483,7 +483,7 @@ module Pitchfork
     def spawn_initial_mold
       mold = Worker.new(nil)
       mold.create_socketpair!
-      mold.pid = fork do
+      mold.pid = Pitchfork.clean_fork do
         mold.after_fork_in_child
         build_app!
         bind_listeners!
