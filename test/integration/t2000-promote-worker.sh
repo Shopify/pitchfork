@@ -7,7 +7,7 @@ if [ "$(uname)" = "Linux" ]; then
 	t_begin "setup and startup" && {
 		rtmpfiles curl_err
 		pitchfork_setup
-		pitchfork_spawn t0006.ru -c $pitchfork_config
+		pitchfork_spawn t2000.ru -c $pitchfork_config
 		pitchfork_wait_start
 	}
 
@@ -52,7 +52,7 @@ else
 	t_begin "setup and startup" && {
 		rtmpfiles curl_err
 		pitchfork_setup
-		pitchfork_spawn t0006.ru -c $pitchfork_config
+		pitchfork_spawn t2000.ru -c $pitchfork_config
 		pitchfork_wait_start
 	}
 
