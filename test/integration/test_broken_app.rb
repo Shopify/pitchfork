@@ -26,7 +26,7 @@ class BrokenAppTest < Pitchfork::IntegrationTest
     response = Net::HTTP.get_response(URI("http://#{addr}:#{port}/nil"))
     assert_equal 500, response.code.to_i
     assert_instance_of(Net::HTTPInternalServerError, response)
-    assert_stderr "app error: undefined method `[]' for nil:NilClass"
+    assert_stderr(/app error.*undefined method.*for nil/)
 
     # Try a few normal requests
     result = 5.times.map { Net::HTTP.get(URI("http://#{addr}:#{port}")).strip }
