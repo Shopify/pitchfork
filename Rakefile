@@ -11,6 +11,14 @@ Rake::TestTask.new("test:unit") do |t|
   t.warning = true
 end
 
+Rake::TestTask.new("test:integration") do |t|
+  t.libs << "test"
+  t.libs << "lib"
+  t.test_files = FileList["test/integration/**/test_*.rb"]
+  t.options = '-v' if ENV['CI'] || ENV['VERBOSE']
+  t.warning = true
+end
+
 namespace :test do
   # It's not so much that these tests are slow, but they tend to fork
   # and/or register signal handlers, so they if something goes wrong
@@ -32,7 +40,7 @@ namespace :test do
   # It's quite hard to work with and it would be good to convert all this
   # to Ruby integration tests, but while pitchfork is a moving target it's
   # preferable to edit the test suite as little as possible.
-  task integration: :compile do
+  task legacy_integration: :compile do
     File.write("test/integration/random_blob", File.read("/dev/random", 1_000_000))
     lib = File.expand_path("lib", __dir__)
     path = "#{File.expand_path("exe", __dir__)}:#{ENV["PATH"]}"
@@ -67,6 +75,6 @@ task :ragel do
   end
 end
 
-task test: %i(test:unit test:slow test:integration)
+task test: %i(test:unit test:slow test:integration test:legacy_integration)
 
 task default: %i(ragel compile test)

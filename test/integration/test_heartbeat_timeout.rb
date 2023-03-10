@@ -1,6 +1,4 @@
-require 'test_helper'
-require 'integration_test'
-require 'socket'
+require 'integration_test_helper'
 
 class HearbeatTimeoutTest < Pitchfork::IntegrationTest
   def test_heartbeat_timeout

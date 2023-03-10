@@ -1,6 +1,4 @@
-require 'test_helper'
-require 'integration_test'
-require 'socket'
+require 'integration_test_helper'
 
 class HttpBasicTest < Pitchfork::IntegrationTest
   def test_http_basic

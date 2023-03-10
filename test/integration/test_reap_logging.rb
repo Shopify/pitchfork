@@ -1,6 +1,4 @@
-require 'test_helper'
-require 'integration_test'
-require 'socket'
+require 'integration_test_helper'
 
 class ReapLoggingTest < Pitchfork::IntegrationTest
   AFTER_FORK_FILE = 'after_fork'
@@ -21,13 +19,13 @@ class ReapLoggingTest < Pitchfork::IntegrationTest
     Process.kill(:KILL, w1_pid)
 
     assert_new_worker_forked
-    assert_match(/ERROR -- :.*pid=#{w1_pid}.*reaped/, File.read("stderr.log"))
+    assert_stderr(/ERROR -- :.*pid=#{w1_pid}.*reaped/)
 
     w2_pid = Net::HTTP.get(URI("http://#{addr}:#{port}")).to_i
     Process.kill(:QUIT, w2_pid)
 
     assert_new_worker_forked
-    assert_match(/INFO -- :.*pid=#{w2_pid}.*reaped/, File.read("stderr.log"))
+    assert_stderr(/INFO -- :.*pid=#{w2_pid}.*reaped/)
 
     assert_clean_shutdown(pid)
   end

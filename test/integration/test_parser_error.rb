@@ -1,6 +1,4 @@
-require 'test_helper'
-require 'integration_test'
-require 'socket'
+require 'integration_test_helper'
 
 class ParserErrorTest < Pitchfork::IntegrationTest
   # TODO: Move all cases into one test to avoid respawning separate servers?

@@ -96,6 +96,11 @@ module Pitchfork
 
     private
 
+    def assert_stderr(pattern)
+      # We have to strip because file truncation is not always atomic.
+      assert_match(pattern, File.read("stderr.log").strip)
+    end
+
     def assert_clean_shutdown(pid, timeout = 4)
       Process.kill("QUIT", pid)
       status = nil
