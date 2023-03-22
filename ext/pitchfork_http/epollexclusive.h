@@ -90,8 +90,7 @@ get_readers(VALUE epio, VALUE ready, VALUE readers, VALUE timeout_msec)
 	Check_Type(ready, T_ARRAY);
 	Check_Type(readers, T_ARRAY);
 	epw.maxevents = RARRAY_LENINT(readers);
-	buf = rb_str_buf_new(sizeof(struct epoll_event) * epw.maxevents);
-	epw.events = (struct epoll_event *)RSTRING_PTR(buf);
+	epw.events = RB_ALLOCV_N(struct epoll_event, buf, epw.maxevents);
 	epio = rb_io_get_io(epio);
 	GetOpenFile(epio, epw.fptr);
 
@@ -109,7 +108,6 @@ get_readers(VALUE epio, VALUE ready, VALUE readers, VALUE timeout_msec)
 		if (RTEST(obj))
 			rb_ary_push(ready, obj);
 	}
-	rb_str_resize(buf, 0);
 	return Qfalse;
 }
 #endif /* USE_EPOLL */
