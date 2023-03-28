@@ -334,30 +334,6 @@ By default automatic reforking isn't enabled.
 
 Make sure to read the [fork safety guide](FORK_SAFETY.md) before enabling reforking.
 
-### `mold_selector`
-
-Sets the mold selector implementation.
-
-```ruby
-mold_selector do |server|
-  candidate = server.children.workers.sample # return an random worker
-  server.logger.info("worker=#{worker.nr} pid=#{worker.pid} selected as new mold")
-  candidate
-end
-```
-
-The has access to `server.children` a `Pitchfork::Children` instance.
-This object can be used to introspect the state of the cluster and select the most
-appropriate worker to be used as the new mold from which workers will be reforked.
-
-The default implementation selects the worker with the least
-amount of shared memory. This heuristic aim to select the most
-warmed up worker.
-
-This should be considered a very advanced API and it is discouraged
-to use it unless you are confident you have a clear understanding
-of pitchfork's architecture.
-
 ## Rack Features
 
 ### `default_middleware`

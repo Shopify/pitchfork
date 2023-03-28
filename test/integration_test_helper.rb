@@ -96,9 +96,23 @@ module Pitchfork
 
     private
 
-    def assert_stderr(pattern)
+    def assert_stderr(pattern, timeout: 1)
+      wait_stderr?(pattern, timeout)
+      assert_match(pattern, read_stderr)
+    end
+
+    def read_stderr
       # We have to strip because file truncation is not always atomic.
-      assert_match(pattern, File.read("stderr.log").strip)
+      File.read("stderr.log").strip
+    end
+
+    def wait_stderr?(pattern, timeout)
+      pattern = Regexp.new(Regexp.escape(pattern)) if String === pattern
+      (timeout * 10).times do
+        return true if pattern.match?(read_stderr)
+        sleep 0.1
+      end
+      false
     end
 
     def assert_clean_shutdown(pid, timeout = 4)

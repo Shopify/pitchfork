@@ -51,10 +51,9 @@ module Pitchfork
         end
       },
       :after_worker_ready => lambda { |server, worker|
-        server.logger.info("worker=#{worker.nr} ready")
+        server.logger.info("worker=#{worker.nr} gen=#{worker.generation} ready")
       },
       :early_hints => false,
-      :mold_selector => MoldSelector::LeastSharedMemory.new,
       :refork_condition => nil,
       :check_client_connection => false,
       :rewindable_input => true,
@@ -137,10 +136,6 @@ module Pitchfork
 
     def after_worker_exit(*args, &block)
       set_hook(:after_worker_exit, block_given? ? block : args[0], 3)
-    end
-
-    def mold_selector(*args, &block)
-      set_hook(:mold_selector, block_given? ? block : args[0], 3)
     end
 
     def timeout(seconds)
