@@ -62,7 +62,7 @@ class TestBoot < Pitchfork::IntegrationTest
 
     pid = spawn_server(app: APP, config: <<~RUBY)
       listen "#{addr}:#{port}"
-      worker_processes 2 # this should be >= nr_cpus
+      worker_processes 2
       refork_after [50, 100, 1000]
     RUBY
 
@@ -75,7 +75,7 @@ class TestBoot < Pitchfork::IntegrationTest
 
     pid = spawn_server(app: APP, config: <<~RUBY)
       listen "#{addr}:#{port}"
-      worker_processes 2 # this should be >= nr_cpus
+      worker_processes 2
       refork_after [50, 100, 1000]
       after_promotion do |_server, _worker|
         raise "Oops"

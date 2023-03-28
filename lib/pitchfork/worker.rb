@@ -12,9 +12,8 @@ module Pitchfork
   class Worker
     # :stopdoc:
     EXIT_SIGNALS = [:QUIT, :TERM]
-    @generation = 0
     attr_accessor :nr, :pid, :generation
-    attr_reader :master
+    attr_reader :master, :requests_count
 
     def initialize(nr, pid: nil, generation: 0)
       @nr = nr
@@ -23,6 +22,7 @@ module Pitchfork
       @mold = false
       @to_io = @master = nil
       @exiting = false
+      @requests_count = 0
       if nr
         build_raindrops(nr)
       else
@@ -42,13 +42,17 @@ module Pitchfork
       @exiting
     end
 
+    def outdated?
+      CURRENT_GENERATION_DROP[0] > @generation
+    end
+
     def update(message)
       message.class.members.each do |member|
         send("#{member}=", message.public_send(member))
       end
 
       case message
-      when Message::WorkerPromoted, Message::PromoteWorker
+      when Message::WorkerPromoted
         promoted!
       end
     end
@@ -60,9 +64,10 @@ module Pitchfork
       @master.close
     end
 
-    def acknowlege_promotion(control_socket)
+    def declare_promotion(control_socket)
       message = Message::WorkerPromoted.new(@nr, Process.pid, generation)
       control_socket.sendmsg(message)
+      CURRENT_GENERATION_DROP[0] = @generation
     end
 
     def promote(generation)
@@ -71,6 +76,11 @@ module Pitchfork
 
     def spawn_worker(new_worker)
       send_message_nonblock(Message::SpawnWorker.new(new_worker.nr))
+    end
+
+    def promote!
+      @generation += 1
+      promoted!
     end
 
     def promoted!
@@ -170,15 +180,11 @@ module Pitchfork
     end
 
     def reset
-      @requests_drop[@drop_offset] = 0
-    end
-
-    def requests_count
-      @requests_drop[@drop_offset]
+      @requests_count = 0
     end
 
     def increment_requests_count
-      @requests_drop.incr(@drop_offset)
+      @requests_count += 1
     end
 
     # called in both the master (reaping worker) and worker (SIGQUIT handler)
@@ -216,9 +222,9 @@ module Pitchfork
     end
 
     MOLD_DROP = Raindrops.new(1)
+    CURRENT_GENERATION_DROP = Raindrops.new(1)
     PER_DROP = Raindrops::PAGE_SIZE / Raindrops::SIZE
     TICK_DROPS = []
-    REQUEST_DROPS = []
 
     class << self
       # Since workers are created from another process, we have to
@@ -229,7 +235,6 @@ module Pitchfork
       def preallocate_drops(workers_count)
         0.upto(workers_count / PER_DROP) do |i|
           TICK_DROPS[i] = Raindrops.new(PER_DROP)
-          REQUEST_DROPS[i] = Raindrops.new(PER_DROP)
         end
       end
     end
@@ -238,8 +243,7 @@ module Pitchfork
       drop_index = drop_nr / PER_DROP
       @drop_offset = drop_nr % PER_DROP
       @tick_drop = TICK_DROPS[drop_index] ||= Raindrops.new(PER_DROP)
-      @requests_drop = REQUEST_DROPS[drop_index] ||= Raindrops.new(PER_DROP)
-      @tick_drop[@drop_offset] = @requests_drop[@drop_offset] = 0
+      @tick_drop[@drop_offset] = 0
     end
   end
 end

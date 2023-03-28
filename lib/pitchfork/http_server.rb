@@ -1,5 +1,6 @@
 # -*- encoding: binary -*-
 require 'pitchfork/pitchfork_http'
+require 'pitchfork/flock'
 
 module Pitchfork
   # This is the process manager of Pitchfork. This manages worker
@@ -13,7 +14,7 @@ module Pitchfork
                   :listener_opts, :children,
                   :orig_app, :config, :ready_pipe,
                   :default_middleware, :early_hints
-    attr_writer   :after_worker_exit, :after_worker_ready, :refork_condition, :mold_selector
+    attr_writer   :after_worker_exit, :after_worker_ready, :refork_condition
 
     attr_reader :logger
     include Pitchfork::SocketHelper
@@ -65,6 +66,8 @@ module Pitchfork
       @respawn = false
       @last_check = time_now
       @default_middleware = true
+      @promotion_lock = Flock.new("pitchfork-promotion")
+
       options = options.dup
       @ready_pipe = options.delete(:ready_pipe)
       @init_listeners = options[:listeners].dup || []
@@ -266,7 +269,7 @@ module Pitchfork
         end
         if @respawn
           maintain_worker_count
-          automatically_refork_workers if REFORKING_AVAILABLE
+          restart_outdated_workers if REFORKING_AVAILABLE
         end
 
         master_sleep(sleep_time) if sleep
@@ -318,6 +321,7 @@ module Pitchfork
         reap_all_workers
       end
       kill_each_child(:KILL)
+      @promotion_lock.unlink
     end
 
     def rewindable_input
@@ -429,17 +433,17 @@ module Pitchfork
       end
 
       unless @children.pending_promotion?
-        @children.refresh
-        if new_mold = @mold_selector.call(self)
+        if new_mold = @children.fresh_workers.first
           @children.promote(new_mold)
         else
-          logger.error("The mold select didn't return a candidate")
+          logger.error("No children at all???")
         end
       else
       end
     end
 
     def after_fork_internal
+      @promotion_lock.at_fork
       @control_socket[0].close_write # this is master-only, now
       @ready_pipe.close if @ready_pipe
       Pitchfork::Configurator::RACKUP.clear
@@ -484,6 +488,7 @@ module Pitchfork
       mold = Worker.new(nil)
       mold.create_socketpair!
       mold.pid = Pitchfork.clean_fork do
+        @promotion_lock.try_lock
         mold.after_fork_in_child
         build_app!
         bind_listeners!
@@ -533,34 +538,21 @@ module Pitchfork
       @children.each_worker { |w| w.nr >= worker_processes and w.soft_kill(:QUIT) }
     end
 
-    def automatically_refork_workers
+    def restart_outdated_workers
       # If we're already in the middle of forking a new generation, we just continue
-      if @children.mold
-        # We don't shutdown any outdated worker if any worker is already being spawned
-        # or a worker is exiting. Workers are only reforked one by one to minimize the
-        # impact on capacity.
-        # In the future we may want to use a dynamic limit, e.g. 10% of workers may be down at
-        # a time.
-        return if @children.pending_workers?
-        return if @children.workers.any?(&:exiting?)
+      return unless @children.mold
 
-        if outdated_worker = @children.workers.find { |w| w.generation < @children.mold.generation }
-          logger.info("worker=#{outdated_worker.nr} pid=#{outdated_worker.pid} restarting")
-          outdated_worker.soft_kill(:QUIT)
-          return # That's all folks
-        end
-      end
+      # We don't shutdown any outdated worker if any worker is already being spawned
+      # or a worker is exiting. Workers are only reforked one by one to minimize the
+      # impact on capacity.
+      # In the future we may want to use a dynamic limit, e.g. 10% of workers may be down at
+      # a time.
+      return if @children.pending_workers?
+      return if @children.workers.any?(&:exiting?)
 
-      # If all workers are alive and well, we can consider reforking a new generation
-      if @refork_condition
-        @children.refresh
-        if @refork_condition.met?(@children, logger)
-          logger.info("Refork condition met, scheduling a promotion")
-          unless @sig_queue.include?(:USR2)
-            @sig_queue << :USR2
-            awaken_master
-          end
-        end
+      if outdated_worker = @children.workers.find { |w| w.generation < @children.mold.generation }
+        logger.info("worker=#{outdated_worker.nr} pid=#{outdated_worker.pid} restarting")
+        outdated_worker.soft_kill(:QUIT)
       end
     end
 
@@ -721,6 +713,12 @@ module Pitchfork
           client = false if client == :wait_readable
           if client
             case client
+            when Message::PromoteWorker
+              if @promotion_lock.try_lock
+                logger.info("Refork asked by master, promoting ourselves")
+                worker.tick = time_now.to_i
+                return worker.promoted!
+              end
             when Message
               worker.update(client)
             else
@@ -729,11 +727,21 @@ module Pitchfork
             end
             worker.tick = time_now.to_i
           end
-          return if worker.mold? # We've been promoted we can exit the loop
         end
 
         # timeout so we can .tick and keep parent from SIGKILL-ing us
         worker.tick = time_now.to_i
+        if @refork_condition && !worker.outdated?
+          if @refork_condition.met?(worker, logger)
+            if @promotion_lock.try_lock
+              logger.info("Refork condition met, promoting ourselves")
+              return worker.promote! # We've been promoted we can exit the loop
+            else
+              # TODO: if we couldn't acquire the lock, we should backoff the refork_condition to avoid hammering the lock
+            end
+          end
+        end
+
         waiter.get_readers(ready, readers, @timeout * 500) # to milliseconds, but halved
       rescue => e
         Pitchfork.log_error(@logger, "listen loop error", e) if readers[0]
@@ -743,7 +751,8 @@ module Pitchfork
     def mold_loop(mold)
       readers = init_mold_process(mold)
       waiter = prep_readers(readers)
-      mold.acknowlege_promotion(@control_socket[1])
+      mold.declare_promotion(@control_socket[1])
+      @promotion_lock.unlock
       ready = readers.dup
 
       begin

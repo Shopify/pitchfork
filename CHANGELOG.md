@@ -1,5 +1,6 @@
 # Unreleased
 
+- Remove `mold_selector`. The promotion logic has been moved inside workers (#38).
 - Add the `after_promotion` callback.
 - Removed the `before_fork` callback.
 - Fork workers and molds with a clean stack to allow more generations. (#30)
