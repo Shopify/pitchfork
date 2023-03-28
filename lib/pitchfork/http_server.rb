@@ -28,7 +28,6 @@ module Pitchfork
     NOOP = '.'
 
     REFORKING_AVAILABLE = Pitchfork::CHILD_SUBREAPER_AVAILABLE || Process.pid == 1
-    MAX_SLEEP = 1 # seconds
 
     # :startdoc:
     # This Hash is considered a stable interface and changing its contents
@@ -353,8 +352,6 @@ module Pitchfork
 
     # wait for a signal handler to wake us up and then consume the pipe
     def master_sleep(sec)
-      sec = MAX_SLEEP if sec > MAX_SLEEP
-
       @control_socket[0].wait(sec) or return
       case message = @control_socket[0].recvmsg_nonblock(exception: false)
       when :wait_readable, NOOP
