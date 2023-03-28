@@ -391,15 +391,6 @@ module Pitchfork
       listener_fds
     end
 
-    def close_sockets_on_exec(sockets)
-      (3..1024).each do |io|
-        next if sockets.include?(io)
-        io = IO.for_fd(io) rescue next
-        io.autoclose = false
-        io.close_on_exec = true
-      end
-    end
-
     # forcibly terminate all workers that haven't checked in in timeout seconds.  The timeout is implemented using an unlinked File
     def murder_lazy_workers
       next_sleep = @timeout - 1
