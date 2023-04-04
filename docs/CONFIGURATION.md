@@ -322,8 +322,14 @@ once at least one worker processed `50` requests.
 
 Each element is a limit for the next generation. On the example above a new generation
 is triggered when a worker has processed 50 requests, then the second generation when
-a worker from the new generation processed an additional 100 requests and finally after another
+a worker from the new generation processed an additional 100 requests and finally after *every*
 1000 requests.
+
+If you don't want unlimited reforking, you can set `false` as the last element of the array:
+
+```ruby
+refork_after [50, 100, 1000, false]
+```
 
 Generally speaking Copy-on-Write efficiency tend to degrade fast during the early requests,
 and then less and less frequently.

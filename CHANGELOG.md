@@ -1,5 +1,6 @@
 # Unreleased
 
+- Refork indefinitely when `refork_after` is set, unless the last element is `false`.
 - Remove `mold_selector`. The promotion logic has been moved inside workers (#38).
 - Add the `after_promotion` callback.
 - Removed the `before_fork` callback.

@@ -8,7 +8,7 @@ module Pitchfork
       end
 
       def met?(worker, logger)
-        if limit = @limits[worker.generation]
+        if limit = @limits.fetch(worker.generation) { @limits.last }
           if worker.requests_count >= limit
             logger.info("worker=#{worker.nr} pid=#{worker.pid} processed #{worker.requests_count} requests, triggering a refork")
             return true
