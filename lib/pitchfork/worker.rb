@@ -183,8 +183,8 @@ module Pitchfork
       @requests_count = 0
     end
 
-    def increment_requests_count
-      @requests_count += 1
+    def increment_requests_count(by = 1)
+      @requests_count += by
     end
 
     # called in both the master (reaping worker) and worker (SIGQUIT handler)

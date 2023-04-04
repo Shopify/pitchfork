@@ -203,8 +203,12 @@ module Pitchfork
     # Defines the number of requests per-worker after which a new generation
     # should be spawned.
     #
+    # +false+ can be used to mark a final generation, otherwise the last request
+    # count is re-used indefinitely.
+    #
     # example:
     #.  refork_after [50, 100, 1000]
+    #.  refork_after [50, 100, 1000, false]
     #
     # Note that reforking is only available on Linux. Other Unix-like systems
     # don't have this capability.
