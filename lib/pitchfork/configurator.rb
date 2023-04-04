@@ -84,9 +84,6 @@ module Pitchfork
 
       RACKUP[:set_listener] and
         set[:listeners] << "#{RACKUP[:host]}:#{RACKUP[:port]}"
-
-      RACKUP[:no_default_middleware] and
-        set[:default_middleware] = false
     end
 
     def commit!(server, options = {}) #:nodoc:
@@ -147,10 +144,6 @@ module Pitchfork
 
     def worker_processes(nr)
       set_int(:worker_processes, nr, 1)
-    end
-
-    def default_middleware(bool)
-      set_bool(:default_middleware, bool)
     end
 
     def early_hints(bool)

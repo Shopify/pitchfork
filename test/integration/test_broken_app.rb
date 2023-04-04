@@ -4,7 +4,7 @@ class BrokenAppTest < Pitchfork::IntegrationTest
   def test_graceful_handling_of_broken_apps
     addr, port = unused_port
 
-    pid = spawn_server("-E", "none", app: File.join(ROOT, "test/integration/broken-app.ru"), config: <<~CONFIG,)
+    pid = spawn_server("-E", "none", app: File.join(ROOT, "test/integration/broken-app.ru"), lint: false, config: <<~CONFIG,)
       listen "#{addr}:#{port}"
     CONFIG
 

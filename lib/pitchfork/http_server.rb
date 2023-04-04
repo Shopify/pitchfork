@@ -64,7 +64,6 @@ module Pitchfork
       @app = app
       @respawn = false
       @last_check = time_now
-      @default_middleware = true
       @promotion_lock = Flock.new("pitchfork-promotion")
 
       options = options.dup
