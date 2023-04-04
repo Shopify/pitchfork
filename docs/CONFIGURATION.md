@@ -342,10 +342,6 @@ Make sure to read the [fork safety guide](FORK_SAFETY.md) before enabling refork
 
 ## Rack Features
 
-### `default_middleware`
-
-Sets whether to add Pitchfork's default middlewares. Defaults to `true`.
-
 ### `early_hints`
 
 Sets whether to enable the proposed early hints Rack API. Defaults to `false`.

@@ -156,14 +156,14 @@ module Pitchfork
       false
     end
 
-    def spawn_server(*args, app:, config:)
+    def spawn_server(*args, app:, config:, lint: true)
       File.write("pitchfork.conf.rb", config)
-      spawn(BIN, app, "-c", "pitchfork.conf.rb", *args)
+      env = lint ? { "RACK_ENV" => "development" } : {}
+      spawn(env, BIN, app, "-c", "pitchfork.conf.rb", *args)
     end
 
     def spawn(*args)
-      env = args.first.is_a?(Hash) ? args.unshift : {}
-      pid = Process.spawn(env, *args, out: "stdout.log", err: "stderr.log")
+      pid = Process.spawn(*args, out: "stdout.log", err: "stderr.log")
       @_pids << pid
       pid
     end

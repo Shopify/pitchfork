@@ -57,40 +57,15 @@ module Pitchfork
         Object.const_get(File.basename(ru, '.rb').capitalize)
       end
 
-      if $DEBUG
-        require 'pp'
-        pp({ :inner_app => inner_app })
-      end
-
-      return inner_app unless server.default_middleware
-
-      middleware = { # order matters
-        ContentLength: nil,
-        Chunked: nil,
-        CommonLogger: [ $stderr ],
-        ShowExceptions: nil,
-        Lint: nil,
-        TempfileReaper: nil,
-      }
-
-      # return value, matches rackup defaults based on env
-      # Pitchfork does not support persistent connections, but Rainbows!
-      # and Zbatery both do.  Users accustomed to the Rack::Server default
-      # middlewares will need ContentLength/Chunked middlewares.
       case ENV["RACK_ENV"]
       when "development"
-      when "deployment"
-        middleware.delete(:ShowExceptions)
-        middleware.delete(:Lint)
+        Rack::Builder.new do
+          use(Rack::Lint)
+          run inner_app
+        end.to_app
       else
-        return inner_app
+        inner_app
       end
-      Rack::Builder.new do
-        middleware.each do |m, args|
-          use(Rack.const_get(m), *args) if Rack.const_defined?(m)
-        end
-        run inner_app
-      end.to_app
     end
   end
 
