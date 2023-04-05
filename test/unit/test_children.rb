@@ -28,16 +28,25 @@ module Pitchfork
       assert_equal [worker], @children.workers
     end
 
-    def test_message_worker_promoted
-      worker = Worker.new(0)
-      @children.register(worker)
-      @children.update(Message::WorkerSpawned.new(0, 42, 0, nil))
+    def test_message_mold_spawned
+      assert_nil @children.mold
+      @children.update(Message::MoldSpawned.new(nil, 42, 1, nil))
 
       assert_nil @children.mold
-      @children.update(Message::WorkerPromoted.new(0, 42, 0))
-      assert_predicate worker, :mold?
-      assert_same worker, @children.mold
-      assert_equal [worker], @children.molds
+      assert_equal 0, @children.molds.size
+      assert_predicate @children, :pending_promotion?
+      assert_equal [], @children.workers
+      assert_equal 0, @children.workers_count
+    end
+
+    def test_message_mold_ready
+      assert_nil @children.mold
+      @children.update(Message::MoldSpawned.new(nil, 42, 1, nil))
+      mold = @children.update(Message::MoldReady.new(nil, 42, 1))
+
+      assert_equal mold, @children.mold
+      assert_equal [mold], @children.molds
+      refute_predicate @children, :pending_promotion?
       assert_equal [], @children.workers
       assert_equal 0, @children.workers_count
     end
@@ -53,18 +62,27 @@ module Pitchfork
       assert_nil @children.reap(worker.pid)
     end
 
-    def test_reap_mold
-      worker = Worker.new(0)
-      @children.register(worker)
-      assert_predicate @children, :pending_workers?
-
-      @children.update(Message::WorkerSpawned.new(0, 42, 0, nil))
-      @children.update(Message::WorkerPromoted.new(0, 42, 0))
-
-      assert_equal worker, @children.reap(worker.pid)
-      assert_nil @children.reap(worker.pid)
+    def test_reap_old_molds
       assert_nil @children.mold
-      assert_equal [], @children.molds
+      @children.update(Message::MoldSpawned.new(nil, 24, 0, nil))
+      @children.update(Message::MoldReady.new(nil, 24, 0))
+
+      first_mold = @children.mold
+      refute_nil first_mold
+      assert_equal 24, first_mold.pid
+
+      @children.update(Message::MoldSpawned.new(nil, 42, 1, nil))
+      @children.update(Message::MoldReady.new(nil, 42, 1))
+      second_mold = @children.mold
+      refute_nil second_mold
+      assert_equal 42, second_mold.pid
+
+      assert_equal [first_mold, second_mold], @children.molds
+
+      @children.reap(24)
+
+      assert_equal [second_mold], @children.molds
+      assert_equal second_mold, @children.mold
     end
 
     def test_reap_pending_mold

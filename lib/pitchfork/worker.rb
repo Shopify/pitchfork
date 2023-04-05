@@ -42,6 +42,10 @@ module Pitchfork
       @exiting
     end
 
+    def pending?
+      @master.nil?
+    end
+
     def outdated?
       CURRENT_GENERATION_DROP[0] > @generation
     end
@@ -50,22 +54,24 @@ module Pitchfork
       message.class.members.each do |member|
         send("#{member}=", message.public_send(member))
       end
-
-      case message
-      when Message::WorkerPromoted
-        promoted!
-      end
     end
 
     def register_to_master(control_socket)
       create_socketpair!
-      message = Message::WorkerSpawned.new(@nr, Process.pid, generation, @master)
+      message = Message::WorkerSpawned.new(@nr, @pid, generation, @master)
       control_socket.sendmsg(message)
       @master.close
     end
 
-    def declare_promotion(control_socket)
-      message = Message::WorkerPromoted.new(@nr, Process.pid, generation)
+    def start_promotion(control_socket)
+      create_socketpair!
+      message = Message::MoldSpawned.new(@nr, @pid, generation, @master)
+      control_socket.sendmsg(message)
+      @master.close
+    end
+
+    def finish_promotion(control_socket)
+      message = Message::MoldReady.new(@nr, @pid, generation)
       control_socket.sendmsg(message)
       CURRENT_GENERATION_DROP[0] = @generation
     end
@@ -198,7 +204,7 @@ module Pitchfork
     end
 
     def after_fork_in_child
-      @master.close
+      @master&.close
     end
 
     private

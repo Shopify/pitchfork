@@ -133,7 +133,7 @@ module Pitchfork
         break if status = Process.wait2(pid, Process::WNOHANG)
         sleep 0.5
       end
-      refute_nil status
+      assert status, "process pid=#{pid} didn't exit in #{timeout} seconds"
       assert_equal exitstatus, status[1].exitstatus
     end
 

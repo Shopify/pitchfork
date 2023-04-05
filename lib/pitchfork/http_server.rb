@@ -289,13 +289,15 @@ module Pitchfork
         worker = @children.update(message)
         # TODO: should we send a message to the worker to acknowledge?
         logger.info "worker=#{worker.nr} pid=#{worker.pid} registered"
-      when Message::WorkerPromoted
+      when Message::MoldSpawned
+        new_mold = @children.update(message)
+        logger.info("mold pid=#{new_mold.pid} gen=#{new_mold.generation} spawned")
+      when Message::MoldReady
         old_molds = @children.molds
-        new_mold = @children.fetch(message.pid)
-        logger.info("worker=#{new_mold.nr} pid=#{new_mold.pid} promoted to a mold")
-        @children.update(message)
+        new_mold = @children.update(message)
+        logger.info("mold pid=#{new_mold.pid} gen=#{new_mold.generation} ready")
         old_molds.each do |old_mold|
-          logger.info("Terminating old mold pid=#{old_mold.pid}")
+          logger.info("Terminating old mold pid=#{old_mold.pid} gen=#{old_mold.generation}")
           old_mold.soft_kill(:QUIT)
         end
       else
@@ -449,9 +451,6 @@ module Pitchfork
 
         after_fork_internal
         worker_loop(worker)
-        if worker.mold?
-          mold_loop(worker)
-        end
       end
 
       worker
@@ -461,12 +460,14 @@ module Pitchfork
       mold = Worker.new(nil)
       mold.create_socketpair!
       mold.pid = Pitchfork.clean_fork do
+        mold.pid = Process.pid
         @promotion_lock.try_lock
         mold.after_fork_in_child
         build_app!
         bind_listeners!
         mold_loop(mold)
       end
+      @promotion_lock.at_fork
       @children.register_mold(mold)
     end
 
@@ -480,7 +481,7 @@ module Pitchfork
 
         if REFORKING_AVAILABLE
           unless @children.mold&.spawn_worker(worker)
-            @logger.error("Failed to send a spawn_woker command")
+            @logger.error("Failed to send a spawn_worker command")
           end
         else
           spawn_worker(worker, detach: false)
@@ -648,10 +649,10 @@ module Pitchfork
       readers
     end
 
-    def init_mold_process(worker)
-      proc_name "mold (gen: #{worker.generation})"
-      after_promotion.call(self, worker)
-      readers = [worker]
+    def init_mold_process(mold)
+      proc_name "mold (gen: #{mold.generation})"
+      after_promotion.call(self, mold)
+      readers = [mold]
       trap(:QUIT) { nuke_listeners!(readers) }
       readers
     end
@@ -687,11 +688,7 @@ module Pitchfork
           if client
             case client
             when Message::PromoteWorker
-              if @promotion_lock.try_lock
-                logger.info("Refork asked by master, promoting ourselves")
-                worker.tick = time_now.to_i
-                return worker.promoted!
-              end
+              spawn_mold(worker.generation)
             when Message
               worker.update(client)
             else
@@ -706,10 +703,8 @@ module Pitchfork
         worker.tick = Pitchfork.time_now(true)
         if @refork_condition && !worker.outdated?
           if @refork_condition.met?(worker, logger)
-            if @promotion_lock.try_lock
-              logger.info("Refork condition met, promoting ourselves")
-              return worker.promote! # We've been promoted we can exit the loop
-            else
+            logger.info("Refork condition met, promoting ourselves")
+            unless spawn_mold(worker.generation)
               # TODO: if we couldn't acquire the lock, we should backoff the refork_condition to avoid hammering the lock
             end
           end
@@ -721,12 +716,28 @@ module Pitchfork
       end while readers[0]
     end
 
+    def spawn_mold(current_generation)
+      return false unless @promotion_lock.try_lock
+
+      begin
+        Pitchfork.fork_sibling do
+          mold = Worker.new(nil, pid: Process.pid, generation: current_generation)
+          mold.promote!
+          mold.start_promotion(@control_socket[1])
+          mold_loop(mold)
+        end
+      ensure
+        @promotion_lock.at_fork # We let the spawned mold own the lock
+      end
+    end
+
     def mold_loop(mold)
       readers = init_mold_process(mold)
       waiter = prep_readers(readers)
-      mold.declare_promotion(@control_socket[1])
       @promotion_lock.unlock
       ready = readers.dup
+
+      mold.finish_promotion(@control_socket[1])
 
       begin
         mold.tick = Pitchfork.time_now(true)

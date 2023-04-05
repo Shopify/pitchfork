@@ -123,7 +123,8 @@ module Pitchfork
     SpawnWorker = Message.new(:nr)
     WorkerSpawned = Message.new(:nr, :pid, :generation, :pipe)
     PromoteWorker = Message.new(:generation)
-    WorkerPromoted = Message.new(:nr, :pid, :generation)
+    MoldSpawned = Message.new(:nr, :pid, :generation, :pipe)
+    MoldReady = Message.new(:nr, :pid, :generation)
 
     SoftKill = Message.new(:signum)
   end

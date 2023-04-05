@@ -1,5 +1,7 @@
 # Unreleased
 
+- Spawn mold from workers instead of promoting workers (#42).
+
 # 0.2.0
 
 - Remove default middlewares.
