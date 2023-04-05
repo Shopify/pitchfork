@@ -444,14 +444,7 @@ module Pitchfork
     def spawn_worker(worker, detach:)
       logger.info("worker=#{worker.nr} gen=#{worker.generation} spawning...")
 
-      pid = Pitchfork.clean_fork do
-        # We double fork so that the new worker is re-attached back
-        # to the master.
-        # This requires either PR_SET_CHILD_SUBREAPER which is exclusive to Linux 3.4
-        # or the master to be PID 1.
-        if detach && fork
-          exit
-        end
+      Pitchfork.fork_sibling do
         worker.pid = Process.pid
 
         after_fork_internal
@@ -459,13 +452,6 @@ module Pitchfork
         if worker.mold?
           mold_loop(worker)
         end
-        exit
-      end
-
-      if detach
-        # If we double forked, we need to wait(2) so that the middle
-        # process doesn't end up a zombie.
-        Process.wait(pid)
       end
 
       worker

@@ -136,9 +136,24 @@ module Pitchfork
       parent_thread.thread_variables.each do |variable|
         current_thread.thread_variable_set(variable, parent_thread.thread_variable_get(variable))
       end
-
-      fork(&block)
+      Process.fork(&block)
     end.value
+  end
+
+  def self.fork_sibling(&block)
+    # We double fork so that the new worker is re-attached back
+    # to the master.
+    # This requires either PR_SET_CHILD_SUBREAPER which is exclusive to Linux 3.4
+    # or the master to be PID 1.
+    if middle_pid = Process.fork # parent
+      # We need to wait(2) so that the middle process doesn't end up a zombie.
+      Process.wait(middle_pid)
+    else # first child
+      clean_fork(&block) # detach into a grand child
+      exit
+    end
+
+    nil # it's tricky to return the PID
   end
   # :startdoc:
 end
