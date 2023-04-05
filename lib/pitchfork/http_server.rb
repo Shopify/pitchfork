@@ -63,7 +63,7 @@ module Pitchfork
       @exit_status = 0
       @app = app
       @respawn = false
-      @last_check = time_now
+      @last_check = Pitchfork.time_now
       @promotion_lock = Flock.new("pitchfork-promotion")
 
       options = options.dup
@@ -259,7 +259,7 @@ module Pitchfork
       when nil
         # avoid murdering workers after our master process (or the
         # machine) comes out of suspend/hibernation
-        if (@last_check + @timeout) >= (@last_check = time_now)
+        if (@last_check + @timeout) >= (@last_check = Pitchfork.time_now)
           sleep_time = murder_lazy_workers
         else
           sleep_time = @timeout/2.0 + 1
@@ -308,8 +308,8 @@ module Pitchfork
     def stop(graceful = true)
       wait_for_pending_workers
       self.listeners = []
-      limit = time_now + timeout
-      until @children.workers.empty? || time_now > limit
+      limit = Pitchfork.time_now + timeout
+      until @children.workers.empty? || Pitchfork.time_now > limit
         if graceful
           soft_kill_each_child(:QUIT)
         else
@@ -393,7 +393,7 @@ module Pitchfork
     # forcibly terminate all workers that haven't checked in in timeout seconds.  The timeout is implemented using an unlinked File
     def murder_lazy_workers
       next_sleep = @timeout - 1
-      now = time_now.to_i
+      now = Pitchfork.time_now(true)
       @children.workers.each do |worker|
         tick = worker.tick
         0 == tick and next # skip workers that haven't processed any clients
@@ -678,7 +678,7 @@ module Pitchfork
       @after_worker_ready.call(self, worker)
 
       begin
-        worker.tick = time_now.to_i
+        worker.tick = Pitchfork.time_now(true)
         while sock = ready.shift
           # Pitchfork::Worker#accept_nonblock is not like accept(2) at all,
           # but that will return false
@@ -698,12 +698,12 @@ module Pitchfork
               process_client(client)
               worker.increment_requests_count
             end
-            worker.tick = time_now.to_i
+            worker.tick = Pitchfork.time_now(true)
           end
         end
 
         # timeout so we can .tick and keep parent from SIGKILL-ing us
-        worker.tick = time_now.to_i
+        worker.tick = Pitchfork.time_now(true)
         if @refork_condition && !worker.outdated?
           if @refork_condition.met?(worker, logger)
             if @promotion_lock.try_lock
@@ -729,7 +729,7 @@ module Pitchfork
       ready = readers.dup
 
       begin
-        mold.tick = time_now.to_i
+        mold.tick = Pitchfork.time_now(true)
         while sock = ready.shift
           # Pitchfork::Worker#accept_nonblock is not like accept(2) at all,
           # but that will return false
@@ -749,7 +749,7 @@ module Pitchfork
         end
 
         # timeout so we can .tick and keep parent from SIGKILL-ing us
-        mold.tick = time_now.to_i
+        mold.tick = Pitchfork.time_now(true)
         waiter.get_readers(ready, readers, @timeout * 500) # to milliseconds, but halved
       rescue => e
         Pitchfork.log_error(@logger, "mold loop error", e) if readers[0]
@@ -805,10 +805,6 @@ module Pitchfork
       end
       listeners.each { |addr| listen(addr) }
       raise ArgumentError, "no listeners" if LISTENERS.empty?
-    end
-
-    def time_now
-      Process.clock_gettime(Process::CLOCK_MONOTONIC)
     end
   end
 end

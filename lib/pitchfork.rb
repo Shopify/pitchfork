@@ -155,6 +155,10 @@ module Pitchfork
 
     nil # it's tricky to return the PID
   end
+
+  def self.time_now(int = false)
+    Process.clock_gettime(Process::CLOCK_MONOTONIC, int ? :second : :float_second)
+  end
   # :startdoc:
 end
 # :enddoc:
