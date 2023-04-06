@@ -702,12 +702,13 @@ module Pitchfork
 
           # timeout so we can .tick and keep parent from SIGKILL-ing us
           worker.tick = Pitchfork.time_now(true)
+
           if @refork_condition && !worker.outdated?
             if @refork_condition.met?(worker, logger)
-              logger.info("Refork condition met, promoting ourselves")
-              unless spawn_mold(worker.generation)
-                # TODO: if we couldn't acquire the lock, we should backoff the refork_condition to avoid hammering the lock
+              if spawn_mold(worker.generation)
+                logger.info("Refork condition met, promoting ourselves")
               end
+              @refork_condition.backoff!
             end
           end
 
@@ -728,6 +729,7 @@ module Pitchfork
           mold.start_promotion(@control_socket[1])
           mold_loop(mold)
         end
+        true
       ensure
         @promotion_lock.at_fork # We let the spawned mold own the lock
       end

@@ -1,5 +1,6 @@
 # Unreleased
 
+- Backoff 10s after every mold spawning attempt.
 - Spawn mold from workers instead of promoting workers (#42).
 
 # 0.2.0
