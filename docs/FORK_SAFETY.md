@@ -12,16 +12,21 @@ end up shared between the parent and child process. This is never what you
 want, so any code keeping persistent connections should close them either
 before or after the fork happens.
 
-`pitchfork` provide two callbacks in its configuration file to do so:
+Most modern Ruby libraries automatically handle this, it's the case of
+Active Record, redis-rb, dalli, net-http-persistent, etc.
+
+However, for libraries that aren't automatically fork-safe
+`pitchfork` provide two callbacks in its configuration file to manually
+reopen connections and restart threads:
 
 ```ruby
 # pitchfork.conf.rb
 
-before_fork do
+after_mold_fork do
   Sequel::DATABASES.each(&:disconnect)
 end
 
-after_fork do
+after_worker_fork do
   SomeLibary.connection.close
 end
 ```

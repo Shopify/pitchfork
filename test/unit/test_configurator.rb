@@ -160,18 +160,18 @@ class TestConfigurator < Pitchfork::Test
     end
   end
 
-  def test_after_fork_proc
+  def test_after_worker_fork_proc
     test_struct = TestStruct.new
     [ proc { |a,b| }, Proc.new { |a,b| }, lambda { |a,b| } ].each do |my_proc|
-      Pitchfork::Configurator.new(:after_fork => my_proc).commit!(test_struct)
-      assert_equal my_proc, test_struct.after_fork
+      Pitchfork::Configurator.new(:after_worker_fork => my_proc).commit!(test_struct)
+      assert_equal my_proc, test_struct.after_worker_fork
     end
   end
 
-  def test_after_fork_wrong_arity
+  def test_after_worker_fork_wrong_arity
     [ proc { |a| }, Proc.new { }, lambda { |a,b,c| } ].each do |my_proc|
       assert_raises(ArgumentError) do
-        Pitchfork::Configurator.new(:after_fork => my_proc)
+        Pitchfork::Configurator.new(:after_worker_fork => my_proc)
       end
     end
   end

@@ -32,7 +32,7 @@ class SignalsTest < Pitchfork::Test
     File.unlink(@tmp.path)
     @server_opts = {
       :listeners => [ "127.0.0.1:#@port", @sock.path ],
-      :after_fork => lambda { |server,worker|
+      :after_worker_fork => lambda { |server, worker|
         trap(:HUP) { @tmp.syswrite('.') }
       },
     }

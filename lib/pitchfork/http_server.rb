@@ -10,7 +10,7 @@ module Pitchfork
   class HttpServer
     # :stopdoc:
     attr_accessor :app, :timeout, :worker_processes,
-                  :after_fork, :after_promotion,
+                  :after_worker_fork, :after_mold_fork,
                   :listener_opts, :children,
                   :orig_app, :config, :ready_pipe,
                   :default_middleware, :early_hints
@@ -129,7 +129,7 @@ module Pitchfork
       else
         build_app!
         bind_listeners!
-        after_promotion.call(self, Worker.new(nil, pid: $$).promoted!)
+        after_mold_fork.call(self, Worker.new(nil, pid: $$).promoted!)
       end
 
       if sync
@@ -176,7 +176,7 @@ module Pitchfork
 
     # add a given address to the +listeners+ set, idempotently
     # Allows workers to add a private, per-process listener via the
-    # after_fork hook.  Very useful for debugging and testing.
+    # after_worker_fork hook.  Very useful for debugging and testing.
     # +:tries+ may be specified as an option for the number of times
     # to retry, and +:delay+ may be specified as the time in seconds
     # to delay between retries.
@@ -638,7 +638,7 @@ module Pitchfork
       proc_name "worker[#{worker.nr}] (gen:#{worker.generation})"
       @children = nil
 
-      after_fork.call(self, worker) # can drop perms and create listeners
+      after_worker_fork.call(self, worker) # can drop perms and create listeners
       LISTENERS.each { |sock| sock.close_on_exec = true }
 
       @config = nil
@@ -651,7 +651,7 @@ module Pitchfork
 
     def init_mold_process(mold)
       proc_name "mold (gen: #{mold.generation})"
-      after_promotion.call(self, mold)
+      after_mold_fork.call(self, mold)
       readers = [mold]
       trap(:QUIT) { nuke_listeners!(readers) }
       readers
