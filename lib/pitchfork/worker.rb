@@ -221,7 +221,7 @@ module Pitchfork
         else
           success = true
         end
-      rescue Errno::EPIPE
+      rescue Errno::EPIPE, Errno::ECONNRESET
         # worker will be reaped soon
       end
       success

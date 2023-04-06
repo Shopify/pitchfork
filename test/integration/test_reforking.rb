@@ -1,7 +1,7 @@
 require 'integration_test_helper'
 
 class ReforkingTest < Pitchfork::IntegrationTest
-  if Pitchfork::HttpServer::REFORKING_AVAILABLE
+  if Pitchfork::REFORKING_AVAILABLE
     def test_reforking
       addr, port = unused_port
 

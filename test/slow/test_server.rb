@@ -97,7 +97,7 @@ class WebServerStartTest < Pitchfork::Test
     assert worker_pid != 0
     tmp.sysseek(0)
     loader_pid = tmp.sysread(4096).to_i
-    if Pitchfork::HttpServer::REFORKING_AVAILABLE
+    if Pitchfork::REFORKING_AVAILABLE
       # If reforking is available the mold is the loader
       refute_equal $$, loader_pid
     else

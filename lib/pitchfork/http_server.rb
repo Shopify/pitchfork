@@ -27,8 +27,6 @@ module Pitchfork
 
     NOOP = '.'
 
-    REFORKING_AVAILABLE = Pitchfork::CHILD_SUBREAPER_AVAILABLE || Process.pid == 1
-
     # :startdoc:
     # This Hash is considered a stable interface and changing its contents
     # will allow you to switch between different installations of Pitchfork
@@ -308,6 +306,7 @@ module Pitchfork
 
     # Terminates all workers, but does not exit master process
     def stop(graceful = true)
+      @respawn = false
       wait_for_pending_workers
       self.listeners = []
       limit = Pitchfork.time_now + timeout
@@ -317,8 +316,9 @@ module Pitchfork
         else
           kill_each_child(:TERM)
         end
-        sleep(0.1)
-        reap_all_workers
+        if monitor_loop(false) == StopIteration
+          return StopIteration
+        end
       end
       kill_each_child(:KILL)
       @promotion_lock.unlink
@@ -678,42 +678,44 @@ module Pitchfork
       ready = readers.dup
       @after_worker_ready.call(self, worker)
 
-      begin
-        worker.tick = Pitchfork.time_now(true)
-        while sock = ready.shift
-          # Pitchfork::Worker#accept_nonblock is not like accept(2) at all,
-          # but that will return false
-          client = sock.accept_nonblock(exception: false)
-          client = false if client == :wait_readable
-          if client
-            case client
-            when Message::PromoteWorker
-              spawn_mold(worker.generation)
-            when Message
-              worker.update(client)
-            else
-              process_client(client)
-              worker.increment_requests_count
-            end
-            worker.tick = Pitchfork.time_now(true)
-          end
-        end
-
-        # timeout so we can .tick and keep parent from SIGKILL-ing us
-        worker.tick = Pitchfork.time_now(true)
-        if @refork_condition && !worker.outdated?
-          if @refork_condition.met?(worker, logger)
-            logger.info("Refork condition met, promoting ourselves")
-            unless spawn_mold(worker.generation)
-              # TODO: if we couldn't acquire the lock, we should backoff the refork_condition to avoid hammering the lock
+      while readers[0]
+        begin
+          worker.tick = Pitchfork.time_now(true)
+          while sock = ready.shift
+            # Pitchfork::Worker#accept_nonblock is not like accept(2) at all,
+            # but that will return false
+            client = sock.accept_nonblock(exception: false)
+            client = false if client == :wait_readable
+            if client
+              case client
+              when Message::PromoteWorker
+                spawn_mold(worker.generation)
+              when Message
+                worker.update(client)
+              else
+                process_client(client)
+                worker.increment_requests_count
+              end
+              worker.tick = Pitchfork.time_now(true)
             end
           end
-        end
 
-        waiter.get_readers(ready, readers, @timeout * 500) # to milliseconds, but halved
-      rescue => e
-        Pitchfork.log_error(@logger, "listen loop error", e) if readers[0]
-      end while readers[0]
+          # timeout so we can .tick and keep parent from SIGKILL-ing us
+          worker.tick = Pitchfork.time_now(true)
+          if @refork_condition && !worker.outdated?
+            if @refork_condition.met?(worker, logger)
+              logger.info("Refork condition met, promoting ourselves")
+              unless spawn_mold(worker.generation)
+                # TODO: if we couldn't acquire the lock, we should backoff the refork_condition to avoid hammering the lock
+              end
+            end
+          end
+
+          waiter.get_readers(ready, readers, @timeout * 500) # to milliseconds, but halved
+        rescue => e
+          Pitchfork.log_error(@logger, "listen loop error", e) if readers[0]
+        end
+      end
     end
 
     def spawn_mold(current_generation)

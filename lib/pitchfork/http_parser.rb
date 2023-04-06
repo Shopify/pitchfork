@@ -1,7 +1,6 @@
 # -*- encoding: binary -*-
 # :enddoc:
 # no stable API here
-require 'pitchfork/pitchfork_http'
 
 module Pitchfork
   class HttpParser

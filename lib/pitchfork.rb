@@ -141,16 +141,20 @@ module Pitchfork
   end
 
   def self.fork_sibling(&block)
-    # We double fork so that the new worker is re-attached back
-    # to the master.
-    # This requires either PR_SET_CHILD_SUBREAPER which is exclusive to Linux 3.4
-    # or the master to be PID 1.
-    if middle_pid = Process.fork # parent
-      # We need to wait(2) so that the middle process doesn't end up a zombie.
-      Process.wait(middle_pid)
-    else # first child
-      clean_fork(&block) # detach into a grand child
-      exit
+    if REFORKING_AVAILABLE
+      # We double fork so that the new worker is re-attached back
+      # to the master.
+      # This requires either PR_SET_CHILD_SUBREAPER which is exclusive to Linux 3.4
+      # or the master to be PID 1.
+      if middle_pid = Process.fork # parent
+        # We need to wait(2) so that the middle process doesn't end up a zombie.
+        Process.wait(middle_pid)
+      else # first child
+        clean_fork(&block) # detach into a grand child
+        exit
+      end
+    else
+      clean_fork(&block)
     end
 
     nil # it's tricky to return the PID
@@ -162,6 +166,10 @@ module Pitchfork
   # :startdoc:
 end
 # :enddoc:
+
+require 'pitchfork/pitchfork_http'
+
+Pitchfork::REFORKING_AVAILABLE = Pitchfork::CHILD_SUBREAPER_AVAILABLE || Process.pid == 1
 
 %w(
   const socket_helper stream_input tee_input mem_info children message http_parser
