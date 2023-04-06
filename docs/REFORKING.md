@@ -46,50 +46,60 @@ first time, if you take a warmed up worker out of rotation, and use it to fork n
 be shared again, and most of them won't be invalidated anymore.
 
 
-When you start `pitchfork` it forks the desired amount of workers:
+When you start `pitchfork` it forks a `mold` process which loads your application:
 
 ```
 PID   COMMAND
 100   \_ pitchfork master
-101       \_ pitchfork worker[0] (gen:0)
-102       \_ pitchfork worker[1] (gen:0)
-103       \_ pitchfork worker[2] (gen:0)
-104       \_ pitchfork worker[3] (gen:0)
+101       \_ pitchfork mold (gen:0)
 ```
 
-When a reforking is triggered, one of the workers is selected to become a `mold`, and is taken out of rotation.
-When promoted, molds no longer process any incoming HTTP requests, they become inactive:
+Once the `mold` is done loading, the `master` asks it to spawn the desired number of workers:
 
 ```
 PID   COMMAND
 100   \_ pitchfork master
-101       \_ pitchfork mold (gen:1)
-102       \_ pitchfork worker[1] (gen:0)
-103       \_ pitchfork worker[2] (gen:0)
-104       \_ pitchfork worker[3] (gen:0)
+101       \_ pitchfork mold (gen:0)
+102       \_ pitchfork worker[0] (gen:0)
+103       \_ pitchfork worker[1] (gen:0)
+104       \_ pitchfork worker[2] (gen:0)
+105       \_ pitchfork worker[3] (gen:0)
 ```
 
-When a new mold has been promoted, `pitchfork` starts a slow rollout of older workers and replace them with fresh workers
+When a reforking is triggered, one of the workers is selected to fork a new `mold`.
+
+```
+PID   COMMAND
+100   \_ pitchfork master
+101       \_ pitchfork mold (gen:0)
+102       \_ pitchfork worker[0] (gen:0)
+103       \_ pitchfork worker[1] (gen:0)
+104       \_ pitchfork worker[2] (gen:0)
+105       \_ pitchfork worker[3] (gen:0)
+105       \_ pitchfork mold (gen:1)
+```
+
+When that new mold is ready, `pitchfork` terminates the old mold and starts a slow rollout of older workers and replace them with fresh workers
 forked from the mold:
 
 ```
 PID   COMMAND
 100   \_ pitchfork master
-101       \_ pitchfork mold (gen:1)
-105       \_ pitchfork worker[0] (gen:1)
-102       \_ pitchfork worker[1] (gen:0)
-103       \_ pitchfork worker[2] (gen:0)
-104       \_ pitchfork worker[3] (gen:0)
+102       \_ pitchfork worker[0] (gen:0)
+103       \_ pitchfork worker[1] (gen:0)
+104       \_ pitchfork worker[2] (gen:0)
+105       \_ pitchfork worker[3] (gen:0)
+105       \_ pitchfork mold (gen:1)
 ```
 
 ```
 PID   COMMAND
 100   \_ pitchfork master
-101       \_ pitchfork mold (gen:1)
-105       \_ pitchfork worker[0] (gen:1)
-106       \_ pitchfork worker[1] (gen:1)
-103       \_ pitchfork worker[2] (gen:0)
-104       \_ pitchfork worker[3] (gen:0)
+103       \_ pitchfork worker[1] (gen:0)
+104       \_ pitchfork worker[2] (gen:0)
+105       \_ pitchfork worker[3] (gen:0)
+105       \_ pitchfork mold (gen:1)
+106       \_ pitchfork worker[0] (gen:1)
 ```
 
 etc.

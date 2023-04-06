@@ -35,5 +35,33 @@ class ReforkingTest < Pitchfork::IntegrationTest
 
       assert_clean_shutdown(pid)
     end
+
+    def test_reforking_broken_after_promotion_hook
+      addr, port = unused_port
+
+      pid = spawn_server(app: File.join(ROOT, "test/integration/env.ru"), config: <<~CONFIG)
+        listen "#{addr}:#{port}"
+        worker_processes 2
+        refork_after [5, 5]
+        after_promotion do |_server, mold|
+          raise "Oops" if mold.generation > 0
+        end
+      CONFIG
+
+      assert_healthy("http://#{addr}:#{port}")
+      assert_stderr "worker=0 gen=0 ready"
+      assert_stderr "worker=1 gen=0 ready"
+
+      9.times do
+        assert_equal true, healthy?("http://#{addr}:#{port}")
+      end
+
+      assert_stderr "Refork condition met, promoting ourselves", timeout: 3
+      assert_stderr(/mold pid=\d+ gen=1 reaped/)
+
+      assert_equal true, healthy?("http://#{addr}:#{port}")
+
+      assert_clean_shutdown(pid)
+    end
   end
 end

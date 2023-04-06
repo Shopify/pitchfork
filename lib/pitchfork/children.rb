@@ -29,7 +29,6 @@ module Pitchfork
     def register_mold(mold)
       @pending_molds[mold.pid] = mold
       @children[mold.pid] = mold
-      @mold = mold
     end
 
     def fetch(pid)
@@ -37,21 +36,29 @@ module Pitchfork
     end
 
     def update(message)
-      child = @children[message.pid] || (message.nr && @workers[message.nr])
-      old_nr = child.nr
+      case message
+      when Message::MoldSpawned
+        mold = Worker.new(nil)
+        mold.update(message)
+        @pending_molds[mold.pid] = mold
+        @children[mold.pid] = mold
+        return mold
+      end
 
+      child = @children[message.pid] || (message.nr && @workers[message.nr])
       child.update(message)
 
       if child.mold?
-        @workers.delete(old_nr)
         @pending_molds.delete(child.pid)
         @molds[child.pid] = child
         @mold = child
       end
+
       if child.pid
         @children[child.pid] = child
         @pending_workers.delete(child.nr)
       end
+
       child
     end
 
