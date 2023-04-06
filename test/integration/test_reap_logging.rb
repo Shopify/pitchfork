@@ -1,14 +1,14 @@
 require 'integration_test_helper'
 
 class ReapLoggingTest < Pitchfork::IntegrationTest
-  AFTER_FORK_FILE = 'after_fork'
+  AFTER_FORK_FILE = 'after_worker_fork'
   # TODO: This test is slow.
   def test_reap_worker_logging_messages
     addr, port = unused_port
 
     pid = spawn_server(app: File.join(ROOT, "test/integration/pid.ru"), config: <<~CONFIG,)
       listen "#{addr}:#{port}"
-      after_fork { |s,w| File.open('#{AFTER_FORK_FILE}','w') { |f| f.write '.' } }
+      after_worker_fork { |s,w| File.open('#{AFTER_FORK_FILE}','w') { |f| f.write '.' } }
     CONFIG
 
     assert_new_worker_forked
@@ -45,6 +45,6 @@ class ReapLoggingTest < Pitchfork::IntegrationTest
     end
 
     File.truncate(AFTER_FORK_FILE, 0)
-    assert new_worker_forked, "A worker did not write to after_fork within #{timeout} seconds."
+    assert new_worker_forked, "A worker did not write to after_worker_fork within #{timeout} seconds."
   end
 end

@@ -238,17 +238,19 @@ application that are used in hooks.
 `pitchfork` also don't attempt to rescue hook errors. Raising from a worker hook will crash the worker,
 and raising from a master hook will bring the whole cluster down.
 
-### `after_promotion`
+### `after_mold_fork`
 
 ```ruby
-after_promotion do |server, mold|
+after_mold_fork do |server, mold|
   Database.disconnect!
+  3.times { GC.start } # promote surviving objects to oldgen
+  GC.compact
 end
 ```
 
-Called in the context of the mold when initially spawned or promotted.
+Called in the context of the mold after it has been spawned.
 
-It's usage is similar to a `before_fork` callback found on other servers
+Its usage is similar to a `before_fork` callback found on other servers
 but it is called once on promotion rather than before forking each worker.
 
 For most protocols connections can be closed after fork, but some
@@ -259,30 +261,17 @@ That is the case for instance of many SQL databases protocols.
 This is also the callback in which memory optimizations, such as
 heap compaction should be done.
 
-### `after_fork`
+### `after_worker_fork`
 
 ```ruby
-after_fork do |server, worker|
-  NetworkClient.disconnect!
+after_worker_fork do |server, worker|
+  NetworkClient.reconnect!
+  BackgroundThread.restart!
 end
 ```
 
 Called in the worker after forking. Generally used to close inherited connections
 or to restart backgrounds threads for libraries that don't do it automatically.
-
-### `after_promotion`
-
-```ruby
-after_promotion do |server, mold|
-  NetworkClient.disconnect!
-  4.times { GC.start } # promote surviving objects to oldgen
-  GC.compact
-end
-```
-
-Called in the worker after it was promoted into a mold. Generally used to shutdown
-open connections and file descriptors, as well as to perform memory optimiations
-such as compacting the heap, trimming memory etc.
 
 ### `after_worker_ready`
 

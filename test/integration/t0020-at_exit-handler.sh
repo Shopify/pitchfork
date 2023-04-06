@@ -8,7 +8,7 @@ t_begin "setup and startup" && {
 	cat >> $pitchfork_config <<EOF
 at_exit { \$stdout.syswrite("#{Process.pid} BOTH\\n") }
 END { \$stdout.syswrite("#{Process.pid} END BOTH\\n") }
-after_fork do |_,_|
+after_worker_fork do |_,_|
   at_exit { \$stdout.syswrite("#{Process.pid} WORKER ONLY\\n") }
   END { \$stdout.syswrite("#{Process.pid} END WORKER ONLY\\n") }
 end

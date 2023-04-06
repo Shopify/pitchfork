@@ -70,14 +70,14 @@ class TestBoot < Pitchfork::IntegrationTest
     assert_clean_shutdown(pid)
   end
 
-  def test_boot_broken_after_promotion
+  def test_boot_broken_after_mold_fork
     addr, port = unused_port
 
     pid = spawn_server(app: APP, config: <<~RUBY)
       listen "#{addr}:#{port}"
       worker_processes 2
       refork_after [50, 100, 1000]
-      after_promotion do |_server, _mold|
+      after_mold_fork do |_server, _mold|
         raise "Oops"
       end
     RUBY

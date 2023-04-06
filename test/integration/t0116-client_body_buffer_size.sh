@@ -7,7 +7,7 @@ t_begin "setup and start" && {
 	rtmpfiles pitchfork_config_tmp one_meg
 	dd if=/dev/zero bs=1M count=1 of=$one_meg
 	cat >> $pitchfork_config <<EOF
-after_fork do |server, worker|
+after_worker_fork do |server, worker|
   File.open("$fifo", "wb") { |fp| fp.syswrite "START" }
 end
 EOF

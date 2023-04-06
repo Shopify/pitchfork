@@ -30,11 +30,11 @@ module Pitchfork
       :timeout => 20,
       :logger => Logger.new($stderr),
       :worker_processes => 1,
-      :after_fork => lambda { |server, worker|
+      :after_worker_fork => lambda { |server, worker|
         server.logger.info("worker=#{worker.nr} gen=#{worker.generation} pid=#{$$} spawned")
       },
-      :after_promotion => lambda { |server, worker|
-        server.logger.info("gen=#{worker.generation} pid=#{$$} promoted")
+      :after_mold_fork => lambda { |server, worker|
+        server.logger.info("mold gen=#{worker.generation} pid=#{$$} spawned")
       },
       :after_worker_exit => lambda { |server, worker, status|
         m = if worker.nil?
@@ -119,12 +119,12 @@ module Pitchfork
       set[:logger] = obj
     end
 
-    def after_fork(*args, &block)
-      set_hook(:after_fork, block_given? ? block : args[0])
+    def after_worker_fork(*args, &block)
+      set_hook(:after_worker_fork, block_given? ? block : args[0])
     end
 
-    def after_promotion(*args, &block)
-      set_hook(:after_promotion, block_given? ? block : args[0])
+    def after_mold_fork(*args, &block)
+      set_hook(:after_mold_fork, block_given? ? block : args[0])
     end
 
     def after_worker_ready(*args, &block)

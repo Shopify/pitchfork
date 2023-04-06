@@ -7,7 +7,7 @@ module Pitchfork
   # releases of pitchfork.  Knowledge of this class is generally not
   # not needed for most users of pitchfork.
   #
-  # Some users may want to access it in the after_promotion/after_fork hooks.
+  # Some users may want to access it in the after_worker_fork/after_mold_fork hooks.
   # See the Pitchfork::Configurator RDoc for examples.
   class Worker
     # :stopdoc:

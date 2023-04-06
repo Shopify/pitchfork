@@ -36,14 +36,14 @@ class ReforkingTest < Pitchfork::IntegrationTest
       assert_clean_shutdown(pid)
     end
 
-    def test_reforking_broken_after_promotion_hook
+    def test_reforking_broken_after_mold_fork_hook
       addr, port = unused_port
 
       pid = spawn_server(app: File.join(ROOT, "test/integration/env.ru"), config: <<~CONFIG)
         listen "#{addr}:#{port}"
         worker_processes 2
         refork_after [5, 5]
-        after_promotion do |_server, mold|
+        after_mold_fork do |_server, mold|
           raise "Oops" if mold.generation > 0
         end
       CONFIG

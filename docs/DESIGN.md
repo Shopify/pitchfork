@@ -28,7 +28,7 @@
 
 * Configuration is purely in Ruby. Ruby is less
   ambiguous than YAML and lets lambdas for
-  before_fork/after_fork hooks be defined inline. An
+  after_worker_fork/after_mold_fork hooks be defined inline. An
   optional, separate config_file may be used to modify supported
   configuration changes.
 
