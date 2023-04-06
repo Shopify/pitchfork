@@ -741,32 +741,34 @@ module Pitchfork
 
       mold.finish_promotion(@control_socket[1])
 
-      begin
-        mold.tick = Pitchfork.time_now(true)
-        while sock = ready.shift
-          # Pitchfork::Worker#accept_nonblock is not like accept(2) at all,
-          # but that will return false
-          message = sock.accept_nonblock(exception: false)
-          case message
-          when false
-            # no message, keep looping
-          when Message::SpawnWorker
-            begin
-              spawn_worker(Worker.new(message.nr, generation: mold.generation), detach: true)
-            rescue => error
-              raise BootFailure, error.message
+      while readers[0]
+        begin
+          mold.tick = Pitchfork.time_now(true)
+          while sock = ready.shift
+            # Pitchfork::Worker#accept_nonblock is not like accept(2) at all,
+            # but that will return false
+            message = sock.accept_nonblock(exception: false)
+            case message
+            when false
+              # no message, keep looping
+            when Message::SpawnWorker
+              begin
+                spawn_worker(Worker.new(message.nr, generation: mold.generation), detach: true)
+              rescue => error
+                raise BootFailure, error.message
+              end
+            else
+              logger.error("Unexpected mold message #{message.inspect}")
             end
-          else
-            logger.error("Unexpected mold message #{message.inspect}")
           end
-        end
 
-        # timeout so we can .tick and keep parent from SIGKILL-ing us
-        mold.tick = Pitchfork.time_now(true)
-        waiter.get_readers(ready, readers, @timeout * 500) # to milliseconds, but halved
-      rescue => e
-        Pitchfork.log_error(@logger, "mold loop error", e) if readers[0]
-      end while readers[0]
+          # timeout so we can .tick and keep parent from SIGKILL-ing us
+          mold.tick = Pitchfork.time_now(true)
+          waiter.get_readers(ready, readers, @timeout * 500) # to milliseconds, but halved
+        rescue => e
+          Pitchfork.log_error(@logger, "mold loop error", e) if readers[0]
+        end
+      end
     end
 
     # delivers a signal to a worker and fails gracefully if the worker
