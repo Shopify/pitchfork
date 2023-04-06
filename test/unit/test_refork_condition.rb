@@ -46,5 +46,15 @@ module Pitchfork
       @worker.increment_requests_count(50)
       refute @condition.met?(@worker, @logger)
     end
+
+    def test_backoff
+      @condition = ReforkCondition::RequestsCount.new([10, nil])
+      @worker.increment_requests_count(11)
+      assert @condition.met?(@worker, @logger)
+
+      @condition.backoff!
+
+      refute @condition.met?(@worker, @logger)
+    end
   end
 end
