@@ -24,4 +24,20 @@ class HttpBasicTest < Pitchfork::IntegrationTest
 
     assert_clean_shutdown(pid)
   end
+
+  def test_chunked_encoding
+    addr, port = unused_port
+
+    pid = spawn_server(app: File.join(ROOT, "test/integration/apps/chunked.ru"), config: <<~CONFIG)
+      listen "#{addr}:#{port}"
+      worker_processes 1
+    CONFIG
+
+    assert_healthy("http://#{addr}:#{port}")
+
+    response = Net::HTTP.get_response(URI("http://#{addr}:#{port}"))
+    assert_equal "chunked", response["transfer-encoding"]
+
+    assert_clean_shutdown(pid)
+  end
 end

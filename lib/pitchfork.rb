@@ -57,15 +57,13 @@ module Pitchfork
         Object.const_get(File.basename(ru, '.rb').capitalize)
       end
 
-      case ENV["RACK_ENV"]
-      when "development"
-        Rack::Builder.new do
-          use(Rack::Lint)
-          run inner_app
-        end.to_app
-      else
-        inner_app
-      end
+      Rack::Builder.new do
+        use(Rack::ContentLength)
+        use(Pitchfork::Chunked)
+        use(Rack::Lint) if ENV["RACK_ENV"] == "development"
+        use(Rack::TempfileReaper)
+        run inner_app
+      end.to_app
     end
   end
 
@@ -171,9 +169,18 @@ require 'pitchfork/pitchfork_http'
 
 Pitchfork::REFORKING_AVAILABLE = Pitchfork::CHILD_SUBREAPER_AVAILABLE || Process.pid == 1
 
-%w(
-  const socket_helper stream_input tee_input mem_info children message http_parser
-  refork_condition configurator tmpio http_response worker http_server
-).each do |s|
-  require_relative "pitchfork/#{s}"
-end
+require_relative "pitchfork/const"
+require_relative "pitchfork/socket_helper"
+require_relative "pitchfork/stream_input"
+require_relative "pitchfork/tee_input"
+require_relative "pitchfork/mem_info"
+require_relative "pitchfork/children"
+require_relative "pitchfork/message"
+require_relative "pitchfork/chunked"
+require_relative "pitchfork/http_parser"
+require_relative "pitchfork/refork_condition"
+require_relative "pitchfork/configurator"
+require_relative "pitchfork/tmpio"
+require_relative "pitchfork/http_response"
+require_relative "pitchfork/worker"
+require_relative "pitchfork/http_server"
