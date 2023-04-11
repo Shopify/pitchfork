@@ -63,5 +63,29 @@ class ReforkingTest < Pitchfork::IntegrationTest
 
       assert_clean_shutdown(pid)
     end
+
+    def test_reforking_on_USR2
+      addr, port = unused_port
+
+      pid = spawn_server(app: File.join(ROOT, "test/integration/env.ru"), config: <<~CONFIG)
+        listen "#{addr}:#{port}"
+        worker_processes 2
+      CONFIG
+
+      assert_healthy("http://#{addr}:#{port}")
+      assert_stderr "worker=0 gen=0 ready"
+      assert_stderr "worker=1 gen=0 ready"
+
+      Process.kill(:USR2, pid)
+
+      assert_stderr "Terminating old mold pid="
+      assert_stderr "worker=0 gen=1 ready"
+      assert_stderr "worker=1 gen=1 ready"
+
+      assert_healthy("http://#{addr}:#{port}")
+      assert_clean_shutdown(pid)
+    ensure
+      puts read_stderr
+    end
   end
 end

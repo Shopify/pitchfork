@@ -80,7 +80,6 @@ module Pitchfork
     end
 
     def promote(worker)
-      @pending_molds[worker.pid] = worker
       worker.promote(self.last_generation += 1)
     end
 
