@@ -1,7 +1,10 @@
 # frozen_string_literal: true
 
-require "rack/constants"
-require "rack/utils"
+require "rack"
+if Rack::VERSION.first >= 3
+  require "rack/constants"
+  require "rack/utils"
+end
 
 module Pitchfork
   # Middleware that applies chunked transfer encoding to response bodies
