@@ -87,6 +87,10 @@ module Pitchfork
       !(@pending_workers.empty? && @pending_molds.empty?)
     end
 
+    def restarting_workers_count
+      @pending_workers.size + @workers.count { |_, w| w.exiting? }
+    end
+
     def pending_promotion?
       !@pending_molds.empty?
     end
