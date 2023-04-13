@@ -635,7 +635,7 @@ module Pitchfork
       (@queue_sigs - exit_sigs).each { |sig| trap(sig, nil) }
       trap(:CHLD, 'DEFAULT')
       @sig_queue.clear
-      proc_name "worker[#{worker.nr}] (gen:#{worker.generation})"
+      proc_name "(gen:#{worker.generation}) worker[#{worker.nr}]"
       @children = nil
 
       after_worker_fork.call(self, worker) # can drop perms and create listeners
@@ -650,7 +650,7 @@ module Pitchfork
     end
 
     def init_mold_process(mold)
-      proc_name "mold (gen: #{mold.generation})"
+      proc_name "(gen: #{mold.generation}) mold"
       after_mold_fork.call(self, mold)
       readers = [mold]
       trap(:QUIT) { nuke_listeners!(readers) }

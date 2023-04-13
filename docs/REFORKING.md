@@ -51,7 +51,7 @@ When you start `pitchfork` it forks a `mold` process which loads your applicatio
 ```
 PID   COMMAND
 100   \_ pitchfork master
-101       \_ pitchfork mold (gen:0)
+101       \_ pitchfork (gen:0) mold
 ```
 
 Once the `mold` is done loading, the `master` asks it to spawn the desired number of workers:
@@ -59,11 +59,11 @@ Once the `mold` is done loading, the `master` asks it to spawn the desired numbe
 ```
 PID   COMMAND
 100   \_ pitchfork master
-101       \_ pitchfork mold (gen:0)
-102       \_ pitchfork worker[0] (gen:0)
-103       \_ pitchfork worker[1] (gen:0)
-104       \_ pitchfork worker[2] (gen:0)
-105       \_ pitchfork worker[3] (gen:0)
+101       \_ pitchfork (gen:0) mold
+102       \_ pitchfork (gen:0) worker[0]
+103       \_ pitchfork (gen:0) worker[1]
+104       \_ pitchfork (gen:0) worker[2]
+105       \_ pitchfork (gen:0) worker[3]
 ```
 
 When a reforking is triggered, one of the workers is selected to fork a new `mold`.
@@ -71,12 +71,12 @@ When a reforking is triggered, one of the workers is selected to fork a new `mol
 ```
 PID   COMMAND
 100   \_ pitchfork master
-101       \_ pitchfork mold (gen:0)
-102       \_ pitchfork worker[0] (gen:0)
-103       \_ pitchfork worker[1] (gen:0)
-104       \_ pitchfork worker[2] (gen:0)
-105       \_ pitchfork worker[3] (gen:0)
-105       \_ pitchfork mold (gen:1)
+101       \_ pitchfork (gen:0) mold
+102       \_ pitchfork (gen:0) worker[0]
+103       \_ pitchfork (gen:0) worker[1]
+104       \_ pitchfork (gen:0) worker[2]
+105       \_ pitchfork (gen:0) worker[3]
+105       \_ pitchfork (gen:1) mold
 ```
 
 When that new mold is ready, `pitchfork` terminates the old mold and starts a slow rollout of older workers and replace them with fresh workers
@@ -85,21 +85,21 @@ forked from the mold:
 ```
 PID   COMMAND
 100   \_ pitchfork master
-102       \_ pitchfork worker[0] (gen:0)
-103       \_ pitchfork worker[1] (gen:0)
-104       \_ pitchfork worker[2] (gen:0)
-105       \_ pitchfork worker[3] (gen:0)
-105       \_ pitchfork mold (gen:1)
+102       \_ pitchfork (gen:0) worker[0]
+103       \_ pitchfork (gen:0) worker[1]
+104       \_ pitchfork (gen:0) worker[2]
+105       \_ pitchfork (gen:0) worker[3]
+105       \_ pitchfork (gen:1) mold
 ```
 
 ```
 PID   COMMAND
 100   \_ pitchfork master
-103       \_ pitchfork worker[1] (gen:0)
-104       \_ pitchfork worker[2] (gen:0)
-105       \_ pitchfork worker[3] (gen:0)
-105       \_ pitchfork mold (gen:1)
-106       \_ pitchfork worker[0] (gen:1)
+103       \_ pitchfork (gen:0) worker[1]
+104       \_ pitchfork (gen:0) worker[2]
+105       \_ pitchfork (gen:0) worker[3]
+105       \_ pitchfork (gen:1) mold
+106       \_ pitchfork (gen:1) worker[0]
 ```
 
 etc.
@@ -113,7 +113,7 @@ a process tree such as:
 PID   COMMAND
 100   \_ pitchfork master
 101       \_ pitchfork mold (gen:1)
-105          \_ pitchfork worker[0] (gen:1)
+105          \_ pitchfork (gen:1) worker[0]
 ```
 
 However the `pitchfork` master process registers itself as a "child subreaper" via [`PR_SET_CHILD_SUBREAPER`](https://man7.org/linux/man-pages/man2/prctl.2.html).
