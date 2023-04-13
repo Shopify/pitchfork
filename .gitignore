@@ -3,6 +3,7 @@
 *.log
 *.so
 *.rbc
+*.log
 .DS_Store
 /.config
 /InstalledFiles

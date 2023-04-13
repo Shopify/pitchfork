@@ -84,8 +84,6 @@ class ReforkingTest < Pitchfork::IntegrationTest
 
       assert_healthy("http://#{addr}:#{port}")
       assert_clean_shutdown(pid)
-    ensure
-      puts read_stderr
     end
   end
 end

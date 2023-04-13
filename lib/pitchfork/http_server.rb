@@ -516,17 +516,18 @@ module Pitchfork
       # If we're already in the middle of forking a new generation, we just continue
       return unless @children.mold
 
-      # We don't shutdown any outdated worker if any worker is already being spawned
-      # or a worker is exiting. Workers are only reforked one by one to minimize the
-      # impact on capacity.
-      # In the future we may want to use a dynamic limit, e.g. 10% of workers may be down at
-      # a time.
-      return if @children.pending_workers?
-      return if @children.workers.any?(&:exiting?)
+      # We don't shutdown any outdated worker if any worker is already being
+      # spawned or a worker is exiting. Only 10% of workers can be reforked at
+      # once to minimize the impact on capacity.
+      max_pending_workers = (worker_processes * 0.1).ceil
+      workers_to_restart = max_pending_workers - @children.restarting_workers_count
 
-      if outdated_worker = @children.workers.find { |w| w.generation < @children.mold.generation }
-        logger.info("worker=#{outdated_worker.nr} pid=#{outdated_worker.pid} restarting")
-        outdated_worker.soft_kill(:QUIT)
+      if workers_to_restart > 0
+        outdated_workers = @children.workers.select { |w| !w.exiting? && w.generation < @children.mold.generation }
+        outdated_workers.each do |worker|
+          logger.info("worker=#{worker.nr} pid=#{worker.pid} gen=#{worker.generation} restarting")
+          worker.soft_kill(:QUIT)
+        end
       end
     end
 
