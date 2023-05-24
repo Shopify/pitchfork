@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.3.0
+
 - Renamed `after_promotion` in `after_mold_fork`.
 - Renamed `after_fork` in `after_worker_fork`.
 - Backoff 10s after every mold spawning attempt.
