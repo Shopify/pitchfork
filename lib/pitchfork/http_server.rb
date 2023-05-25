@@ -606,7 +606,10 @@ module Pitchfork
       end
 
       unless client.closed? # rack.hijack may've close this for us
-        client.shutdown # in case of fork() in Rack app
+        begin
+          client.shutdown # in case of fork() in Rack app
+        rescue Errno::ENOTCONN
+        end
         client.close # flush and uncork socket immediately, no keepalive
       end
     rescue => e
