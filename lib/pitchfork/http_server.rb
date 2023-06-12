@@ -733,10 +733,15 @@ module Pitchfork
           mold.start_promotion(@control_socket[1])
           mold_loop(mold)
         end
-        true
-      ensure
+      rescue
+        # HACK: we need to call this on error or on no error, but not on throw
+        # hence why we don't use `ensure`
+        @promotion_lock.at_fork
+        raise
+      else
         @promotion_lock.at_fork # We let the spawned mold own the lock
       end
+      true
     end
 
     def mold_loop(mold)

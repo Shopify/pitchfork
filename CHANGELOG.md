@@ -1,6 +1,6 @@
 # Unreleased
 
-- Use a Fiber rather than a Thread to implement `clean_fork`.
+- Preserve the current thread when reforking.
 
 # 0.3.0
 

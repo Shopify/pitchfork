@@ -121,17 +121,42 @@ module Pitchfork
   end
 
   def self.clean_fork(&block)
-    # We fork from a fiber to start with a clean stack.
-    # If we didn't the base stack would grow after each refork
-    # putting an effective limit on the number of generations.
-    current_thread = Thread.current
-    fiber_locals = current_thread.keys.map { |k| [k, current_thread[k]] }
+    if pid = Process.fork
+      return pid
+    end
 
-    Fiber.new do
-      # We copy over any fiber local state it might have
-      fiber_locals.each { |k, v| current_thread[k] = v }
-      Process.fork(&block)
-    end.resume
+    begin
+      # Pitchfork recursively refork the worker processes.
+      # Because of this we need to unwind the stack before resuming execution
+      # in the child, otherwise on each generation the available stack space would
+      # get smaller and smaller until it's basically 0.
+      #
+      # The very first version of this method used to call fork from a new
+      # thread, however this can cause issues with some native gems that rely on
+      # pthread_atfork(3) or pthread_mutex_lock(3), as the new main thread would
+      # now be different.
+      #
+      # A second version used to fork from a new fiber, but fibers have a much smaller
+      # stack space (https://bugs.ruby-lang.org/issues/3187), so it would break large applications.
+      #
+      # The latest version now use `throw` to unwind the stack after the fork, it however
+      # restrict it to be called only inside `handle_clean_fork`.
+      if Thread.current[:pitchfork_handle_clean_fork]
+        throw self, block
+      else
+        while block
+          block = catch(self) do
+            Thread.current[:pitchfork_handle_clean_fork] = true
+            block.call
+            nil
+          end
+        end
+      end
+    rescue
+      abort
+    else
+      exit
+    end
   end
 
   def self.fork_sibling(&block)
