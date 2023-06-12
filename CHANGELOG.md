@@ -1,5 +1,7 @@
 # Unreleased
 
+- Use a Fiber rather than a Thread to implement `clean_fork`.
+
 # 0.3.0
 
 - Renamed `after_promotion` in `after_mold_fork`.

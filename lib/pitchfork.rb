@@ -121,21 +121,17 @@ module Pitchfork
   end
 
   def self.clean_fork(&block)
-    # We fork from a thread to start with a clean stack.
+    # We fork from a fiber to start with a clean stack.
     # If we didn't the base stack would grow after each refork
     # putting an effective limit on the number of generations.
-    parent_thread = Thread.current
-    Thread.new do
-      current_thread = Thread.current
-      # We copy over any thread state it might have
-      parent_thread.keys.each do |key|
-        current_thread[key] = parent_thread[key]
-      end
-      parent_thread.thread_variables.each do |variable|
-        current_thread.thread_variable_set(variable, parent_thread.thread_variable_get(variable))
-      end
+    current_thread = Thread.current
+    fiber_locals = current_thread.keys.map { |k| [k, current_thread[k]] }
+
+    Fiber.new do
+      # We copy over any fiber local state it might have
+      fiber_locals.each { |k, v| current_thread[k] = v }
       Process.fork(&block)
-    end.value
+    end.resume
   end
 
   def self.fork_sibling(&block)
