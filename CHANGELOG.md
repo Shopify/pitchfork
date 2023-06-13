@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.4.0
+
 - Preserve the current thread when reforking.
 
 # 0.3.0
