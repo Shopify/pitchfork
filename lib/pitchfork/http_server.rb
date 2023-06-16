@@ -376,7 +376,7 @@ module Pitchfork
         if worker
           @after_worker_exit.call(self, worker, status)
         else
-          logger.error("reaped unknown subprocess #{status.inspect}")
+          logger.info("reaped unknown subprocess #{status.inspect}")
         end
       rescue Errno::ECHILD
         break
