@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "rack"
-if Rack::VERSION.first >= 3
+if defined?(Rack::RELEASE)
   require "rack/constants"
   require "rack/utils"
 end
