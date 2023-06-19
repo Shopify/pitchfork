@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "rack"
-if defined?(Rack::RELEASE)
+if defined?(Rack::RELEASE) && Rack::RELEASE > "3"
   require "rack/constants"
   require "rack/utils"
 end
