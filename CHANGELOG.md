@@ -1,5 +1,11 @@
 # Unreleased
 
+# 0.4.1
+
+- Avoid a Rack 3 deprecation warning.
+- Fix handling on non-ASCII cookies.
+- Log unknown process being reaped at INFO level.
+
 # 0.4.0
 
 - Preserve the current thread when reforking.
