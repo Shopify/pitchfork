@@ -149,10 +149,13 @@ module Pitchfork
       false
     end
 
-    def healthy?(host)
-      Net::HTTP.get(URI(host))
+    def healthy?(url)
+      uri = URI(url)
+      http = Net::HTTP.start(uri.host, uri.port)
+      http.max_retries = 0
+      http.get("#{uri.path}?#{uri.query}")
       true
-    rescue Errno::ECONNREFUSED, Errno::EADDRNOTAVAIL
+    rescue Errno::ECONNREFUSED, Errno::EADDRNOTAVAIL, EOFError
       false
     end
 

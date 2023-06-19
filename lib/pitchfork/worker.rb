@@ -93,7 +93,7 @@ module Pitchfork
       @mold = true
       @nr = nil
       @drop_offset = 0
-      @tick_drop = MOLD_DROP
+      @deadline_drop = MOLD_DROP
       self
     end
 
@@ -167,21 +167,25 @@ module Pitchfork
       super || (!@nr.nil? && @nr == other)
     end
 
+    def update_deadline(timeout)
+      self.deadline = Pitchfork.time_now(true) + timeout
+    end
+
     # called in the worker process
-    def tick=(value) # :nodoc:
+    def deadline=(value) # :nodoc:
       if mold?
         MOLD_DROP[0] = value
       else
-        @tick_drop[@drop_offset] = value
+        @deadline_drop[@drop_offset] = value
       end
     end
 
     # called in the master process
-    def tick # :nodoc:
+    def deadline # :nodoc:
       if mold?
         MOLD_DROP[0]
       else
-        @tick_drop[@drop_offset]
+        @deadline_drop[@drop_offset]
       end
     end
 
@@ -221,7 +225,7 @@ module Pitchfork
         else
           success = true
         end
-      rescue Errno::EPIPE, Errno::ECONNRESET
+      rescue Errno::EPIPE, Errno::ECONNRESET, Errno::ECONNREFUSED
         # worker will be reaped soon
       end
       success
@@ -248,8 +252,8 @@ module Pitchfork
     def build_raindrops(drop_nr)
       drop_index = drop_nr / PER_DROP
       @drop_offset = drop_nr % PER_DROP
-      @tick_drop = TICK_DROPS[drop_index] ||= Raindrops.new(PER_DROP)
-      @tick_drop[@drop_offset] = 0
+      @deadline_drop = TICK_DROPS[drop_index] ||= Raindrops.new(PER_DROP)
+      @deadline_drop[@drop_offset] = 0
     end
   end
 end
