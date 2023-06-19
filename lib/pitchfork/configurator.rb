@@ -53,6 +53,7 @@ module Pitchfork
       :after_worker_ready => lambda { |server, worker|
         server.logger.info("worker=#{worker.nr} gen=#{worker.generation} ready")
       },
+      :after_request_complete => nil,
       :early_hints => false,
       :refork_condition => nil,
       :check_client_connection => false,
@@ -133,6 +134,10 @@ module Pitchfork
 
     def after_worker_exit(*args, &block)
       set_hook(:after_worker_exit, block_given? ? block : args[0], 3)
+    end
+
+    def after_request_complete(*args, &block)
+      set_hook(:after_request_complete, block_given? ? block : args[0])
     end
 
     def timeout(seconds)

@@ -14,7 +14,7 @@ module Pitchfork
                   :listener_opts, :children,
                   :orig_app, :config, :ready_pipe,
                   :default_middleware, :early_hints
-    attr_writer   :after_worker_exit, :after_worker_ready, :refork_condition
+    attr_writer   :after_worker_exit, :after_worker_ready, :after_request_complete, :refork_condition
 
     attr_reader :logger
     include Pitchfork::SocketHelper
@@ -698,6 +698,7 @@ module Pitchfork
                 worker.update(client)
               else
                 process_client(client)
+                @after_request_complete&.call(self, worker)
                 worker.increment_requests_count
               end
               worker.tick = Pitchfork.time_now(true)

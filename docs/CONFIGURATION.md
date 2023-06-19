@@ -297,6 +297,20 @@ after_worker_exit do |server, worker, status|
 end
 ```
 
+### `after_request_complete`
+
+Called in the worker processes after a request has completed.
+
+Can be used for out of band work, or to exit unhealthy workers.
+
+```ruby
+after_request_complete do |server, worker|
+  if something_wrong?
+    exit
+  end
+end
+```
+
 ## Reforking
 
 ### `refork_after`

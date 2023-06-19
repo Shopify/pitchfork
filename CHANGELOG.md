@@ -1,5 +1,7 @@
 # Unreleased
 
+- Implement `after_request_complete` callback.
+
 # 0.4.1
 
 - Avoid a Rack 3 deprecation warning.
