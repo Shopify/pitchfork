@@ -1,3 +1,5 @@
+# -*- encoding: binary -*-
+
 require 'integration_test_helper'
 
 class ParserErrorTest < Pitchfork::IntegrationTest
@@ -90,6 +92,30 @@ class ParserErrorTest < Pitchfork::IntegrationTest
       result = sock.read
 
       assert_equal "HTTP/1.1 414 URI Too Long\r\n\r\n", result
+    end
+
+    assert_clean_shutdown(pid)
+  end
+
+  def test_non_ascii_headers
+    addr, port = unused_port
+
+    pid = spawn_server(app: File.join(ROOT, "test/integration/env.ru"), config: <<~CONFIG)
+      listen "#{addr}:#{port}"
+    CONFIG
+
+    assert_healthy("http://#{addr}:#{port}")
+
+    request = <<~REQUEST
+      GET /hello HTTP/1.1\r\nHost: localhost\r\ncookie: weird_utf8=\xC3\xB0\xC5\xB8\xC5\xA1\xC5\xA1;\r\n\r\n
+    REQUEST
+
+    Socket.tcp(addr, port) do |sock|
+      sock.print(request)
+      sock.close_write
+      result = sock.read
+
+      assert_equal "HTTP/1.1 200 OK", result.lines.first.strip
     end
 
     assert_clean_shutdown(pid)
