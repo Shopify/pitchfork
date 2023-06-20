@@ -173,33 +173,55 @@ The following options may be specified (but are generally not needed):
 ### `timeout`
 
 ```ruby
-timeout 10
+timeout 10, cleanup: 3
 ```
 
-Sets the timeout of worker processes to a number of seconds.
-Workers handling the request/app.call/response cycle taking longer than
-this time period will be forcibly killed (via `SIGKILL`).
+Sets the timeout for worker processes to a number of seconds.
 
-This timeout mecanism shouldn't be routinely relying on, and should
+Note that Pitchfork has two layers of timeout.
+
+A first "soft" timeout will invoke the `after_worker_timeout` from
+within the worker (but from a background thread) and then call `exit`
+to terminate the worker cleanly.
+
+The second "hard" timeout, is the sum of `timeout` and `cleanup`.
+Workers taking longer than this time period to be ready to handle a new
+request will be forcibly killed (via `SIGKILL`).
+
+Neither of these timeout mecanisms should be routinely relied on, and should
 instead be considered as a last line of defense in case you application
 is impacted by bugs causing unexpectedly slow response time, or fully stuck
 processes.
 
+If some of the application endpoints require an unreasonably large timeout,
+rather than to increase the global application timeout, it is possible to
+adjust it on a per request basis via the rack request environment:
+
+```ruby
+class MyMiddleware
+  def call(env)
+    if slow_endpoint?(env)
+      # Give 10 more seconds
+      env["pitchfork.timeout"]&.extend_deadline(10)
+    end
+    @app.call(env)
+  end
+end
+```
+
 Make sure to read the guide on [application timeouts](Application_Timeouts.md).
 
-This configuration defaults to a (too) generous 20 seconds, it is
-highly recommended to set a stricter one based on your application
-profile.
+This configuration defaults to a (too) generous 20 seconds for the soft timeout
+and an extra 2 seconds for the hard timeout. It is highly recommended to set a
+stricter one based on your application profile.
 
-This timeout is enforced by the master process itself and not subject
-to the scheduling limitations by the worker process.
 Due the low-complexity, low-overhead implementation, timeouts of less
 than 3.0 seconds can be considered inaccurate and unsafe.
 
 For running Pitchfork behind nginx, it is recommended to set
 "fail_timeout=0" for in your nginx configuration like this
 to have nginx always retry backends that may have had workers
-SIGKILL-ed due to timeouts.
+exit or be SIGKILL-ed due to timeouts.
 
 ```
    upstream pitchfork_backend {
@@ -283,6 +305,32 @@ after_worker_ready do |server, worker|
   server.logger.info("worker #{worker.nr} ready")
 end
 ```
+
+### `after_worker_timeout`
+
+Called by the worker process when the request timeout is elapsed:
+
+```ruby
+after_worker_timeout do |server, worker, timeout_info|
+  timeout_info.copy_thread_variables!
+  server.logger.error("Request timed out: #{timeout_info.rack_env.inspect}")
+  $stderr.puts timeout_info.thread.backtrace
+end
+```
+
+Note that this callback is invoked from a different thread. You can access the
+main thread via `timeout_info.thread`, as well as the rack environment via `timeout_info.rack_env`.
+
+If you need to invoke cleanup code that rely on thread local state, you can copy
+that state with `timeout_info.copy_thread_variables!`, but it's best avoided as the
+thread local state could contain thread unsafe objects.
+
+After the callback is executed the worker will exit with status `0`.
+
+It is recommended not to do slow operations in this callback, but if you
+really have to, make sure to configure the `cleanup` timeout so that the
+callback has time to complete before the "hard" timeout triggers.
+By default the cleanup timeout is 2 seconds.
 
 ### `after_worker_exit`
 

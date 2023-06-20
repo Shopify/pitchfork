@@ -22,4 +22,72 @@ class ConfigurationTest < Pitchfork::IntegrationTest
 
     assert_clean_shutdown(pid)
   end
+
+  def test_soft_timeout
+    addr, port = unused_port
+
+    pid = spawn_server(app: File.join(ROOT, "test/integration/sleep.ru"), config: <<~CONFIG)
+      listen "#{addr}:#{port}"
+      worker_processes 1
+      timeout 3, cleanup: 10
+
+      after_worker_timeout do |server, worker, timeout_info|
+        $stderr.puts "[after_worker_timeout]"
+      end
+    CONFIG
+
+    assert_healthy("http://#{addr}:#{port}/")
+
+    assert_equal false, healthy?("http://#{addr}:#{port}/?10")
+    assert_stderr("timed out, exiting")
+    assert_stderr("[after_worker_timeout]")
+
+    assert_clean_shutdown(pid)
+  end
+
+  def test_soft_timeout_failure
+    addr, port = unused_port
+
+    pid = spawn_server(app: File.join(ROOT, "test/integration/sleep.ru"), config: <<~CONFIG)
+      listen "#{addr}:#{port}"
+      worker_processes 1
+      timeout 3, cleanup: 10
+
+      after_worker_timeout do |server, worker, timeout_info|
+        raise "[after_worker_timeout] Ooops"
+      end
+    CONFIG
+
+    assert_healthy("http://#{addr}:#{port}/")
+
+    assert_equal false, healthy?("http://#{addr}:#{port}/?10")
+    assert_stderr("timed out, exiting")
+    assert_stderr("[after_worker_timeout] Ooops")
+
+    assert_clean_shutdown(pid)
+  end
+
+  def test_hard_timeout
+    addr, port = unused_port
+
+    pid = spawn_server(app: File.join(ROOT, "test/integration/sleep.ru"), config: <<~CONFIG)
+      listen "#{addr}:#{port}"
+      worker_processes 1
+      timeout 3, cleanup: 2
+
+      after_worker_timeout do |server, worker, timeout_info|
+        $stderr.puts "[after_worker_timeout]"
+        sleep 60
+      end
+    CONFIG
+
+    assert_healthy("http://#{addr}:#{port}")
+
+    assert_equal false, healthy?("http://#{addr}:#{port}/?10")
+    assert_stderr("timed out, exiting")
+    assert_stderr("[after_worker_timeout]")
+    assert_stderr("timed out, killing")
+
+    assert_clean_shutdown(pid)
+  end
 end

@@ -70,5 +70,5 @@ handle network/server failures.
 The `timeout` mechanism in pitchfork is an extreme solution that should
 be avoided whenever possible.
 It will help preserve the platform if your application or a dependency
-has a bug that cause it to either get stuck or two slow, but it is not a
+has a bug that cause it to either get stuck or be too slow, but it is not a
 solution to such bugs, merely a mitigation.

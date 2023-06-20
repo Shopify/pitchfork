@@ -27,7 +27,9 @@ module Pitchfork
 
     # Default settings for Pitchfork
     DEFAULTS = {
-      :timeout => 20,
+      :soft_timeout => 20,
+      :cleanup_timeout => 2,
+      :timeout => 22,
       :logger => Logger.new($stderr),
       :worker_processes => 1,
       :after_worker_fork => lambda { |server, worker|
@@ -53,6 +55,7 @@ module Pitchfork
       :after_worker_ready => lambda { |server, worker|
         server.logger.info("worker=#{worker.nr} gen=#{worker.generation} ready")
       },
+      :after_worker_timeout => nil,
       :after_request_complete => nil,
       :early_hints => false,
       :refork_condition => nil,
@@ -132,6 +135,10 @@ module Pitchfork
       set_hook(:after_worker_ready, block_given? ? block : args[0])
     end
 
+    def after_worker_timeout(*args, &block)
+      set_hook(:after_worker_timeout, block_given? ? block : args[0], 3)
+    end
+
     def after_worker_exit(*args, &block)
       set_hook(:after_worker_exit, block_given? ? block : args[0], 3)
     end
@@ -140,11 +147,10 @@ module Pitchfork
       set_hook(:after_request_complete, block_given? ? block : args[0])
     end
 
-    def timeout(seconds)
-      set_int(:timeout, seconds, 3)
-      # POSIX says 31 days is the smallest allowed maximum timeout for select()
-      max = 30 * 60 * 60 * 24
-      set[:timeout] = seconds > max ? max : seconds
+    def timeout(seconds, cleanup: 2)
+      soft_timeout = set_int(:soft_timeout, seconds, 3)
+      cleanup_timeout = set_int(:cleanup_timeout, cleanup, 2)
+      set_int(:timeout, soft_timeout + cleanup_timeout, 5)
     end
 
     def worker_processes(nr)
