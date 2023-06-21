@@ -1,5 +1,7 @@
 # Unreleased
 
+- Added a soft timeout in addition to the historical Unicorn hard timeout.
+  On soft timeout, the `after_worker_timeout` callback is invoked.
 - Implement `after_request_complete` callback.
 
 # 0.4.1
