@@ -313,6 +313,7 @@ Called by the worker process when the request timeout is elapsed:
 ```ruby
 after_worker_timeout do |server, worker, timeout_info|
   timeout_info.copy_thread_variables!
+  timeout_info.thread.kill
   server.logger.error("Request timed out: #{timeout_info.rack_env.inspect}")
   $stderr.puts timeout_info.thread.backtrace
 end
@@ -324,6 +325,9 @@ main thread via `timeout_info.thread`, as well as the rack environment via `time
 If you need to invoke cleanup code that rely on thread local state, you can copy
 that state with `timeout_info.copy_thread_variables!`, but it's best avoided as the
 thread local state could contain thread unsafe objects.
+
+Also note that at this stage, the thread is still alive, if your callback does
+substantial work, you may want to kill the thread.
 
 After the callback is executed the worker will exit with status `0`.
 
