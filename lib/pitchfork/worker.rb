@@ -24,7 +24,7 @@ module Pitchfork
       @exiting = false
       @requests_count = 0
       if nr
-        build_raindrops(nr)
+        build_raindrops(nr + 1)
       else
         promoted!
       end
@@ -92,8 +92,7 @@ module Pitchfork
     def promoted!
       @mold = true
       @nr = nil
-      @drop_offset = 0
-      @deadline_drop = MOLD_DROP
+      build_raindrops(0)
       self
     end
 
@@ -173,20 +172,12 @@ module Pitchfork
 
     # called in the worker process
     def deadline=(value) # :nodoc:
-      if mold?
-        MOLD_DROP[0] = value
-      else
-        @deadline_drop[@drop_offset] = value
-      end
+      @deadline_drop[@drop_offset] = value
     end
 
     # called in the master process
     def deadline # :nodoc:
-      if mold?
-        MOLD_DROP[0]
-      else
-        @deadline_drop[@drop_offset]
-      end
+      @deadline_drop[@drop_offset]
     end
 
     def reset
@@ -231,7 +222,6 @@ module Pitchfork
       success
     end
 
-    MOLD_DROP = Raindrops.new(1)
     CURRENT_GENERATION_DROP = Raindrops.new(1)
     PER_DROP = Raindrops::PAGE_SIZE / Raindrops::SIZE
     TICK_DROPS = []
@@ -243,7 +233,7 @@ module Pitchfork
       # However this doesn't account for TTIN signals that increase the
       # number of workers, but we should probably remove that feature too.
       def preallocate_drops(workers_count)
-        0.upto(workers_count / PER_DROP) do |i|
+        0.upto((workers_count + 1) / PER_DROP) do |i|
           TICK_DROPS[i] = Raindrops.new(PER_DROP)
         end
       end
