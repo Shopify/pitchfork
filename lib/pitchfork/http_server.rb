@@ -77,7 +77,7 @@ module Pitchfork
                   :orig_app, :config, :ready_pipe,
                   :default_middleware, :early_hints
     attr_writer   :after_worker_exit, :after_worker_ready, :after_request_complete, :refork_condition,
-                  :after_worker_timeout
+                  :after_worker_timeout, :after_worker_hard_timeout
 
     attr_reader :logger
     include Pitchfork::SocketHelper
@@ -473,10 +473,19 @@ module Pitchfork
         else # worker is out of time
           next_sleep = 0
           if worker.mold?
-            logger.error "mold pid=#{worker.pid} deadline=#{deadline} timed out, killing"
+            logger.error "mold pid=#{worker.pid} timed out, killing"
           else
-            logger.error "worker=#{worker.nr} pid=#{worker.pid} deadline=#{deadline} timed out, killing"
+            logger.error "worker=#{worker.nr} pid=#{worker.pid} timed out, killing"
           end
+
+          if @after_worker_hard_timeout
+            begin
+              @after_worker_hard_timeout.call(self, worker)
+            rescue => error
+              Pitchfork.log_error(@logger, "after_worker_hard_timeout callback", error)
+            end
+          end
+
           kill_worker(:KILL, worker.pid) # take no prisoners for hard timeout violations
         end
       end

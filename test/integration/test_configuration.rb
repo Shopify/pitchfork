@@ -79,6 +79,10 @@ class ConfigurationTest < Pitchfork::IntegrationTest
         $stderr.puts "[after_worker_timeout]"
         sleep 60
       end
+
+      after_worker_hard_timeout do |server, worker|
+        $stderr.puts "[after_worker_hard_timeout] pid=\#{worker.pid}"
+      end
     CONFIG
 
     assert_healthy("http://#{addr}:#{port}")
@@ -87,6 +91,7 @@ class ConfigurationTest < Pitchfork::IntegrationTest
     assert_stderr("timed out, exiting")
     assert_stderr("[after_worker_timeout]")
     assert_stderr("timed out, killing")
+    assert_stderr("[after_worker_hard_timeout]")
 
     assert_clean_shutdown(pid)
   end

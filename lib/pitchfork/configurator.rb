@@ -56,6 +56,7 @@ module Pitchfork
         server.logger.info("worker=#{worker.nr} gen=#{worker.generation} ready")
       },
       :after_worker_timeout => nil,
+      :after_worker_hard_timeout => nil,
       :after_request_complete => nil,
       :early_hints => false,
       :refork_condition => nil,
@@ -137,6 +138,10 @@ module Pitchfork
 
     def after_worker_timeout(*args, &block)
       set_hook(:after_worker_timeout, block_given? ? block : args[0], 3)
+    end
+
+    def after_worker_hard_timeout(*args, &block)
+      set_hook(:after_worker_hard_timeout, block_given? ? block : args[0], 2)
     end
 
     def after_worker_exit(*args, &block)

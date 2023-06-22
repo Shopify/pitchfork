@@ -336,6 +336,21 @@ really have to, make sure to configure the `cleanup` timeout so that the
 callback has time to complete before the "hard" timeout triggers.
 By default the cleanup timeout is 2 seconds.
 
+### `after_worker_hard_timeout`
+
+Called in the master process when a worker hard timeout is elapsed:
+
+```ruby
+after_worker_timeout do |server, worker|
+  $stderr.puts "Worker hard timeout, pid=#{worker.pid}"
+end
+```
+
+Once the callback complete, the worker will be signaled with `SIGKILL`.
+
+This callback being called in an indication that something is preventing the
+soft timeout from working.
+
 ### `after_worker_exit`
 
 Called in the master process after a worker exits.
