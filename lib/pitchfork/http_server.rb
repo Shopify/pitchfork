@@ -332,10 +332,10 @@ module Pitchfork
         end
 
         master_sleep(sleep_time) if sleep
-      when :QUIT # graceful shutdown
-        logger.info "QUIT received, starting graceful shutdown"
+      when :QUIT, :TERM # graceful shutdown
+        logger.info "#{message} received, starting graceful shutdown"
         return StopIteration
-      when :TERM, :INT # immediate shutdown
+      when :INT # immediate shutdown
         logger.info "#{message} received, starting immediate shutdown"
         stop(false)
         return StopIteration

@@ -1,5 +1,6 @@
 # Unreleased
 
+- Treat `TERM` as graceful shutdown rather than quick shutdown.
 - Implement `after_worker_hard_timeout` callback.
 
 # 0.5.0

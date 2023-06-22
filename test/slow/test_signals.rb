@@ -119,7 +119,7 @@ class SignalsTest < Pitchfork::Test
     assert diff > 1.0, "diff was #{diff.inspect}"
     assert diff < 60.0
   ensure
-    Process.kill(:TERM, pid) rescue nil
+    Process.kill(:INT, pid) rescue nil
   end
 
   def test_response_write

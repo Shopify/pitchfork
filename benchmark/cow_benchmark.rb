@@ -13,5 +13,5 @@ sleep 3
 puts "Memory Usage:"
 puts Net::HTTP.get(URI(app_url))
 
-Process.kill("TERM", pid)
+Process.kill("INT", pid)
 Process.wait
