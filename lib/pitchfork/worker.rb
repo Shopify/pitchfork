@@ -1,5 +1,5 @@
 # -*- encoding: binary -*-
-require "raindrops"
+require 'pitchfork/shared_memory'
 
 module Pitchfork
   # This class and its members can be considered a stable interface
@@ -24,7 +24,7 @@ module Pitchfork
       @exiting = false
       @requests_count = 0
       if nr
-        build_raindrops(nr + 1)
+        @deadline_drop = SharedMemory.worker_tick(nr)
       else
         promoted!
       end
@@ -47,7 +47,7 @@ module Pitchfork
     end
 
     def outdated?
-      CURRENT_GENERATION_DROP[0] > @generation
+      SharedMemory.current_generation > @generation
     end
 
     def update(message)
@@ -73,7 +73,7 @@ module Pitchfork
     def finish_promotion(control_socket)
       message = Message::MoldReady.new(@nr, @pid, generation)
       control_socket.sendmsg(message)
-      CURRENT_GENERATION_DROP[0] = @generation
+      SharedMemory.current_generation = @generation
     end
 
     def promote(generation)
@@ -92,7 +92,7 @@ module Pitchfork
     def promoted!
       @mold = true
       @nr = nil
-      build_raindrops(0)
+      @deadline_drop = SharedMemory.mold_tick
       self
     end
 
@@ -172,12 +172,12 @@ module Pitchfork
 
     # called in the worker process
     def deadline=(value) # :nodoc:
-      @deadline_drop[@drop_offset] = value
+      @deadline_drop.value = value
     end
 
     # called in the master process
     def deadline # :nodoc:
-      @deadline_drop[@drop_offset]
+      @deadline_drop.value
     end
 
     def reset
@@ -220,30 +220,6 @@ module Pitchfork
         # worker will be reaped soon
       end
       success
-    end
-
-    CURRENT_GENERATION_DROP = Raindrops.new(1)
-    PER_DROP = Raindrops::PAGE_SIZE / Raindrops::SIZE
-    TICK_DROPS = []
-
-    class << self
-      # Since workers are created from another process, we have to
-      # pre-allocate the drops so they are shared between everyone.
-      #
-      # However this doesn't account for TTIN signals that increase the
-      # number of workers, but we should probably remove that feature too.
-      def preallocate_drops(workers_count)
-        0.upto((workers_count + 1) / PER_DROP) do |i|
-          TICK_DROPS[i] = Raindrops.new(PER_DROP)
-        end
-      end
-    end
-
-    def build_raindrops(drop_nr)
-      drop_index = drop_nr / PER_DROP
-      @drop_offset = drop_nr % PER_DROP
-      @deadline_drop = TICK_DROPS[drop_index] ||= Raindrops.new(PER_DROP)
-      @deadline_drop[@drop_offset] = 0
     end
   end
 end

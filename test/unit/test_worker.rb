@@ -1,9 +1,14 @@
 require 'test_helper'
 
 class TestWorker < Pitchfork::Test
+  def setup
+    Pitchfork::SharedMemory::DROPS.clear
+    Pitchfork::SharedMemory.preallocate_drops(1024)
+  end
+
   def test_create_many_workers
     now = Time.now.to_i
-    (0..1024).each do |i|
+    (0...1024).each do |i|
       worker = Pitchfork::Worker.new(i)
       assert worker.respond_to?(:deadline)
       assert_equal 0, worker.deadline
