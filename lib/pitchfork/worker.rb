@@ -216,7 +216,7 @@ module Pitchfork
         else
           success = true
         end
-      rescue Errno::EPIPE, Errno::ECONNRESET, Errno::ECONNREFUSED
+      rescue Errno::EPIPE, Errno::ECONNRESET, Errno::ECONNREFUSED, Errno::ENOTCONN
         # worker will be reaped soon
       end
       success
