@@ -1,12 +1,9 @@
 require 'test_helper'
 
 class TestWorker < Pitchfork::Test
-  def setup
-    Pitchfork::SharedMemory::DROPS.clear
-    Pitchfork::SharedMemory.preallocate_drops(1024)
-  end
-
   def test_create_many_workers
+    Pitchfork::SharedMemory.preallocate_drops(1024)
+
     now = Time.now.to_i
     (0...1024).each do |i|
       worker = Pitchfork::Worker.new(i)
