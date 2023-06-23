@@ -334,9 +334,11 @@ module Pitchfork
 
         master_sleep(sleep_time) if sleep
       when :QUIT, :TERM # graceful shutdown
+        SharedMemory.shutting_down!
         logger.info "#{message} received, starting graceful shutdown"
         return StopIteration
       when :INT # immediate shutdown
+        SharedMemory.shutting_down!
         logger.info "#{message} received, starting immediate shutdown"
         stop(false)
         return StopIteration
@@ -371,6 +373,7 @@ module Pitchfork
     # Terminates all workers, but does not exit master process
     def stop(graceful = true)
       @respawn = false
+      SharedMemory.shutting_down!
       wait_for_pending_workers
       self.listeners = []
       limit = Pitchfork.time_now + timeout

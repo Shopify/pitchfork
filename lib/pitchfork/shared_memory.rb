@@ -8,8 +8,9 @@ module Pitchfork
 
     PER_DROP = Raindrops::PAGE_SIZE / Raindrops::SIZE
     CURRENT_GENERATION_OFFSET = 0
-    MOLD_TICK_OFFSET = 1
-    WORKER_TICK_OFFSET = 2
+    SHUTDOWN_OFFSET = 1
+    MOLD_TICK_OFFSET = 2
+    WORKER_TICK_OFFSET = 3
 
     DROPS = [Raindrops.new(PER_DROP)]
 
@@ -19,6 +20,14 @@ module Pitchfork
 
     def current_generation=(value)
       DROPS[0][CURRENT_GENERATION_OFFSET] = value
+    end
+
+    def shutting_down!
+      DROPS[0][SHUTDOWN_OFFSET] = 1
+    end
+
+    def shutting_down?
+      DROPS[0][SHUTDOWN_OFFSET] > 0
     end
 
     class Field
