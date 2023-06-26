@@ -1,5 +1,6 @@
 # Unreleased
 
+- Get rid of `Pitchfork::PrereadInput`.
 - Treat `TERM` as graceful shutdown rather than quick shutdown.
 - Implement `after_worker_hard_timeout` callback.
 
