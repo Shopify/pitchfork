@@ -121,8 +121,11 @@ module Pitchfork
     end
   end
 
-  def self.clean_fork(&block)
+  def self.clean_fork(setpgid: true, &block)
     if pid = Process.fork
+      if setpgid
+        Process.setpgid(pid, pid) # Make into a group leader
+      end
       return pid
     end
 
