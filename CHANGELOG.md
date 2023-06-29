@@ -1,5 +1,6 @@
 # Unreleased
 
+- Implement `before_worker_exit` callback.
 - Make each mold and worker a process group leader.
 - Get rid of `Pitchfork::PrereadInput`.
 - Treat `TERM` as graceful shutdown rather than quick shutdown.

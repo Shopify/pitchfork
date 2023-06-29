@@ -38,6 +38,7 @@ module Pitchfork
       :after_mold_fork => lambda { |server, worker|
         server.logger.info("mold gen=#{worker.generation} pid=#{$$} spawned")
       },
+      :before_worker_exit => nil,
       :after_worker_exit => lambda { |server, worker, status|
         m = if worker.nil?
           "repead unknown process (#{status.inspect})"
@@ -142,6 +143,10 @@ module Pitchfork
 
     def after_worker_hard_timeout(*args, &block)
       set_hook(:after_worker_hard_timeout, block_given? ? block : args[0], 2)
+    end
+
+    def before_worker_exit(*args, &block)
+      set_hook(:before_worker_exit, block_given? ? block : args[0], 2)
     end
 
     def after_worker_exit(*args, &block)

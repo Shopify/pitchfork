@@ -45,14 +45,15 @@ module Pitchfork
       end
 
       def call(original_thread) # :nodoc:
-        @server.logger.error("worker=#{@worker.nr} pid=#{@worker.pid} timed out, exiting")
-        if @callback
-          @callback.call(@server, @worker, Info.new(original_thread, @rack_env))
+        begin
+          @server.logger.error("worker=#{@worker.nr} pid=#{@worker.pid} timed out, exiting")
+          if @callback
+            @callback.call(@server, @worker, Info.new(original_thread, @rack_env))
+          end
+        rescue => error
+          Pitchfork.log_error(@server.logger, "after_worker_timeout error", error)
         end
-      rescue => error
-        Pitchfork.log_error(@server.logger, "after_worker_timeout error", error)
-      ensure
-        exit
+        @server.worker_exit(@worker)
       end
 
       def finished # :nodoc:
@@ -77,8 +78,8 @@ module Pitchfork
                   :listener_opts, :children,
                   :orig_app, :config, :ready_pipe,
                   :default_middleware, :early_hints
-    attr_writer   :after_worker_exit, :after_worker_ready, :after_request_complete, :refork_condition,
-                  :after_worker_timeout, :after_worker_hard_timeout
+    attr_writer   :after_worker_exit, :before_worker_exit, :after_worker_ready, :after_request_complete,
+                  :refork_condition, :after_worker_timeout, :after_worker_hard_timeout
 
     attr_reader :logger
     include Pitchfork::SocketHelper
@@ -313,7 +314,7 @@ module Pitchfork
       if REFORKING_AVAILABLE && @respawn && @children.molds.empty?
         logger.info("No mold alive, shutting down")
         @exit_status = 1
-        @sig_queue << :QUIT
+        @sig_queue << :TERM
         @respawn = false
       end
 
@@ -360,7 +361,7 @@ module Pitchfork
         logger.info("mold pid=#{new_mold.pid} gen=#{new_mold.generation} ready")
         old_molds.each do |old_mold|
           logger.info("Terminating old mold pid=#{old_mold.pid} gen=#{old_mold.generation}")
-          old_mold.soft_kill(:QUIT)
+          old_mold.soft_kill(:TERM)
         end
       else
         logger.error("Unexpected message in sig_queue #{message.inspect}")
@@ -376,9 +377,9 @@ module Pitchfork
       limit = Pitchfork.time_now + timeout
       until @children.workers.empty? || Pitchfork.time_now > limit
         if graceful
-          soft_kill_each_child(:QUIT)
+          soft_kill_each_child(:TERM)
         else
-          kill_each_child(:TERM)
+          kill_each_child(:INT)
         end
         if monitor_loop(false) == StopIteration
           return StopIteration
@@ -386,6 +387,17 @@ module Pitchfork
       end
       kill_each_child(:KILL)
       @promotion_lock.unlink
+    end
+
+    def worker_exit(worker)
+      if @before_worker_exit
+        begin
+          @before_worker_exit.call(self, worker)
+        rescue => error
+          Pitchfork.log_error(logger, "before_worker_exit error", error)
+        end
+      end
+      Process.exit
     end
 
     def rewindable_input
@@ -529,6 +541,7 @@ module Pitchfork
 
         after_fork_internal
         worker_loop(worker)
+        worker_exit(worker)
       end
 
       worker
@@ -587,7 +600,7 @@ module Pitchfork
     def maintain_worker_count
       (off = @children.workers_count - worker_processes) == 0 and return
       off < 0 and return spawn_missing_workers
-      @children.each_worker { |w| w.nr >= worker_processes and w.soft_kill(:QUIT) }
+      @children.each_worker { |w| w.nr >= worker_processes and w.soft_kill(:TERM) }
     end
 
     def restart_outdated_workers
@@ -604,7 +617,7 @@ module Pitchfork
         outdated_workers = @children.workers.select { |w| !w.exiting? && w.generation < @children.mold.generation }
         outdated_workers.each do |worker|
           logger.info("worker=#{worker.nr} pid=#{worker.pid} gen=#{worker.generation} restarting")
-          worker.soft_kill(:QUIT)
+          worker.soft_kill(:TERM)
         end
       end
     end
@@ -714,7 +727,7 @@ module Pitchfork
     def init_worker_process(worker)
       worker.reset
       worker.register_to_master(@control_socket[1])
-      # we'll re-trap :QUIT later for graceful shutdown iff we accept clients
+      # we'll re-trap :QUIT and :TERM later for graceful shutdown iff we accept clients
       exit_sigs = [ :QUIT, :TERM, :INT ]
       exit_sigs.each { |sig| trap(sig) { exit!(0) } }
       exit!(0) if (@sig_queue & exit_sigs)[0]
@@ -732,6 +745,7 @@ module Pitchfork
       readers = LISTENERS.dup
       readers << worker
       trap(:QUIT) { nuke_listeners!(readers) }
+      trap(:TERM) { nuke_listeners!(readers) }
       readers
     end
 
@@ -740,6 +754,7 @@ module Pitchfork
       after_mold_fork.call(self, mold)
       readers = [mold]
       trap(:QUIT) { nuke_listeners!(readers) }
+      trap(:TERM) { nuke_listeners!(readers) }
       readers
     end
 

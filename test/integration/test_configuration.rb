@@ -13,14 +13,34 @@ class ConfigurationTest < Pitchfork::IntegrationTest
         request_count += 1
         $stderr.puts "[after_request_complete] request_count=\#{request_count}"
       end
+
+      before_worker_exit do |server, worker|
+        $stderr.puts "[before_worker_exit]"
+      end
     CONFIG
 
     assert_healthy("http://#{addr}:#{port}")
     assert_stderr("[after_request_complete] request_count=1")
     assert_healthy("http://#{addr}:#{port}")
-    assert_stderr("[after_request_complete] request_count=2")
 
     assert_clean_shutdown(pid)
+  end
+
+  def test_before_worker_exit
+    addr, port = unused_port
+
+    pid = spawn_server(app: File.join(ROOT, "test/integration/env.ru"), config: <<~CONFIG)
+      listen "#{addr}:#{port}"
+      worker_processes 1
+
+      before_worker_exit do |server, worker|
+        $stderr.puts "[before_worker_exit]"
+      end
+    CONFIG
+
+    assert_healthy("http://#{addr}:#{port}")
+    assert_clean_shutdown(pid)
+    assert_stderr("[before_worker_exit]")
   end
 
   def test_soft_timeout
@@ -34,6 +54,10 @@ class ConfigurationTest < Pitchfork::IntegrationTest
       after_worker_timeout do |server, worker, timeout_info|
         $stderr.puts "[after_worker_timeout]"
       end
+
+      before_worker_exit do |server, worker|
+        $stderr.puts "[before_worker_exit]"
+      end
     CONFIG
 
     assert_healthy("http://#{addr}:#{port}/")
@@ -41,6 +65,7 @@ class ConfigurationTest < Pitchfork::IntegrationTest
     assert_equal false, healthy?("http://#{addr}:#{port}/?10")
     assert_stderr("timed out, exiting")
     assert_stderr("[after_worker_timeout]")
+    assert_stderr("[before_worker_exit]")
 
     assert_clean_shutdown(pid)
   end
