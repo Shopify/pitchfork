@@ -36,11 +36,11 @@ module Pitchfork
       end
     end
 
-    def mold_tick
+    def mold_deadline
       self[MOLD_TICK_OFFSET]
     end
 
-    def worker_tick(worker_nr)
+    def worker_deadline(worker_nr)
       self[WORKER_TICK_OFFSET + worker_nr]
     end
 

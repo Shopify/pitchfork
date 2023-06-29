@@ -24,7 +24,8 @@ module Pitchfork
       @exiting = false
       @requests_count = 0
       if nr
-        @deadline_drop = SharedMemory.worker_tick(nr)
+        @deadline_drop = SharedMemory.worker_deadline(nr)
+        self.deadline = 0
       else
         promoted!
       end
@@ -92,7 +93,8 @@ module Pitchfork
     def promoted!
       @mold = true
       @nr = nil
-      @deadline_drop = SharedMemory.mold_tick
+      @deadline_drop = SharedMemory.mold_deadline
+      self.deadline = 0
       self
     end
 
