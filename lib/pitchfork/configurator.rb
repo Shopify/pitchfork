@@ -26,11 +26,15 @@ module Pitchfork
     }
 
     # Default settings for Pitchfork
+    default_logger = Logger.new($stderr)
+    default_logger.formatter = Logger::Formatter.new
+    default_logger.progname = "[Pitchfork]"
+
     DEFAULTS = {
       :soft_timeout => 20,
       :cleanup_timeout => 2,
       :timeout => 22,
-      :logger => Logger.new($stderr),
+      :logger => default_logger,
       :worker_processes => 1,
       :after_worker_fork => lambda { |server, worker|
         server.logger.info("worker=#{worker.nr} gen=#{worker.generation} pid=#{$$} spawned")

@@ -19,13 +19,13 @@ class ReapLoggingTest < Pitchfork::IntegrationTest
     Process.kill(:KILL, w1_pid)
 
     assert_new_worker_forked
-    assert_stderr(/ERROR -- :.*pid=#{w1_pid}.*reaped/)
+    assert_stderr(/ERROR --.*pid=#{w1_pid}.*reaped/)
 
     w2_pid = Net::HTTP.get(URI("http://#{addr}:#{port}")).to_i
     Process.kill(:QUIT, w2_pid)
 
     assert_new_worker_forked
-    assert_stderr(/INFO -- :.*pid=#{w2_pid}.*reaped/)
+    assert_stderr(/INFO --.*pid=#{w2_pid}.*reaped/)
 
     assert_clean_shutdown(pid)
   end
