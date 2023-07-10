@@ -192,6 +192,7 @@ module Pitchfork
 
     # called in both the master (reaping worker) and worker (SIGQUIT handler)
     def close # :nodoc:
+      self.deadline = 0
       @master.close if @master
       @to_io.close if @to_io
     end
