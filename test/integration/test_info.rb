@@ -6,13 +6,22 @@ class InfoTest < Pitchfork::IntegrationTest
 
     pid = spawn_server(app: File.join(ROOT, "test/integration/info.ru"), config: <<~CONFIG)
       listen "#{addr}:#{port}"
-      worker_processes 1
+      worker_processes 4
     CONFIG
 
     assert_healthy("http://#{addr}:#{port}")
+    assert_stderr "worker=3 gen=0 ready"
 
     response = http_get("http://#{addr}:#{port}/")
-    assert_equal "{:workers_count=>1, :live_workers_count=>1}", response.body
+    assert_equal "{:workers_count=>4, :live_workers_count=>4}", response.body
+
+    Process.kill(:TTOU, pid)
+    assert_stderr(/worker=3 pid=\d+ gen=0 reaped/)
+    Process.kill(:TTOU, pid)
+    assert_stderr(/worker=2 pid=\d+ gen=0 reaped/)
+
+    response = http_get("http://#{addr}:#{port}/")
+    assert_equal "{:workers_count=>4, :live_workers_count=>2}", response.body
 
     assert_clean_shutdown(pid)
   end
