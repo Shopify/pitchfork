@@ -150,13 +150,22 @@ module Pitchfork
     end
 
     def healthy?(url)
-      uri = URI(url)
-      http = Net::HTTP.start(uri.host, uri.port)
-      http.max_retries = 0
-      http.get("#{uri.path}?#{uri.query}")
+      http_get(url)
       true
     rescue Errno::ECONNREFUSED, Errno::EADDRNOTAVAIL, EOFError
       false
+    end
+
+    def http_get(url)
+      uri = URI(url)
+      http = Net::HTTP.start(uri.host, uri.port)
+      http.max_retries = 0
+
+      path_info = uri.path.empty? ? "/" : uri.path
+      if uri.query
+        path_info = "#{path_info}?#{uri.query}"
+      end
+      http.get(path_info)
     end
 
     def spawn_server(*args, app:, config:, lint: true)

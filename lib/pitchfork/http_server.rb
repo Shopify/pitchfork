@@ -3,6 +3,7 @@ require 'pitchfork/pitchfork_http'
 require 'pitchfork/flock'
 require 'pitchfork/soft_timeout'
 require 'pitchfork/shared_memory'
+require 'pitchfork/info'
 
 module Pitchfork
   # This is the process manager of Pitchfork. This manages worker
@@ -165,6 +166,8 @@ module Pitchfork
       # list of signals we care about and trap in master.
       @queue_sigs = [
         :QUIT, :INT, :TERM, :USR2, :TTIN, :TTOU ]
+
+      Info.workers_count = worker_processes
       SharedMemory.preallocate_drops(worker_processes)
     end
 

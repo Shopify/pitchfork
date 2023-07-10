@@ -1,5 +1,6 @@
 # Unreleased
 
+- Expose `Pitchfork::Info.workers_count` and `.live_workers_count` to be consumed by application health checks.
 - Implement `before_worker_exit` callback.
 - Make each mold and worker a process group leader.
 - Get rid of `Pitchfork::PrereadInput`.
