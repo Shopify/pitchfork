@@ -15,6 +15,16 @@ module Pitchfork
           SharedMemory.worker_deadline(nr).value > now
         end
       end
+
+      # Returns true if the server is shutting down.
+      # This can be useful to implement health check endpoints, so they
+      # can fail immediately after TERM/QUIT/INT was received by the master
+      # process.
+      # Otherwise they may succeed while Pitchfork is draining requests causing
+      # more requests to be sent.
+      def shutting_down?
+        SharedMemory.shutting_down?
+      end
     end
   end
 end
