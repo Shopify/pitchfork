@@ -4,6 +4,7 @@
 - Implement `before_worker_exit` callback.
 - Make each mold and worker a process group leader.
 - Get rid of `Pitchfork::PrereadInput`.
+- Add `Pitchfork.shutting_down?` to allow health check endpoints to fail sooner on graceful shutdowns.
 - Treat `TERM` as graceful shutdown rather than quick shutdown.
 - Implement `after_worker_hard_timeout` callback.
 
