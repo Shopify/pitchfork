@@ -5,9 +5,18 @@ require 'pitchfork/shared_memory'
 module Pitchfork
   module Info
     @workers_count = 0
+    @fork_safe = true
 
     class << self
       attr_accessor :workers_count
+
+      def fork_safe?
+        @fork_safe
+      end
+
+      def no_longer_fork_safe!
+        @fork_safe = false
+      end
 
       def live_workers_count
         now = Pitchfork.time_now(true)

@@ -811,7 +811,7 @@ module Pitchfork
           # timeout so we can update .deadline and keep parent from SIGKILL-ing us
           worker.update_deadline(@timeout)
 
-          if @refork_condition && !worker.outdated?
+          if @refork_condition && Info.fork_safe? && !worker.outdated?
             if @refork_condition.met?(worker, logger)
               if spawn_mold(worker.generation)
                 logger.info("Refork condition met, promoting ourselves")
