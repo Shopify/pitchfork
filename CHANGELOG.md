@@ -1,5 +1,7 @@
 # Unreleased
 
+- Expose `Pitchfork::Info.fork_safe?` and `Pitchfork::Info.no_longer_fork_safe!`.
+
 # 0.6.0
 
 - Expose `Pitchfork::Info.workers_count` and `.live_workers_count` to be consumed by application health checks.

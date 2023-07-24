@@ -64,6 +64,28 @@ class ReforkingTest < Pitchfork::IntegrationTest
       assert_clean_shutdown(pid)
     end
 
+    def test_fork_unsafe
+      addr, port = unused_port
+
+      pid = spawn_server(app: File.join(ROOT, "test/integration/fork_unsafe.ru"), config: <<~CONFIG)
+        listen "#{addr}:#{port}"
+        worker_processes 2
+        refork_after [5, 5]
+      CONFIG
+
+      assert_healthy("http://#{addr}:#{port}")
+      assert_stderr "worker=0 gen=0 ready"
+      assert_stderr "worker=1 gen=0 ready"
+
+      20.times do
+        assert_equal true, healthy?("http://#{addr}:#{port}")
+      end
+
+      refute_match("Refork condition met, promoting ourselves", read_stderr)
+
+      assert_clean_shutdown(pid)
+    end
+
     def test_reforking_on_USR2
       addr, port = unused_port
 
