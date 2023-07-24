@@ -76,10 +76,12 @@ impact of discovering such bug.
 
 ## Known Incompatible Gems
 
-- [The `grpc` isn't fork safe](https://github.com/grpc/grpc/issues/8798) and doesn't provide any before or after fork callback to re-establish connection.
-  It can only be used in forking environment if the client is never used in the parent before fork.
-  If you application uses `grpc`, you shouldn't enable reforking.
-  But frankly, that gem is such a tire fire, you shouldn't use it regardless.
-  If you really have to consume a gRPC API, you can consider `grpc_kit` as a replacement.
+- The `grpc` isn't fork safe by default, but starting from version `1.57.0`, it does provide an experimental
+  fork safe option that requires setting an environment variable before loading the library, and calling
+  `GRPC.prefork`, `GRPC.postfork_parent` and `GRPC.postfork_child` around fork calls.
+  (https://github.com/grpc/grpc/pull/33430)
 
-No other gem is known to be incompatible, but if you find one please open an issue to add it to the list.
+- The `ruby-vips` gem binds the `libvips` image processing library that isn't fork safe.
+  (https://github.com/libvips/libvips/discussions/3577)
+
+No other gem is known to be incompatible for now, but if you find one please open an issue to add it to the list.
