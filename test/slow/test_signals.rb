@@ -25,8 +25,8 @@ class SignalsTest < Pitchfork::Test
     @bs = 1 * 1024 * 1024
     @count = 100
     @port = unused_port
-    @sock = Tempfile.new('pitchfork.sock')
-    @tmp = Tempfile.new('pitchfork.write')
+    @sock = Pitchfork::Info.keep_io(Tempfile.new('pitchfork.sock'))
+    @tmp = Pitchfork::Info.keep_io(Tempfile.new('pitchfork.write'))
     @tmp.sync = true
     File.unlink(@sock.path)
     File.unlink(@tmp.path)
@@ -75,7 +75,7 @@ class SignalsTest < Pitchfork::Test
   end
 
   def test_sleepy_kill
-    rd, wr = IO.pipe
+    rd, wr = Pitchfork::Info.keep_ios(IO.pipe)
     pid = fork {
       rd.close
       app = lambda { |env| wr.syswrite('.'); sleep; [ 200, {}, [] ] }

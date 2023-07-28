@@ -129,6 +129,7 @@ module Pitchfork
       @respawn = false
       @last_check = Pitchfork.time_now
       @promotion_lock = Flock.new("pitchfork-promotion")
+      Info.keep_io(@promotion_lock)
 
       options = options.dup
       @ready_pipe = options.delete(:ready_pipe)
@@ -180,6 +181,7 @@ module Pitchfork
       # It's also used by newly spawned children to send their soft_signal pipe
       # to the master when they are spawned.
       @control_socket.replace(Pitchfork.socketpair)
+      Info.keep_ios(@control_socket)
       @master_pid = $$
 
       # setup signal handlers before writing pid file in case people get
@@ -264,6 +266,7 @@ module Pitchfork
           io = server_cast(io)
         end
         logger.info "listening on addr=#{sock_name(io)} fd=#{io.fileno}"
+        Info.keep_io(io)
         LISTENERS << io
         io
       rescue Errno::EADDRINUSE => err

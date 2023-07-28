@@ -6,9 +6,39 @@ module Pitchfork
   module Info
     @workers_count = 0
     @fork_safe = true
+    @kept_ios = ObjectSpace::WeakMap.new
 
     class << self
       attr_accessor :workers_count
+
+      def keep_io(io)
+        @kept_ios[io] = io if io && !io.to_io.closed?
+        io
+      end
+
+      def keep_ios(ios)
+        ios.each { |io| keep_io(io) }
+      end
+
+      def close_all_fds!
+        ignored_fds = [$stdin.to_i, $stdout.to_i, $stderr.to_i]
+        @kept_ios.each_value do |io_like|
+          if io = io_like&.to_io
+            ignored_fds << io.to_i unless io.closed?
+          end
+        end
+
+        all_fds = Dir.children("/dev/fd").map(&:to_i)
+        all_fds -= ignored_fds
+
+        all_fds.each do |fd|
+          IO.for_fd(fd).close
+        rescue ArgumentError
+          # RubyVM internal file descriptor, leave it alone
+        rescue Errno::EBADF
+          # Likely a race condition
+        end
+      end
 
       def fork_safe?
         @fork_safe

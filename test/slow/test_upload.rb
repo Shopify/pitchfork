@@ -143,7 +143,7 @@ class UploadTest < Pitchfork::Test
   end
 
   def test_put_excessive_overwrite_closed
-    tmp = Tempfile.new('overwrite_check')
+    tmp = Pitchfork::Info.keep_io(Tempfile.new('overwrite_check'))
     tmp.sync = true
     start_server(lambda { |env|
       nr = 0
