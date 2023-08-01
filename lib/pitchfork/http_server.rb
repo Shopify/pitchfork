@@ -514,8 +514,13 @@ module Pitchfork
 
     def trigger_refork
       unless REFORKING_AVAILABLE
-        logger.error("This system doesn't support PR_SET_CHILD_SUBREAPER, can't promote a worker")
+        logger.error("This system doesn't support PR_SET_CHILD_SUBREAPER, can't refork")
       end
+
+      unless Info.fork_safe?
+        logger.error("worker=#{worker.nr} gen=#{worker.generation} is not fork safe, can't refork")
+      end
+
 
       unless @children.pending_promotion?
         if new_mold = @children.fresh_workers.first
@@ -523,7 +528,6 @@ module Pitchfork
         else
           logger.error("No children at all???")
         end
-      else
       end
     end
 
