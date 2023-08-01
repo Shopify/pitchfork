@@ -12,7 +12,8 @@ module Pitchfork
       attr_accessor :workers_count
 
       def keep_io(io)
-        @kept_ios[io] = io if io && !io.to_io.closed?
+        raise ArgumentError, "#{io.inspect} doesn't respond to :to_io" unless io.respond_to?(:to_io)
+        @kept_ios[io] = io
         io
       end
 
@@ -20,23 +21,31 @@ module Pitchfork
         ios.each { |io| keep_io(io) }
       end
 
-      def close_all_fds!
-        ignored_fds = [$stdin.to_i, $stdout.to_i, $stderr.to_i]
+      def close_all_ios!
+        ignored_ios = [$stdin, $stdout, $stderr]
+
         @kept_ios.each_value do |io_like|
-          if io = io_like&.to_io
-            ignored_fds << io.to_i unless io.closed?
-          end
+          ignored_ios << (io_like.is_a?(IO) ? io_like : io_like.to_io)
         end
 
-        all_fds = Dir.children("/dev/fd").map(&:to_i)
-        all_fds -= ignored_fds
+        ObjectSpace.each_object(IO) do |io|
+          closed = begin
+            io.closed?
+          rescue IOError
+            true
+          end
 
-        all_fds.each do |fd|
-          IO.for_fd(fd).close
-        rescue ArgumentError
-          # RubyVM internal file descriptor, leave it alone
-        rescue Errno::EBADF
-          # Likely a race condition
+          if !closed && io.autoclose? && !ignored_ios.include?(io)
+            if io.is_a?(TCPSocket)
+              # If we inherited a TCP Socket, calling #close directly could send FIN or RST.
+              # So we first reopen /dev/null to avoid that.
+              io.reopen(File::NULL)
+            end
+            begin
+              io.close
+            rescue Errno::EBADF
+            end
+          end
         end
       end
 

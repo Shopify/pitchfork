@@ -18,19 +18,21 @@ module Pitchfork
     end
 
     def test_message_worker_spawned
+      pipe = IO.pipe.last
       worker = Worker.new(0)
       @children.register(worker)
       assert_predicate @children, :pending_workers?
 
-      @children.update(Message::WorkerSpawned.new(0, 42, 0, nil))
+      @children.update(Message::WorkerSpawned.new(0, 42, 0, pipe))
       refute_predicate @children, :pending_workers?
       assert_equal 42, worker.pid
       assert_equal [worker], @children.workers
     end
 
     def test_message_mold_spawned
+      pipe = IO.pipe.last
       assert_nil @children.mold
-      @children.update(Message::MoldSpawned.new(nil, 42, 1, nil))
+      @children.update(Message::MoldSpawned.new(nil, 42, 1, pipe))
 
       assert_nil @children.mold
       assert_equal 0, @children.molds.size
@@ -40,8 +42,9 @@ module Pitchfork
     end
 
     def test_message_mold_ready
+      pipe = IO.pipe.last
       assert_nil @children.mold
-      @children.update(Message::MoldSpawned.new(nil, 42, 1, nil))
+      @children.update(Message::MoldSpawned.new(nil, 42, 1, pipe))
       mold = @children.update(Message::MoldReady.new(nil, 42, 1))
 
       assert_equal mold, @children.mold
@@ -52,26 +55,28 @@ module Pitchfork
     end
 
     def test_reap_worker
+      pipe = IO.pipe.last
       worker = Worker.new(0)
       @children.register(worker)
       assert_predicate @children, :pending_workers?
 
-      @children.update(Message::WorkerSpawned.new(0, 42, 0, nil))
+      @children.update(Message::WorkerSpawned.new(0, 42, 0, pipe))
 
       assert_equal worker, @children.reap(worker.pid)
       assert_nil @children.reap(worker.pid)
     end
 
     def test_reap_old_molds
+      pipe = IO.pipe.last
       assert_nil @children.mold
-      @children.update(Message::MoldSpawned.new(nil, 24, 0, nil))
+      @children.update(Message::MoldSpawned.new(nil, 24, 0, pipe))
       @children.update(Message::MoldReady.new(nil, 24, 0))
 
       first_mold = @children.mold
       refute_nil first_mold
       assert_equal 24, first_mold.pid
 
-      @children.update(Message::MoldSpawned.new(nil, 42, 1, nil))
+      @children.update(Message::MoldSpawned.new(nil, 42, 1, pipe))
       @children.update(Message::MoldReady.new(nil, 42, 1))
       second_mold = @children.mold
       refute_nil second_mold

@@ -208,6 +208,7 @@ module Pitchfork
     private
 
     def pipe=(socket)
+      raise ArgumentError, "pipe can't be nil" unless socket
       Info.keep_io(socket)
       @master = MessageSocket.new(socket)
     end
