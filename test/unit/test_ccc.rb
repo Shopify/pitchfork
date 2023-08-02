@@ -6,9 +6,9 @@ class TestCccTCPI < Pitchfork::Test
     host = '127.0.0.1'
     port = unused_port
 
-    rd, wr = IO.pipe
-    sleep_pipe = IO.pipe
-    ready_read, ready_write = IO.pipe
+    rd, wr = Pitchfork::Info.keep_ios(IO.pipe)
+    sleep_pipe = Pitchfork::Info.keep_ios(IO.pipe)
+    ready_read, ready_write = Pitchfork::Info.keep_ios(IO.pipe)
 
     pid = fork do
       ready_read.close

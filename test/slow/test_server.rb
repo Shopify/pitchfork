@@ -80,6 +80,7 @@ class WebServerStartTest < Pitchfork::Test
 
   def test_preload_app
     tmp = Tempfile.new('test_preload_app_config')
+    Pitchfork::Info.keep_io(tmp)
     ObjectSpace.undefine_finalizer(tmp)
     app = lambda { ||
       tmp.sysseek(0)

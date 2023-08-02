@@ -19,6 +19,10 @@ module Pitchfork
       nil
     end
 
+    def to_io
+      @file
+    end
+
     def unlink
       File.unlink(@file.path)
     rescue Errno::ENOENT

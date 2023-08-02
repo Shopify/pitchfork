@@ -198,7 +198,7 @@ module Pitchfork
     end
 
     def create_socketpair!
-      @to_io, @master = Pitchfork.socketpair
+      @to_io, @master = Info.keep_ios(Pitchfork.socketpair)
     end
 
     def after_fork_in_child
@@ -208,6 +208,8 @@ module Pitchfork
     private
 
     def pipe=(socket)
+      raise ArgumentError, "pipe can't be nil" unless socket
+      Info.keep_io(socket)
       @master = MessageSocket.new(socket)
     end
 
