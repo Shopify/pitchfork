@@ -350,7 +350,11 @@ module Pitchfork
         stop(false)
         return StopIteration
       when :USR2 # trigger a promotion
-        trigger_refork
+        if @respawn
+          trigger_refork
+        else
+          logger.error "Can't trigger a refork as the server is shutting down"
+        end
       when :TTIN
         @respawn = true
         self.worker_processes += 1
