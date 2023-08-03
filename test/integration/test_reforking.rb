@@ -107,5 +107,46 @@ class ReforkingTest < Pitchfork::IntegrationTest
       assert_healthy("http://#{addr}:#{port}")
       assert_clean_shutdown(pid)
     end
+
+    def test_slow_worker_rollout
+      addr, port = unused_port
+
+      pid = spawn_server(app: File.join(ROOT, "test/integration/env.ru"), config: <<~CONFIG)
+        listen "#{addr}:#{port}"
+        worker_processes 5
+        after_worker_fork do |_server, worker|
+          Kernel.at_exit do
+            sleep 0.1
+          end
+        end
+      CONFIG
+
+      assert_healthy("http://#{addr}:#{port}")
+      assert_stderr "worker=0 gen=0 ready"
+      assert_stderr "worker=4 gen=0 ready"
+
+      Process.kill(:USR2, pid)
+
+      assert_stderr "worker=0 gen=1 ready"
+      assert_stderr "worker=1 gen=1 ready"
+      assert_stderr "worker=2 gen=1 ready"
+      assert_stderr "worker=3 gen=1 ready"
+      assert_stderr "worker=4 gen=1 ready"
+
+      assert_clean_shutdown(pid)
+
+      log_lines = read_stderr.lines.drop_while { |l| !l.match?(/Terminating old mold/) }
+      log_lines = log_lines.take_while { |l| !l.match?(/QUIT received/) }
+
+      events = log_lines.map do |line|
+        case line
+        when /Sent SIGTERM to worker/
+          :term
+        when /registered/
+          :registered
+        end
+      end.compact
+      assert_equal([:term, :registered] * 5, events)
+    end
   end
 end
