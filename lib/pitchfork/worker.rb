@@ -215,6 +215,7 @@ module Pitchfork
 
     def send_message_nonblock(message)
       success = false
+      return false unless @master
       begin
         case @master.sendmsg_nonblock(message, exception: false)
         when :wait_writable
