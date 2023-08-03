@@ -1,5 +1,6 @@
 # Unreleased
 
+- Fix the slow rollout of workers on a new generation.
 - Expose `Pitchfork::Info.fork_safe?` and `Pitchfork::Info.no_longer_fork_safe!`.
 
 # 0.6.0

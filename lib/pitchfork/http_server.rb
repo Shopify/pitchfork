@@ -635,9 +635,11 @@ module Pitchfork
         outdated_workers.each do |worker|
           if worker.soft_kill(:TERM)
             logger.info("Sent SIGTERM to worker=#{worker.nr} pid=#{worker.pid} gen=#{worker.generation}")
+            workers_to_restart -= 1
           else
             logger.info("Failed to send SIGTERM to worker=#{worker.nr} pid=#{worker.pid} gen=#{worker.generation}")
           end
+          break if workers_to_restart <= 0
         end
       end
     end
