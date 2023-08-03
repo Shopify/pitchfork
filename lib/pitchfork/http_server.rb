@@ -629,8 +629,11 @@ module Pitchfork
       if workers_to_restart > 0
         outdated_workers = @children.workers.select { |w| !w.exiting? && w.generation < @children.mold.generation }
         outdated_workers.each do |worker|
-          logger.info("worker=#{worker.nr} pid=#{worker.pid} gen=#{worker.generation} restarting")
-          worker.soft_kill(:TERM)
+          if worker.soft_kill(:TERM)
+            logger.info("Sent SIGTERM to worker=#{worker.nr} pid=#{worker.pid} gen=#{worker.generation}")
+          else
+            logger.info("Failed to send SIGTERM to worker=#{worker.nr} pid=#{worker.pid} gen=#{worker.generation}")
+          end
         end
       end
     end
