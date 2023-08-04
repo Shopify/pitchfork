@@ -108,6 +108,31 @@ class ReforkingTest < Pitchfork::IntegrationTest
       assert_clean_shutdown(pid)
     end
 
+    def test_reforking_on_USR2_fork_unsafe_worker
+      addr, port = unused_port
+
+      pid = spawn_server(app: File.join(ROOT, "test/integration/env.ru"), config: <<~CONFIG)
+        listen "#{addr}:#{port}"
+        worker_processes 1
+
+        after_worker_fork do |_server, worker|
+          if worker.nr == 0
+            Pitchfork::Info.no_longer_fork_safe!
+          end
+        end
+      CONFIG
+
+      assert_healthy("http://#{addr}:#{port}")
+      assert_stderr "worker=0 gen=0 ready"
+
+      Process.kill(:USR2, pid)
+
+      assert_stderr "is no longer fork safe, can't refork"
+
+      assert_healthy("http://#{addr}:#{port}")
+      assert_clean_shutdown(pid)
+    end
+
     def test_slow_worker_rollout
       addr, port = unused_port
 
