@@ -91,7 +91,7 @@ module Pitchfork
     # in new projects
     LISTENERS = []
 
-    NOOP = '.'
+    NOOP = '.'.freeze
 
     # :startdoc:
     # This Hash is considered a stable interface and changing its contents
@@ -137,6 +137,8 @@ module Pitchfork
       options[:use_defaults] = true
       self.config = Pitchfork::Configurator.new(options)
       self.listener_opts = {}
+
+      proc_name role: 'monitor', status: START_CTX[:argv].join(' ')
 
       # We use @control_socket differently in the master and worker processes:
       #
@@ -290,7 +292,8 @@ module Pitchfork
     def join
       @respawn = true
 
-      proc_name 'master'
+      proc_name role: 'monitor', status: START_CTX[:argv].join(' ')
+
       logger.info "master process ready" # test_exec.rb relies on this message
       if @ready_pipe
         begin
@@ -383,6 +386,7 @@ module Pitchfork
 
     # Terminates all workers, but does not exit master process
     def stop(graceful = true)
+      proc_name role: 'monitor', status: 'shutting down'
       @respawn = false
       SharedMemory.shutting_down!
       wait_for_pending_workers
@@ -689,6 +693,9 @@ module Pitchfork
       env = nil
       @request = Pitchfork::HttpParser.new
       env = @request.read(client)
+
+      proc_name status: "processing: #{env["PATH_INFO"]}"
+
       timeout_handler.rack_env = env
       env["pitchfork.timeout"] = timeout_handler
 
@@ -742,6 +749,7 @@ module Pitchfork
     # traps for USR2, and HUP may be set in the after_fork Proc
     # by the user.
     def init_worker_process(worker)
+      proc_name role: "(gen:#{worker.generation}) worker[#{worker.nr}]", status: "init"
       worker.reset
       worker.register_to_master(@control_socket[1])
       # we'll re-trap :QUIT and :TERM later for graceful shutdown iff we accept clients
@@ -751,7 +759,6 @@ module Pitchfork
       (@queue_sigs - exit_sigs).each { |sig| trap(sig, nil) }
       trap(:CHLD, 'DEFAULT')
       @sig_queue.clear
-      proc_name "(gen:#{worker.generation}) worker[#{worker.nr}]"
       @children = nil
 
       after_worker_fork.call(self, worker) # can drop perms and create listeners
@@ -767,7 +774,7 @@ module Pitchfork
     end
 
     def init_mold_process(mold)
-      proc_name "(gen:#{mold.generation}) mold"
+      proc_name role: "(gen:#{mold.generation}) mold", status: "ready"
       after_mold_fork.call(self, mold)
       readers = [mold]
       trap(:QUIT) { nuke_listeners!(readers) }
@@ -795,6 +802,8 @@ module Pitchfork
 
       ready = readers.dup
       @after_worker_ready.call(self, worker)
+
+      proc_name status: "ready"
 
       while readers[0]
         begin
@@ -835,6 +844,7 @@ module Pitchfork
             end
           end
 
+          proc_name status: "waiting"
           waiter.get_readers(ready, readers, @timeout * 500) # to milliseconds, but halved
         rescue => e
           Pitchfork.log_error(@logger, "listen loop error", e) if readers[0]
@@ -926,6 +936,8 @@ module Pitchfork
     def build_app!
       return unless app.respond_to?(:arity)
 
+      proc_name status: "booting"
+
       self.app = case app.arity
       when 0
         app.call
@@ -936,9 +948,11 @@ module Pitchfork
       end
     end
 
-    def proc_name(tag)
-      $0 = ([ File.basename(START_CTX[0]), tag
-            ]).concat(START_CTX[:argv]).join(' ')
+    def proc_name(role: nil, status: nil)
+      @proctitle_role = role if role
+      @proctitle_status = status if status
+
+      Process.setproctitle("#{File.basename(START_CTX[0])} #{@proctitle_role} - #{@proctitle_status}")
     end
 
     def bind_listeners!
