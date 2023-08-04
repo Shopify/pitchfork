@@ -371,7 +371,7 @@ Called in the worker processes after a request has completed.
 Can be used for out of band work, or to exit unhealthy workers.
 
 ```ruby
-after_request_complete do |server, worker|
+after_request_complete do |server, worker, env|
   if something_wrong?
     exit
   end
