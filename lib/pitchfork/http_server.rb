@@ -772,7 +772,7 @@ module Pitchfork
     end
 
     def init_mold_process(mold)
-      proc_name "(gen: #{mold.generation}) mold"
+      proc_name "(gen:#{mold.generation}) mold"
       after_mold_fork.call(self, mold)
       readers = [mold]
       trap(:QUIT) { nuke_listeners!(readers) }
