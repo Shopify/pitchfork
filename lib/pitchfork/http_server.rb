@@ -524,11 +524,6 @@ module Pitchfork
         logger.error("This system doesn't support PR_SET_CHILD_SUBREAPER, can't refork")
       end
 
-      unless Info.fork_safe?
-        logger.error("worker=#{worker.nr} gen=#{worker.generation} is not fork safe, can't refork")
-      end
-
-
       unless @children.pending_promotion?
         if new_mold = @children.fresh_workers.first
           @children.promote(new_mold)
@@ -812,7 +807,11 @@ module Pitchfork
             if client
               case client
               when Message::PromoteWorker
-                spawn_mold(worker.generation)
+                if Info.fork_safe?
+                  spawn_mold(worker.generation)
+                else
+                  logger.error("worker=#{worker.nr} gen=#{worker.generation} is no longer fork safe, can't refork")
+                end
               when Message
                 worker.update(client)
               else
