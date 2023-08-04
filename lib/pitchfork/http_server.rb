@@ -710,12 +710,12 @@ module Pitchfork
       status, headers, body = @app.call(env)
 
       begin
-        return if @request.hijacked?
+        return env if @request.hijacked?
 
         if 100 == status.to_i
           e100_response_write(client, env)
           status, headers, body = @app.call(env)
-          return if @request.hijacked?
+          return env if @request.hijacked?
         end
         @request.headers? or headers = nil
         http_response_write(client, status, headers, body, @request)
@@ -730,11 +730,14 @@ module Pitchfork
         end
         client.close # flush and uncork socket immediately, no keepalive
       end
+      env
     rescue => e
       handle_error(client, e)
+      env
     ensure
       env["rack.after_reply"].each(&:call) if env
       timeout_handler.finished
+      env
     end
 
     def nuke_listeners!(readers)
@@ -824,8 +827,8 @@ module Pitchfork
               when Message
                 worker.update(client)
               else
-                process_client(client, prepare_timeout(worker))
-                @after_request_complete&.call(self, worker)
+                request_env = process_client(client, prepare_timeout(worker))
+                @after_request_complete&.call(self, worker, request_env)
                 worker.increment_requests_count
               end
               worker.update_deadline(@timeout)

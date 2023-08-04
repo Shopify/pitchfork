@@ -158,7 +158,7 @@ module Pitchfork
     end
 
     def after_request_complete(*args, &block)
-      set_hook(:after_request_complete, block_given? ? block : args[0])
+      set_hook(:after_request_complete, block_given? ? block : args[0], 3)
     end
 
     def timeout(seconds, cleanup: 2)
