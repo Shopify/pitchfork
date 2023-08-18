@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    pitchfork (0.6.0)
+    pitchfork (0.7.0)
       rack (>= 2.0)
       raindrops (~> 0.7)
 

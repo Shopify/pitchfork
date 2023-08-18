@@ -1,5 +1,8 @@
 # Unreleased
 
+# 0.7.0
+
+- Set nicer `proctile` to better see the state of the process tree at a glance.
 - Pass the last request env to `after_request_complete` callback.
 - Fix the slow rollout of workers on a new generation.
 - Expose `Pitchfork::Info.fork_safe?` and `Pitchfork::Info.no_longer_fork_safe!`.
