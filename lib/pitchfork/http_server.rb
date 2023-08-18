@@ -407,6 +407,8 @@ module Pitchfork
     end
 
     def worker_exit(worker)
+      proc_name status: "exiting"
+
       if @before_worker_exit
         begin
           @before_worker_exit.call(self, worker)
