@@ -29,13 +29,7 @@ module Pitchfork
         end
 
         ObjectSpace.each_object(IO) do |io|
-          closed = begin
-            io.closed?
-          rescue IOError
-            true
-          end
-
-          if !closed && io.autoclose? && !ignored_ios.include?(io)
+          if io_open?(io) && io_autoclosed?(io) && !ignored_ios.include?(io)
             if io.is_a?(TCPSocket)
               # If we inherited a TCP Socket, calling #close directly could send FIN or RST.
               # So we first reopen /dev/null to avoid that.
@@ -72,6 +66,20 @@ module Pitchfork
       # more requests to be sent.
       def shutting_down?
         SharedMemory.shutting_down?
+      end
+
+      private
+
+      def io_open?(io)
+        !io.closed?
+      rescue IOError
+        false
+      end
+
+      def io_autoclosed?(io)
+        io.autoclose?
+      rescue IOError
+        false
       end
     end
   end
