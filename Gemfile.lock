@@ -10,7 +10,7 @@ GEM
   specs:
     minitest (5.15.0)
     nio4r (2.5.9)
-    puma (6.3.0)
+    puma (6.3.1)
       nio4r (~> 2.0)
     rack (3.0.8)
     raindrops (0.20.1)
