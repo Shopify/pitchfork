@@ -253,12 +253,23 @@ The default Logger will log its output to STDERR.
 Because pitchfork several callbacks around the lifecycle of workers.
 It is often necessary to use these callbacks to close inherited connection after fork.
 
-Note that when reforking is available, the `pitchfork` master process won't load your application
-at all. As such for hooks executed in the master, you may need to explicitly load the parts of your
+Note that when reforking is available, the `pitchfork` monitor process won't load your application
+at all. As such for hooks executed in the monitor, you may need to explicitly load the parts of your
 application that are used in hooks.
 
 `pitchfork` also don't attempt to rescue hook errors. Raising from a worker hook will crash the worker,
-and raising from a master hook will bring the whole cluster down.
+and raising from a monitor hook will bring the whole cluster down.
+
+### `after_monitor_ready`
+
+Called by the monitor process after it's done booting the application and
+spawning the original workers.
+
+```ruby
+after_monitor_ready do |server|
+  server.logger.info("Monitor pid=#{Process.pid} ready")
+end
+```
 
 ### `after_mold_fork`
 
@@ -338,7 +349,7 @@ By default the cleanup timeout is 2 seconds.
 
 ### `after_worker_hard_timeout`
 
-Called in the master process when a worker hard timeout is elapsed:
+Called in the monitor process when a worker hard timeout is elapsed:
 
 ```ruby
 after_worker_timeout do |server, worker|
@@ -353,7 +364,7 @@ soft timeout from working.
 
 ### `after_worker_exit`
 
-Called in the master process after a worker exits.
+Called in the monitor process after a worker exits.
 
 ```ruby
 after_worker_exit do |server, worker, status|

@@ -60,6 +60,9 @@ module Pitchfork
       :after_worker_ready => lambda { |server, worker|
         server.logger.info("worker=#{worker.nr} gen=#{worker.generation} ready")
       },
+      :after_monitor_ready => lambda { |server|
+        server.logger.info("Monitor pid=#{Process.pid} ready")
+      },
       :after_worker_timeout => nil,
       :after_worker_hard_timeout => nil,
       :after_request_complete => nil,
@@ -139,6 +142,10 @@ module Pitchfork
 
     def after_worker_ready(*args, &block)
       set_hook(:after_worker_ready, block_given? ? block : args[0])
+    end
+
+    def after_monitor_ready(*args, &block)
+      set_hook(:after_monitor_ready, block_given? ? block : args[0], 1)
     end
 
     def after_worker_timeout(*args, &block)
