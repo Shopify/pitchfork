@@ -80,7 +80,7 @@ module Pitchfork
                   :orig_app, :config, :ready_pipe,
                   :default_middleware, :early_hints
     attr_writer   :after_worker_exit, :before_worker_exit, :after_worker_ready, :after_request_complete,
-                  :refork_condition, :after_worker_timeout, :after_worker_hard_timeout
+                  :refork_condition, :after_worker_timeout, :after_worker_hard_timeout, :after_monitor_ready
 
     attr_reader :logger
     include Pitchfork::SocketHelper
@@ -211,6 +211,8 @@ module Pitchfork
         # once all initial workers are spawned.
         wait_for_pending_workers
       end
+
+      @after_monitor_ready&.call(self)
 
       self
     end
