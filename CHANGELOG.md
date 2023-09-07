@@ -1,5 +1,7 @@
 # Unreleased
 
+- Implement `Pitchfork.prevent_fork` for use in background threads that synchronize native locks with the GVL released.
+
 # 0.7.0
 
 - Set nicer `proctile` to better see the state of the process tree at a glance.

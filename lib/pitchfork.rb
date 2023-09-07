@@ -36,9 +36,40 @@ module Pitchfork
 
   # :stopdoc:
 
+  FORK_LOCK = Monitor.new
   @socket_type = :SOCK_SEQPACKET
 
   class << self
+    # :startdoc:
+
+    # Prevent Pitchfork from forking new children for the duration of the block.
+    #
+    # If you have background threads calling code that synchronize native locks,
+    # while the GVL is released, forking while they are held could leak to
+    # corrupted children.
+    #
+    # One example of this is `getaddrinfo(3)`, so opening a connection from a
+    # background thread has a chance to produce stuck children.
+    #
+    # To avoid this you can wrap such code in `Pitchfork.prevent_fork`:
+    #
+    # def heartbeat_thread
+    #   @heartbeat_thread ||= Thread.new do
+    #     loop do
+    #       Pitchfork.prevent_fork do
+    #         heartbeat
+    #       end
+    #       sleep 10
+    #     end
+    #   end
+    # end
+    #
+    def prevent_fork(&block)
+      FORK_LOCK.synchronize(&block)
+    end
+
+    # :stopdoc:
+
     # This returns a lambda to pass in as the app, this does not "build" the
     # app The returned lambda will be called when it is
     # time to build the app.
@@ -124,7 +155,7 @@ module Pitchfork
     end
 
     def clean_fork(setpgid: true, &block)
-      if pid = Process.fork
+      if pid = FORK_LOCK.synchronize { Process.fork }
         if setpgid
           Process.setpgid(pid, pid) # Make into a group leader
         end
@@ -171,7 +202,7 @@ module Pitchfork
         # to the master.
         # This requires either PR_SET_CHILD_SUBREAPER which is exclusive to Linux 3.4
         # or the master to be PID 1.
-        if middle_pid = Process.fork # parent
+        if middle_pid = FORK_LOCK.synchronize { Process.fork } # parent
           # We need to wait(2) so that the middle process doesn't end up a zombie.
           Process.wait(middle_pid)
         else # first child
