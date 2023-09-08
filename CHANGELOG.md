@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.8.0
+
 - Add an `after_monitor_ready` callback, called in the monitor process at end of boot.
 - Implement `Pitchfork.prevent_fork` for use in background threads that synchronize native locks with the GVL released.
 
