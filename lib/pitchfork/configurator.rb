@@ -33,6 +33,7 @@ module Pitchfork
     DEFAULTS = {
       :soft_timeout => 20,
       :cleanup_timeout => 2,
+      :spawn_timeout => 10,
       :timeout => 22,
       :logger => default_logger,
       :worker_processes => 1,
@@ -172,6 +173,10 @@ module Pitchfork
       soft_timeout = set_int(:soft_timeout, seconds, 3)
       cleanup_timeout = set_int(:cleanup_timeout, cleanup, 2)
       set_int(:timeout, soft_timeout + cleanup_timeout, 5)
+    end
+
+    def spawn_timeout(seconds)
+      set_int(:spawn_timeout, seconds, 1)
     end
 
     def worker_processes(nr)

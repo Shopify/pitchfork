@@ -238,6 +238,19 @@ exit or be SIGKILL-ed due to timeouts.
 See https://nginx.org/en/docs/http/ngx_http_upstream_module.html
 for more details on nginx upstream configuration.
 
+### `spawn_timeout`
+
+```ruby
+timeout 5
+```
+
+Sets the timeout for a newly spawned worker to be ready after being spawned.
+
+This timeout is a safeguard against various low-level fork safety bugs that could cause
+a process to dead-lock.
+
+The default of `10` seconds is quite generous and likely doesn't need to be adjusted.
+
 ### `logger`
 
 ```ruby
