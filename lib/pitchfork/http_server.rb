@@ -74,7 +74,7 @@ module Pitchfork
     end
 
     # :stopdoc:
-    attr_accessor :app, :timeout, :soft_timeout, :cleanup_timeout, :worker_processes,
+    attr_accessor :app, :timeout, :soft_timeout, :cleanup_timeout, :spawn_timeout, :worker_processes,
                   :after_worker_fork, :after_mold_fork,
                   :listener_opts, :children,
                   :orig_app, :config, :ready_pipe,
@@ -556,6 +556,10 @@ module Pitchfork
     def spawn_worker(worker, detach:)
       logger.info("worker=#{worker.nr} gen=#{worker.generation} spawning...")
 
+      # We set the deadline before spawning the child so that if for some
+      # reason it gets stuck before reaching the worker loop,
+      # the monitor process will kill it.
+      worker.update_deadline(@spawn_timeout)
       Pitchfork.fork_sibling do
         worker.pid = Process.pid
 

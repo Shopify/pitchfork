@@ -84,4 +84,29 @@ class TestBoot < Pitchfork::IntegrationTest
 
     assert_exited(pid, 1)
   end
+
+  def test_boot_worker_stuck_in_spawn
+    addr, port = unused_port
+
+    pid = spawn_server(app: APP, config: <<~RUBY)
+      listen "#{addr}:#{port}"
+      worker_processes 2
+      refork_after [50, 100, 1000]
+      spawn_timeout 2
+      after_worker_fork do |_server, worker|
+        if worker.nr == 1
+          sleep 20 # simulate a stuck worker
+        end
+      end
+    RUBY
+
+
+    assert_healthy("http://#{addr}:#{port}")
+
+    assert_stderr("worker=0 gen=0 ready")
+    assert_stderr(/worker=1 pid=\d+ registered/)
+    assert_stderr(/worker=1 pid=\d+ timed out, killing/, timeout: 4)
+
+    assert_clean_shutdown(pid)
+  end
 end

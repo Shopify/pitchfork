@@ -1,5 +1,7 @@
 # Unreleased
 
+- Implement `spawn_timeout` to protect against bugs causing workers to get stuck before they reach ready state.
+
 # 0.8.0
 
 - Add an `after_monitor_ready` callback, called in the monitor process at end of boot.
