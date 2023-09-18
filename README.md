@@ -9,13 +9,6 @@ advantage of features in Unix/Unix-like kernels. Slow clients should
 only be served by placing a reverse proxy capable of fully buffering
 both the request and response in between `pitchfork` and slow clients.
 
-## Disclaimer
-
-Until this notice is removed from the README, `pitchfork` should be
-considered experimental. As such it is not encouraged to run it in
-production just yet unless you feel capable of debugging yourself
-any issue that may arise.
-
 ## Features
 
 * Designed for Rack, Linux, fast clients, and ease-of-debugging. We
