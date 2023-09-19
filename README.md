@@ -33,8 +33,22 @@ both the request and response in between `pitchfork` and slow clients.
   or ports yourself. `pitchfork` can spawn and manage any number of
   worker processes you choose to scale to your backend.
 
+* Adaptative timeout: request timeout can be extended dynamically on a
+  per request basis, which allows to keep a strict overall timeout for
+  most endpoints, but allow a few endpoints to take longer.
+
 * Load balancing is done entirely by the operating system kernel.
   Requests never pile up behind a busy worker process.
+
+## When to Use
+
+Pitchfork isn't inherently better than other Ruby application servers, it mostly
+focus on different tradeoffs.
+
+If you are fine with your current server, it's best to stick with it.
+
+If there is a problem you are trying to solve, please read the
+[migration guide](docs/WHY_MIGRATE.md) first.
 
 ## Requirements
 
