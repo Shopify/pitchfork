@@ -6,14 +6,35 @@ module Pitchfork
   module Info
     @workers_count = 0
     @fork_safe = true
-    @kept_ios = ObjectSpace::WeakMap.new
+
+    class WeakSet # :nodoc
+      def initialize
+        @map = ObjectSpace::WeakMap.new
+      end
+
+      if RUBY_VERSION < "2.7"
+        def <<(object)
+          @map[object] = object
+        end
+      else
+        def <<(object)
+          @map[object] = true
+        end
+      end
+
+      def each(&block)
+        @map.each_key(&block)
+      end
+    end
+    
+    @kept_ios = WeakSet.new
 
     class << self
       attr_accessor :workers_count
 
       def keep_io(io)
         raise ArgumentError, "#{io.inspect} doesn't respond to :to_io" unless io.respond_to?(:to_io)
-        @kept_ios[io] = io
+        @kept_ios << io
         io
       end
 
@@ -22,9 +43,9 @@ module Pitchfork
       end
 
       def close_all_ios!
-        ignored_ios = [$stdin, $stdout, $stderr]
+        ignored_ios = [$stdin, $stdout, $stderr, STDIN, STDOUT, STDERR].uniq.compact
 
-        @kept_ios.each_value do |io_like|
+        @kept_ios.each do |io_like|
           ignored_ios << (io_like.is_a?(IO) ? io_like : io_like.to_io)
         end
 
