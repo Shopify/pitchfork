@@ -66,7 +66,10 @@ PID   COMMAND
 105       \_ pitchfork (gen:0) worker[3]
 ```
 
-When a reforking is triggered, one of the workers is selected to fork a new `mold`.
+As the diagram shows, while workers are forked from the mold, they become children of the master process.
+We'll see how does that work [later](#forking-sibling-processes).
+
+When a reforking is triggered, one of the workers is selected to fork a new `mold`:
 
 ```
 PID   COMMAND
@@ -78,6 +81,9 @@ PID   COMMAND
 105       \_ pitchfork (gen:0) worker[3]
 105       \_ pitchfork (gen:1) mold
 ```
+
+Again, while the mold was forked from a worker, it becomes a child of the master process.
+We'll see how does that work [later](#forking-sibling-processes).
 
 When that new mold is ready, `pitchfork` terminates the old mold and starts a slow rollout of older workers and replace them with fresh workers
 forked from the mold:
@@ -104,7 +110,7 @@ PID   COMMAND
 
 etc.
 
-### Forking Sibling Processes 
+### Forking Sibling Processes
 
 Normally on unix systems, when calling `fork(2)`, the newly created process is a child of the original one, so forking from the mold should create
 a process tree such as:
@@ -119,5 +125,8 @@ PID   COMMAND
 However the `pitchfork` master process registers itself as a "child subreaper" via [`PR_SET_CHILD_SUBREAPER`](https://man7.org/linux/man-pages/man2/prctl.2.html).
 This means any descendant process that is orphaned will be re-parented as a child of the master rather than a child of the init process (pid 1).
 
-With this in mind, the mold fork twice to create an orphaned process that will get re-attached to the master, effectively forking a sibling rather than a child.
-The need for `PR_SET_CHILD_SUBREAPER` is the main reason why reforking is only available on Linux. 
+With this in mind, the mold forks twice to create an orphaned process that will get re-attached to the master,
+effectively forking a sibling rather than a child. Similarly, workers do the same when forking new molds.
+This technique eases killing previous generations of molds and workers.
+
+The need for `PR_SET_CHILD_SUBREAPER` is the main reason why reforking is only available on Linux.
