@@ -204,7 +204,11 @@ module Pitchfork
         # or the master to be PID 1.
         if middle_pid = FORK_LOCK.synchronize { Process.fork } # parent
           # We need to wait(2) so that the middle process doesn't end up a zombie.
-          Process.wait(middle_pid)
+          # The process only call fork again an exit so it should be pretty fast.
+          # However it might need to execute some `Process._fork` or `at_exit` callbacks,
+          # so it case it takes more than 2 seconds to exit, we kill it with SIGBUS
+          # to produce a crash report, as this is indicative of a nasty bug.
+          process_wait_with_timeout(middle_pid, 2, :BUS)
         else # first child
           clean_fork(&block) # detach into a grand child
           exit
@@ -214,6 +218,18 @@ module Pitchfork
       end
 
       nil # it's tricky to return the PID
+    end
+
+    def process_wait_with_timeout(pid, timeout, timeout_signal = :KILL)
+      (timeout * 200).times do
+        status = Process.wait(pid, Process::WNOHANG)
+        return status if status
+        sleep 0.005 # 200 * 5ms => 1s
+      end
+
+      # The process didn't exit in the allotted time, so we kill it.
+      Process.kill(timeout_signal, pid)
+      Process.wait(pid)
     end
 
     def time_now(int = false)
