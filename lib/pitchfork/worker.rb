@@ -139,6 +139,14 @@ module Pitchfork
       success
     end
 
+    def hard_kill(sig)
+      Process.kill(sig, pid)
+    end
+
+    def hard_timeout!
+      hard_kill(:KILL)
+    end
+
     # this only runs when the Rack app.call is not running
     # act like a listener
     def accept_nonblock(exception: nil) # :nodoc:

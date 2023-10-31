@@ -107,6 +107,33 @@ module Pitchfork
       @workers.each_value(&block)
     end
 
+    def soft_kill_all(sig)
+      each do |child|
+        child.soft_kill(sig)
+      end
+    end
+
+    def hard_kill(sig, child)
+      child.hard_kill(sig)
+    rescue Errno::ESRCH
+      reap(child.pid)
+      child.close
+    end
+
+    def hard_kill_all(sig)
+      each do |child|
+        hard_kill(sig, child)
+      end
+    end
+
+    def hard_timeout(child)
+      child.hard_timeout!
+    rescue Errno::ESRCH
+      reap(child.pid)
+      child.close
+      true
+    end
+
     def workers
       @workers.values
     end

@@ -396,15 +396,15 @@ module Pitchfork
       limit = Pitchfork.time_now + timeout
       until @children.workers.empty? || Pitchfork.time_now > limit
         if graceful
-          soft_kill_each_child(:TERM)
+          @children.soft_kill_all(:TERM)
         else
-          kill_each_child(:INT)
+          @children.hard_kill_all(:INT)
         end
         if monitor_loop(false) == StopIteration
           return StopIteration
         end
       end
-      kill_each_child(:KILL)
+      @children.hard_kill_all(:KILL)
       @promotion_lock.unlink
     end
 
@@ -506,25 +506,28 @@ module Pitchfork
           next
         else # worker is out of time
           next_sleep = 0
-          if worker.mold?
-            logger.error "mold pid=#{worker.pid} timed out, killing"
-          else
-            logger.error "worker=#{worker.nr} pid=#{worker.pid} timed out, killing"
-          end
-
-          if @after_worker_hard_timeout
-            begin
-              @after_worker_hard_timeout.call(self, worker)
-            rescue => error
-              Pitchfork.log_error(@logger, "after_worker_hard_timeout callback", error)
-            end
-          end
-
-          kill_worker(:KILL, worker.pid) # take no prisoners for hard timeout violations
+          hard_timeout(worker)
         end
       end
 
       next_sleep <= 0 ? 1 : next_sleep
+    end
+
+    def hard_timeout(worker)
+      if @after_worker_hard_timeout
+        begin
+          @after_worker_hard_timeout.call(self, worker)
+        rescue => error
+          Pitchfork.log_error(@logger, "after_worker_hard_timeout callback", error)
+        end
+      end
+
+      if worker.mold?
+        logger.error "mold pid=#{worker.pid} timed out, killing"
+      else
+        logger.error "worker=#{worker.nr} pid=#{worker.pid} timed out, killing"
+      end
+      @children.hard_timeout(worker) # take no prisoners for hard timeout violations
     end
 
     def trigger_refork
@@ -928,15 +931,6 @@ module Pitchfork
       Process.kill(signal, wpid)
     rescue Errno::ESRCH
       worker = @children.reap(wpid) and worker.close rescue nil
-    end
-
-    # delivers a signal to each worker
-    def kill_each_child(signal)
-      @children.each { |w| kill_worker(signal, w.pid) }
-    end
-
-    def soft_kill_each_child(signal)
-      @children.each { |worker| worker.soft_kill(signal) }
     end
 
     # returns an array of string names for the given listener array
