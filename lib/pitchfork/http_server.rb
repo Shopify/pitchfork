@@ -851,6 +851,7 @@ module Pitchfork
 
           if @refork_condition && Info.fork_safe? && !worker.outdated?
             if @refork_condition.met?(worker, logger)
+              proc_name status: "requests: #{worker.requests_count}, spawning mold"
               if spawn_mold(worker.generation)
                 logger.info("Refork condition met, promoting ourselves")
               end
