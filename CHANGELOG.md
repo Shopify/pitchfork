@@ -1,5 +1,7 @@
 # Unreleased
 
+- Include requests count in workers proctitle.
+
 # 0.9.0
 
 - Implement `spawn_timeout` to protect against bugs causing workers to get stuck before they reach ready state.

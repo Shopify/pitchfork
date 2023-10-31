@@ -700,12 +700,12 @@ module Pitchfork
 
     # once a client is accepted, it is processed in its entirety here
     # in 3 easy steps: read request, call app, write app response
-    def process_client(client, timeout_handler)
+    def process_client(client, worker, timeout_handler)
       env = nil
       @request = Pitchfork::HttpParser.new
       env = @request.read(client)
 
-      proc_name status: "processing: #{env["PATH_INFO"]}"
+      proc_name status: "requests: #{worker.requests_count}, processing: #{env["PATH_INFO"]}"
 
       timeout_handler.rack_env = env
       env["pitchfork.timeout"] = timeout_handler
@@ -838,7 +838,7 @@ module Pitchfork
               when Message
                 worker.update(client)
               else
-                request_env = process_client(client, prepare_timeout(worker))
+                request_env = process_client(client, worker, prepare_timeout(worker))
                 @after_request_complete&.call(self, worker, request_env)
                 worker.increment_requests_count
               end
@@ -858,7 +858,7 @@ module Pitchfork
             end
           end
 
-          proc_name status: "waiting"
+          proc_name status: "requests: #{worker.requests_count}, waiting"
           waiter.get_readers(ready, readers, @timeout * 500) # to milliseconds, but halved
         rescue => e
           Pitchfork.log_error(@logger, "listen loop error", e) if readers[0]
