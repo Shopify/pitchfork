@@ -210,6 +210,7 @@ module Pitchfork
           # to produce a crash report, as this is indicative of a nasty bug.
           process_wait_with_timeout(middle_pid, 2, :BUS)
         else # first child
+          Process.setproctitle("<pitcfork fork_sibling>")
           clean_fork(&block) # detach into a grand child
           exit
         end
