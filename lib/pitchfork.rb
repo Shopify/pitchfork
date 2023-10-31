@@ -206,9 +206,9 @@ module Pitchfork
           # We need to wait(2) so that the middle process doesn't end up a zombie.
           # The process only call fork again an exit so it should be pretty fast.
           # However it might need to execute some `Process._fork` or `at_exit` callbacks,
-          # so it case it takes more than 2 seconds to exit, we kill it with SIGBUS
+          # so it case it takes more than 5 seconds to exit, we kill it with SIGBUS
           # to produce a crash report, as this is indicative of a nasty bug.
-          process_wait_with_timeout(middle_pid, 2, :BUS)
+          process_wait_with_timeout(middle_pid, 5, :BUS)
         else # first child
           Process.setproctitle("<pitcfork fork_sibling>")
           clean_fork(&block) # detach into a grand child
