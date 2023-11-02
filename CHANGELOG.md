@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.10.0
+
 - Include requests count in workers proctitle.
 
 # 0.9.0
