@@ -1,5 +1,7 @@
 # Unreleased
 
+- Add a `before_fork` callback called before forking new molds and new workers.
+
 # 0.10.0
 
 - Include requests count in workers proctitle.

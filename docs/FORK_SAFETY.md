@@ -22,12 +22,16 @@ reopen connections and restart threads:
 ```ruby
 # pitchfork.conf.rb
 
-after_mold_fork do
+before_fork do
   Sequel::DATABASES.each(&:disconnect)
 end
 
-after_worker_fork do
+after_mold_fork do
   SomeLibary.connection.close
+end
+
+after_worker_fork do
+  SomeOtherLibary.connection.close
 end
 ```
 

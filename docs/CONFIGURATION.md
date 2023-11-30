@@ -284,6 +284,16 @@ after_monitor_ready do |server|
 end
 ```
 
+### `before_fork`
+
+Called by the mold before forking a new workers, and by workers before they spawn a new mold.
+
+```ruby
+before_fork do |server|
+  server.logger.info("About to fork, closing connections!")
+end
+```
+
 ### `after_mold_fork`
 
 ```ruby

@@ -37,6 +37,7 @@ module Pitchfork
       :timeout => 22,
       :logger => default_logger,
       :worker_processes => 1,
+      :before_fork => nil,
       :after_worker_fork => lambda { |server, worker|
         server.logger.info("worker=#{worker.nr} gen=#{worker.generation} pid=#{$$} spawned")
       },
@@ -131,6 +132,10 @@ module Pitchfork
       end
 
       set[:logger] = obj
+    end
+
+    def before_fork(*args, &block)
+      set_hook(:before_fork, block_given? ? block : args[0], 1)
     end
 
     def after_worker_fork(*args, &block)
