@@ -26,6 +26,22 @@ class ConfigurationTest < Pitchfork::IntegrationTest
     assert_clean_shutdown(pid)
   end
 
+  def test_before_fork
+    addr, port = unused_port
+
+    pid = spawn_server(app: File.join(ROOT, "test/integration/env.ru"), config: <<~CONFIG)
+      listen "#{addr}:#{port}"
+      worker_processes 1
+
+      before_fork do |server|
+        $stderr.puts "[before_fork]"
+      end
+    CONFIG
+
+    assert_healthy("http://#{addr}:#{port}")
+    assert_stderr("[before_fork]")
+    assert_clean_shutdown(pid)
+  end
   def test_before_worker_exit
     addr, port = unused_port
 

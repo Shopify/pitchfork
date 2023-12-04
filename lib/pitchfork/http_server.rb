@@ -75,7 +75,7 @@ module Pitchfork
 
     # :stopdoc:
     attr_accessor :app, :timeout, :soft_timeout, :cleanup_timeout, :spawn_timeout, :worker_processes,
-                  :after_worker_fork, :after_mold_fork,
+                  :before_fork, :after_worker_fork, :after_mold_fork,
                   :listener_opts, :children,
                   :orig_app, :config, :ready_pipe,
                   :default_middleware, :early_hints
@@ -563,6 +563,7 @@ module Pitchfork
       # reason it gets stuck before reaching the worker loop,
       # the monitor process will kill it.
       worker.update_deadline(@spawn_timeout)
+      @before_fork&.call(self)
       Pitchfork.fork_sibling do
         worker.pid = Process.pid
 
@@ -869,6 +870,8 @@ module Pitchfork
 
     def spawn_mold(current_generation)
       return false unless @promotion_lock.try_lock
+
+      @before_fork&.call(self)
 
       begin
         Pitchfork.fork_sibling do
