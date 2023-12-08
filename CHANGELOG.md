@@ -1,5 +1,6 @@
 # Unreleased
 
+- Add more information in proctitle when forking a new sibbling.
 - Add a `before_fork` callback called before forking new molds and new workers.
 
 # 0.10.0

@@ -196,7 +196,7 @@ module Pitchfork
       end
     end
 
-    def fork_sibling(&block)
+    def fork_sibling(role, &block)
       if REFORKING_AVAILABLE
         # We double fork so that the new worker is re-attached back
         # to the master.
@@ -210,7 +210,7 @@ module Pitchfork
           # to produce a crash report, as this is indicative of a nasty bug.
           process_wait_with_timeout(middle_pid, 5, :BUS)
         else # first child
-          Process.setproctitle("<pitchfork fork_sibling>")
+          Process.setproctitle("<pitchfork fork_sibling(#{role})>")
           clean_fork(&block) # detach into a grand child
           exit
         end

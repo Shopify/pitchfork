@@ -564,7 +564,7 @@ module Pitchfork
       # the monitor process will kill it.
       worker.update_deadline(@spawn_timeout)
       @before_fork&.call(self)
-      Pitchfork.fork_sibling do
+      Pitchfork.fork_sibling("spawn_worker") do
         worker.pid = Process.pid
 
         after_fork_internal
@@ -874,7 +874,7 @@ module Pitchfork
       @before_fork&.call(self)
 
       begin
-        Pitchfork.fork_sibling do
+        Pitchfork.fork_sibling("spawn_mold") do
           mold = Worker.new(nil, pid: Process.pid, generation: current_generation)
           mold.promote!
           mold.start_promotion(@control_socket[1])
