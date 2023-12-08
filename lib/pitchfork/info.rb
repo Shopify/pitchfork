@@ -26,7 +26,7 @@ module Pitchfork
         @map.each_key(&block)
       end
     end
-    
+
     @kept_ios = WeakSet.new
 
     class << self
