@@ -66,6 +66,11 @@ module Pitchfork
       @workers.key?(nr)
     end
 
+    def abandon(worker)
+      @workers.delete(worker.nr)
+      @pending_workers.delete(worker.nr)
+    end
+
     def reap(pid)
       if child = @children.delete(pid)
         @pending_workers.delete(child.nr)
@@ -73,6 +78,9 @@ module Pitchfork
         @molds.delete(child.pid)
         @workers.delete(child.nr)
         if @mold == child
+          @pending_workers.reject! do |nr, worker|
+            worker.generation == @mold.generation
+          end
           @mold = nil
         end
       end

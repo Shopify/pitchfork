@@ -33,9 +33,11 @@ module Pitchfork
   ClientShutdown = Class.new(EOFError)
 
   BootFailure = Class.new(StandardError)
+  ForkFailure = Class.new(StandardError)
 
   # :stopdoc:
 
+  FORK_TIMEOUT = 5
   FORK_LOCK = Monitor.new
   @socket_type = :SOCK_SEQPACKET
 
@@ -198,39 +200,54 @@ module Pitchfork
 
     def fork_sibling(role, &block)
       if REFORKING_AVAILABLE
+        r, w = Pitchfork::Info.keep_ios(IO.pipe)
         # We double fork so that the new worker is re-attached back
         # to the master.
         # This requires either PR_SET_CHILD_SUBREAPER which is exclusive to Linux 3.4
         # or the master to be PID 1.
         if middle_pid = FORK_LOCK.synchronize { Process.fork } # parent
+          w.close
           # We need to wait(2) so that the middle process doesn't end up a zombie.
           # The process only call fork again an exit so it should be pretty fast.
           # However it might need to execute some `Process._fork` or `at_exit` callbacks,
           # so it case it takes more than 5 seconds to exit, we kill it with SIGBUS
           # to produce a crash report, as this is indicative of a nasty bug.
-          process_wait_with_timeout(middle_pid, 5, :BUS)
+          status = process_wait_with_timeout(middle_pid, FORK_TIMEOUT, :BUS)
+          pid_str = r.gets
+          r.close
+          if pid_str
+            Integer(pid_str)
+          else
+            raise ForkFailure, "fork_sibling didn't succeed in #{FORK_TIMEOUT} seconds"
+          end
         else # first child
+          r.close
           Process.setproctitle("<pitchfork fork_sibling(#{role})>")
-          clean_fork(&block) # detach into a grand child
+          pid = clean_fork do
+            # detach into a grand child
+            w.close
+            yield
+          end
+          w.puts(pid)
+          w.close
           exit
         end
       else
         clean_fork(&block)
       end
-
-      nil # it's tricky to return the PID
     end
 
     def process_wait_with_timeout(pid, timeout, timeout_signal = :KILL)
       (timeout * 200).times do
-        status = Process.wait(pid, Process::WNOHANG)
+        _, status = Process.waitpid2(pid, Process::WNOHANG)
         return status if status
         sleep 0.005 # 200 * 5ms => 1s
       end
 
       # The process didn't exit in the allotted time, so we kill it.
       Process.kill(timeout_signal, pid)
-      Process.wait(pid)
+      _, status = Process.waitpid2(pid)
+      status
     end
 
     def time_now(int = false)

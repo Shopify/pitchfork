@@ -315,7 +315,7 @@ module Pitchfork
         end
       end
       stop # gracefully shutdown all workers on our way out
-      logger.info "master complete"
+      logger.info "master complete status=#{@exit_status}"
       @exit_status
     end
 
@@ -368,7 +368,7 @@ module Pitchfork
       when Message::WorkerSpawned
         worker = @children.update(message)
         # TODO: should we send a message to the worker to acknowledge?
-        logger.info "worker=#{worker.nr} pid=#{worker.pid} registered"
+        logger.info "worker=#{worker.nr} pid=#{worker.pid} gen=#{worker.generation} registered"
       when Message::MoldSpawned
         new_mold = @children.update(message)
         logger.info("mold pid=#{new_mold.pid} gen=#{new_mold.generation} spawned")
@@ -409,6 +409,7 @@ module Pitchfork
     end
 
     def worker_exit(worker)
+      logger.info "worker=#{worker.nr} pid=#{worker.pid} gen=#{worker.generation} exiting"
       proc_name status: "exiting"
 
       if @before_worker_exit
@@ -514,6 +515,12 @@ module Pitchfork
     end
 
     def hard_timeout(worker)
+      if worker.pid.nil? # Not yet registered, likely never spawned
+        logger.error "worker=#{worker.nr} timed out during spawn, abandoning"
+        @children.abandon(worker)
+        return
+      end
+
       if @after_worker_hard_timeout
         begin
           @after_worker_hard_timeout.call(self, worker)
@@ -523,9 +530,9 @@ module Pitchfork
       end
 
       if worker.mold?
-        logger.error "mold pid=#{worker.pid} timed out, killing"
+        logger.error "mold pid=#{worker.pid} gen=#{worker.generation} timed out, killing"
       else
-        logger.error "worker=#{worker.nr} pid=#{worker.pid} timed out, killing"
+        logger.error "worker=#{worker.nr} pid=#{worker.pid} gen=#{worker.generation} timed out, killing"
       end
       @children.hard_timeout(worker) # take no prisoners for hard timeout violations
     end
@@ -599,6 +606,8 @@ module Pitchfork
         worker = Pitchfork::Worker.new(worker_nr)
 
         if REFORKING_AVAILABLE
+          worker.generation = @children.mold&.generation || 0
+
           unless @children.mold&.spawn_worker(worker)
             @logger.error("Failed to send a spawn_worker command")
           end
@@ -854,7 +863,7 @@ module Pitchfork
             if @refork_condition.met?(worker, logger)
               proc_name status: "requests: #{worker.requests_count}, spawning mold"
               if spawn_mold(worker.generation)
-                logger.info("Refork condition met, promoting ourselves")
+                logger.info("worker=#{worker.nr} gen=#{worker.generation} Refork condition met, promoting ourselves")
               end
               @refork_condition.backoff!
             end
@@ -910,8 +919,18 @@ module Pitchfork
             when false
               # no message, keep looping
             when Message::SpawnWorker
+              retries = 1
               begin
                 spawn_worker(Worker.new(message.nr, generation: mold.generation), detach: true)
+              rescue ForkFailure
+                if retries > 0
+                  @logger.fatal("mold pid=#{mold.pid} gen=#{mold.generation} Failed to spawn a worker. Retrying.")
+                  retries -= 1
+                  retry
+                else
+                  @logger.fatal("mold pid=#{mold.pid} gen=#{mold.generation} Failed to spawn a worker twice in a row. Corrupted mold process?")
+                  Process.exit(1)
+                end
               rescue => error
                 raise BootFailure, error.message
               end
