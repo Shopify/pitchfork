@@ -22,9 +22,11 @@ module Pitchfork
       worker = Worker.new(0)
       @children.register(worker)
       assert_predicate @children, :pending_workers?
+      assert @children.nr_alive?(0)
 
       @children.update(Message::WorkerSpawned.new(0, 42, 0, pipe))
       refute_predicate @children, :pending_workers?
+      assert @children.nr_alive?(0), @children.inspect
       assert_equal 42, worker.pid
       assert_equal [worker], @children.workers
     end

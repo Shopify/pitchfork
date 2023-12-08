@@ -64,6 +64,44 @@ class ReforkingTest < Pitchfork::IntegrationTest
       assert_clean_shutdown(pid)
     end
 
+    def test_broken_mold
+      addr, port = unused_port
+
+      pid = spawn_server(app: File.join(ROOT, "test/integration/env.ru"), config: <<~CONFIG)
+        listen "#{addr}:#{port}"
+        worker_processes 2
+        spawn_timeout 2
+        refork_after [5, 5]
+        after_mold_fork do |_server, mold|
+          if mold.generation > 0
+            def Process.fork
+              # simulate some issue causing children to fail.
+              # Typically some native background thread holding a lock
+              # right when we fork.
+              Process.spawn("false")
+            end
+          end
+        end
+      CONFIG
+
+      assert_healthy("http://#{addr}:#{port}")
+      assert_stderr "worker=0 gen=0 ready"
+      assert_stderr "worker=1 gen=0 ready", timeout: 5
+
+      9.times do
+        assert_equal true, healthy?("http://#{addr}:#{port}")
+      end
+
+      assert_stderr "Refork condition met, promoting ourselves", timeout: 3
+
+      assert_stderr "Failed to spawn a worker. Retrying."
+      assert_stderr "Failed to spawn a worker twice in a row. Corrupted mold process?"
+      assert_stderr "No mold alive, shutting down"
+      assert_stderr "timed out during spawn, abandoning", timeout: 5
+
+      assert_exited(pid, 1, timeout: 5)
+    end
+
     def test_fork_unsafe
       addr, port = unused_port
 

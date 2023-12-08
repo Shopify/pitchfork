@@ -97,8 +97,10 @@ module Pitchfork
     private
 
     def assert_stderr(pattern, timeout: 1)
-      wait_stderr?(pattern, timeout)
-      assert_match(pattern, read_stderr)
+      print_stderr_on_error do
+        wait_stderr?(pattern, timeout)
+        assert_match(pattern, read_stderr)
+      end
     end
 
     def read_stderr
@@ -115,26 +117,30 @@ module Pitchfork
       false
     end
 
-    def assert_clean_shutdown(pid, timeout = 4)
-      Process.kill("QUIT", pid)
-      status = nil
-      (timeout * 2).times do
-        Process.kill(0, pid)
-        break if status = Process.wait2(pid, Process::WNOHANG)
-        sleep 0.5
+    def assert_clean_shutdown(pid, timeout: 4)
+      print_stderr_on_error do
+        Process.kill("QUIT", pid)
+        status = nil
+        (timeout * 2).times do
+          Process.kill(0, pid)
+          break if status = Process.wait2(pid, Process::WNOHANG)
+          sleep 0.5
+        end
+        assert status, "process pid=#{pid} didn't exit in #{timeout} seconds"
+        assert_predicate status[1], :success?
       end
-      assert status, "process pid=#{pid} didn't exit in #{timeout} seconds"
-      assert_predicate status[1], :success?
     end
 
-    def assert_exited(pid, exitstatus, timeout = 4)
-      status = nil
-      (timeout * 2).times do
-        break if status = Process.wait2(pid, Process::WNOHANG)
-        sleep 0.5
+    def assert_exited(pid, exitstatus, timeout: 4)
+      print_stderr_on_error do
+        status = nil
+        (timeout * 2).times do
+          break if status = Process.wait2(pid, Process::WNOHANG)
+          sleep 0.5
+        end
+        assert status, "process pid=#{pid} didn't exit in #{timeout} seconds"
+        assert_equal exitstatus, status[1].exitstatus
       end
-      assert status, "process pid=#{pid} didn't exit in #{timeout} seconds"
-      assert_equal exitstatus, status[1].exitstatus
     end
 
     def assert_healthy(host, timeout = 2)
@@ -178,6 +184,15 @@ module Pitchfork
       pid = Process.spawn(*args, out: "stdout.log", err: "stderr.log")
       @_pids << pid
       pid
+    end
+
+    def print_stderr_on_error
+      yield
+    rescue Minitest::Assertion
+      puts '=' * 40
+      puts read_stderr
+      puts '=' * 40
+      raise
     end
   end
 end
