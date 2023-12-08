@@ -1,5 +1,6 @@
 # Unreleased
 
+- Gracefully shutdown the server if the mold appear to be corrupted (#79).
 - Add more information in proctitle when forking a new sibbling.
 - Add a `before_fork` callback called before forking new molds and new workers.
 
