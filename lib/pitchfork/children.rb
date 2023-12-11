@@ -107,6 +107,10 @@ module Pitchfork
       @molds.values
     end
 
+    def empty?
+      @children.empty?
+    end
+
     def each(&block)
       @children.each_value(&block)
     end

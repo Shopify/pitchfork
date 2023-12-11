@@ -241,10 +241,10 @@ for more details on nginx upstream configuration.
 ### `spawn_timeout`
 
 ```ruby
-timeout 5
+spawn_timeout 5
 ```
 
-Sets the timeout for a newly spawned worker to be ready after being spawned.
+Sets the timeout for a newly spawned worker or mold to be ready after being spawned.
 
 This timeout is a safeguard against various low-level fork safety bugs that could cause
 a process to dead-lock.
