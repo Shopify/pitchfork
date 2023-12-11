@@ -317,6 +317,11 @@ That is the case for instance of many SQL databases protocols.
 This is also the callback in which memory optimizations, such as
 heap compaction should be done.
 
+This callback is also a good place to check for potential corruption
+issues caused by forking. If you detect something wrong, you can
+call `Process.exit`, and this mold won't be used, another one will be
+spawned later. e.g. you can check `Socket.getaddrinfo` still works, etc.
+
 ### `after_worker_fork`
 
 ```ruby

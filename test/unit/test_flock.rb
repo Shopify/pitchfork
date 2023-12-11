@@ -58,4 +58,17 @@ class TestFlock < Pitchfork::Test
     Process.wait(pid)
     assert_equal true, @flock.try_lock
   end
+
+  def test_unlock_on_crash
+    assert_predicate @flock, :try_lock
+
+    pid = fork do
+      exit!(0)
+    end
+    @flock.at_fork
+    _, status = Process.waitpid2(pid)
+    assert_predicate status, :success?
+
+    assert_predicate @flock, :try_lock
+  end
 end

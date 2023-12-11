@@ -102,6 +102,51 @@ class ReforkingTest < Pitchfork::IntegrationTest
       assert_exited(pid, 1, timeout: 5)
     end
 
+    def test_exiting_mold
+      addr, port = unused_port
+
+      pid = spawn_server(app: File.join(ROOT, "test/integration/env.ru"), config: <<~CONFIG)
+        Pitchfork::ReforkCondition.backoff_delay = 0.0
+
+        listen "#{addr}:#{port}"
+        worker_processes 2
+        spawn_timeout 2
+        refork_after [5, 5]
+        after_mold_fork do |_server, mold|
+          if mold.generation > 0
+            if File.exist?("crashed-once.txt")
+              $stderr.puts "[mold success]"
+            else
+              File.write("crashed-once.txt", "1")
+              $stderr.puts "[mold crashing]"
+              exit 1
+            end
+          end
+        end
+      CONFIG
+
+      assert_healthy("http://#{addr}:#{port}")
+      assert_stderr "worker=0 gen=0 ready"
+      assert_stderr "worker=1 gen=0 ready", timeout: 5
+
+      7.times do
+        assert_equal true, healthy?("http://#{addr}:#{port}")
+      end
+
+      assert_stderr(/mold pid=\d+ gen=1 spawned/)
+      assert_stderr("[mold crashing]")
+      assert_stderr(/mold pid=\d+ gen=1 reaped/)
+
+      10.times do
+        assert_equal true, healthy?("http://#{addr}:#{port}")
+      end
+
+      assert_stderr "worker=0 gen=1 ready", timeout: 15
+      assert_stderr "worker=1 gen=1 ready"
+
+      assert_clean_shutdown(pid)
+    end
+
     def test_fork_unsafe
       addr, port = unused_port
 
