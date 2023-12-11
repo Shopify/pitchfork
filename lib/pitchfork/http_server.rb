@@ -201,7 +201,7 @@ module Pitchfork
       else
         build_app!
         bind_listeners!
-        after_mold_fork.call(self, Worker.new(nil, pid: $$).promoted!)
+        after_mold_fork.call(self, Worker.new(nil, pid: $$).promoted!(@spawn_timeout))
       end
 
       if sync
@@ -394,7 +394,7 @@ module Pitchfork
       wait_for_pending_workers
       self.listeners = []
       limit = Pitchfork.time_now + timeout
-      until @children.workers.empty? || Pitchfork.time_now > limit
+      until @children.empty? || Pitchfork.time_now > limit
         if graceful
           @children.soft_kill_all(:TERM)
         else
@@ -495,8 +495,8 @@ module Pitchfork
       now = Pitchfork.time_now(true)
       next_sleep = @timeout - 1
 
-      @children.workers.each do |worker|
-        deadline = worker.deadline
+      @children.each do |child|
+        deadline = child.deadline
         if 0 == deadline # worker is idle
           next
         elsif deadline > now # worker still has time
@@ -507,34 +507,34 @@ module Pitchfork
           next
         else # worker is out of time
           next_sleep = 0
-          hard_timeout(worker)
+          hard_timeout(child)
         end
       end
 
       next_sleep <= 0 ? 1 : next_sleep
     end
 
-    def hard_timeout(worker)
-      if worker.pid.nil? # Not yet registered, likely never spawned
-        logger.error "worker=#{worker.nr} timed out during spawn, abandoning"
+    def hard_timeout(child)
+      if child.pid.nil? # Not yet registered, likely never spawned
+        logger.error "worker=#{child.nr} timed out during spawn, abandoning"
         @children.abandon(worker)
         return
       end
 
-      if @after_worker_hard_timeout
+      if @after_worker_hard_timeout && !child.mold?
         begin
-          @after_worker_hard_timeout.call(self, worker)
+          @after_worker_hard_timeout.call(self, child)
         rescue => error
           Pitchfork.log_error(@logger, "after_worker_hard_timeout callback", error)
         end
       end
 
-      if worker.mold?
-        logger.error "mold pid=#{worker.pid} gen=#{worker.generation} timed out, killing"
+      if child.mold?
+        logger.error "mold pid=#{child.pid} gen=#{child.generation} timed out, killing"
       else
-        logger.error "worker=#{worker.nr} pid=#{worker.pid} gen=#{worker.generation} timed out, killing"
+        logger.error "worker=#{child.nr} pid=#{child.pid} gen=#{child.generation} timed out, killing"
       end
-      @children.hard_timeout(worker) # take no prisoners for hard timeout violations
+      @children.hard_timeout(child) # take no prisoners for hard timeout violations
     end
 
     def trigger_refork
@@ -794,15 +794,18 @@ module Pitchfork
       readers << worker
       trap(:QUIT) { nuke_listeners!(readers) }
       trap(:TERM) { nuke_listeners!(readers) }
+      trap(:INT) { nuke_listeners!(readers); exit!(0) }
       readers
     end
 
     def init_mold_process(mold)
-      proc_name role: "(gen:#{mold.generation}) mold", status: "ready"
+      proc_name role: "(gen:#{mold.generation}) mold", status: "init"
       after_mold_fork.call(self, mold)
       readers = [mold]
       trap(:QUIT) { nuke_listeners!(readers) }
       trap(:TERM) { nuke_listeners!(readers) }
+      trap(:INT) { nuke_listeners!(readers); exit!(0) }
+      proc_name role: "(gen:#{mold.generation}) mold", status: "ready"
       readers
     end
 
@@ -885,7 +888,7 @@ module Pitchfork
       begin
         Pitchfork.fork_sibling("spawn_mold") do
           mold = Worker.new(nil, pid: Process.pid, generation: current_generation)
-          mold.promote!
+          mold.promote!(@spawn_timeout)
           mold.start_promotion(@control_socket[1])
           mold_loop(mold)
         end

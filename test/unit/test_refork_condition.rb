@@ -14,7 +14,7 @@ module Pitchfork
       @worker.increment_requests_count(11)
       assert @condition.met?(@worker, @logger)
 
-      @worker.promote!
+      @worker.promote!(10)
       @worker.reset
 
       refute @condition.met?(@worker, @logger)
@@ -23,7 +23,7 @@ module Pitchfork
       @worker.increment_requests_count(40)
       assert @condition.met?(@worker, @logger)
 
-      @worker.promote!
+      @worker.promote!(10)
       @worker.reset
 
       @worker.increment_requests_count(49)
@@ -39,7 +39,7 @@ module Pitchfork
       @worker.increment_requests_count(11)
       assert @condition.met?(@worker, @logger)
 
-      @worker.promote!
+      @worker.promote!(10)
       @worker.reset
 
       refute @condition.met?(@worker, @logger)

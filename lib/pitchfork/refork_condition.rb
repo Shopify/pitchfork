@@ -2,6 +2,12 @@
 
 module Pitchfork
   module ReforkCondition
+    @backoff_delay = 10.0
+
+    class << self
+      attr_accessor :backoff_delay
+    end
+
     class RequestsCount
       def initialize(request_counts)
         @limits = request_counts
@@ -31,7 +37,7 @@ module Pitchfork
         end
       end
 
-      def backoff!(delay = 10.0)
+      def backoff!(delay = ReforkCondition.backoff_delay)
         @backoff_until = Pitchfork.time_now + delay
       end
     end

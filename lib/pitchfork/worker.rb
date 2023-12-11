@@ -27,7 +27,7 @@ module Pitchfork
         @deadline_drop = SharedMemory.worker_deadline(nr)
         self.deadline = 0
       else
-        promoted!
+        promoted!(nil)
       end
     end
 
@@ -55,6 +55,13 @@ module Pitchfork
       message.class.members.each do |member|
         send("#{member}=", message.public_send(member))
       end
+
+      case message
+      when Message::MoldSpawned
+        @deadline_drop = SharedMemory.mold_promotion_deadline
+      when Message::MoldReady
+        @deadline_drop = SharedMemory.mold_deadline
+      end
     end
 
     def register_to_master(control_socket)
@@ -75,6 +82,7 @@ module Pitchfork
       message = Message::MoldReady.new(@nr, @pid, generation)
       control_socket.sendmsg(message)
       SharedMemory.current_generation = @generation
+      @deadline_drop = SharedMemory.mold_deadline
     end
 
     def promote(generation)
@@ -85,16 +93,16 @@ module Pitchfork
       send_message_nonblock(Message::SpawnWorker.new(new_worker.nr))
     end
 
-    def promote!
+    def promote!(timeout)
       @generation += 1
-      promoted!
+      promoted!(timeout)
     end
 
-    def promoted!
+    def promoted!(timeout)
       @mold = true
       @nr = nil
-      @deadline_drop = SharedMemory.mold_deadline
-      self.deadline = 0
+      @deadline_drop = SharedMemory.mold_promotion_deadline
+      update_deadline(timeout) if timeout
       self
     end
 
