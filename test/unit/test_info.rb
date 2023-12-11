@@ -4,6 +4,10 @@ require 'test_helper'
 
 class TestInfo < Pitchfork::Test
   def test_close_all_ios_except_marked_ones
+    if RUBY_VERSION < '3.2' && ENV["CI"]
+      skip "Older rubies have very buggy Weak Maps."
+    end
+
     r, w = IO.pipe
 
     Pitchfork::Info.keep_io(w)
