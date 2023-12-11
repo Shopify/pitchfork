@@ -212,7 +212,7 @@ module Pitchfork
           # However it might need to execute some `Process._fork` or `at_exit` callbacks,
           # so it case it takes more than 5 seconds to exit, we kill it with SIGBUS
           # to produce a crash report, as this is indicative of a nasty bug.
-          status = process_wait_with_timeout(middle_pid, FORK_TIMEOUT, :BUS)
+          process_wait_with_timeout(middle_pid, FORK_TIMEOUT, :BUS)
           pid_str = r.gets
           r.close
           if pid_str

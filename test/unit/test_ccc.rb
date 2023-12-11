@@ -32,6 +32,7 @@ class TestCccTCPI < Pitchfork::Test
         listeners: [ "#{host}:#{port}" ],
         worker_processes: 1,
         check_client_connection: true,
+        logger: Logger.new(IO::NULL),
       }
       uni = Pitchfork::HttpServer.new(app, opts)
       uni.start

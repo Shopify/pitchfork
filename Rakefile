@@ -42,7 +42,6 @@ namespace :test do
   # preferable to edit the test suite as little as possible.
   task legacy_integration: :compile do
     File.write("test/integration/random_blob", File.read("/dev/random", 1_000_000))
-    lib = File.expand_path("lib", __dir__)
     path = "#{File.expand_path("exe", __dir__)}:#{ENV["PATH"]}"
     old_path = ENV["PATH"]
     ENV["PATH"] = "#{path}:#{old_path}"
