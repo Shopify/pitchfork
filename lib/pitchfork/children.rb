@@ -138,14 +138,6 @@ module Pitchfork
       end
     end
 
-    def hard_timeout(child)
-      child.hard_timeout!
-    rescue Errno::ESRCH
-      reap(child.pid)
-      child.close
-      true
-    end
-
     def workers
       @workers.values
     end

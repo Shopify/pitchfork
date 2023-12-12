@@ -74,7 +74,7 @@ module Pitchfork
     end
 
     # :stopdoc:
-    attr_accessor :app, :timeout, :soft_timeout, :cleanup_timeout, :spawn_timeout, :worker_processes,
+    attr_accessor :app, :timeout, :timeout_signal, :soft_timeout, :cleanup_timeout, :spawn_timeout, :worker_processes,
                   :before_fork, :after_worker_fork, :after_mold_fork,
                   :listener_opts, :children,
                   :orig_app, :config, :ready_pipe,
@@ -404,7 +404,12 @@ module Pitchfork
           return StopIteration
         end
       end
-      @children.hard_kill_all(:KILL)
+
+      @children.each do |child|
+        if child.pid
+          @children.hard_kill(@timeout_signal.call(child.pid), child)
+        end
+      end
       @promotion_lock.unlink
     end
 
@@ -534,7 +539,7 @@ module Pitchfork
       else
         logger.error "worker=#{child.nr} pid=#{child.pid} gen=#{child.generation} timed out, killing"
       end
-      @children.hard_timeout(child) # take no prisoners for hard timeout violations
+      @children.hard_kill(@timeout_signal.call(child.pid), child) # take no prisoners for hard timeout violations
     end
 
     def trigger_refork
@@ -571,7 +576,7 @@ module Pitchfork
       # the monitor process will kill it.
       worker.update_deadline(@spawn_timeout)
       @before_fork&.call(self)
-      Pitchfork.fork_sibling("spawn_worker") do
+      fork_sibling("spawn_worker") do
         worker.pid = Process.pid
 
         after_fork_internal
@@ -844,7 +849,7 @@ module Pitchfork
               case client
               when Message::PromoteWorker
                 if Info.fork_safe?
-                  spawn_mold(worker.generation)
+                  spawn_mold(worker)
                 else
                   logger.error("worker=#{worker.nr} gen=#{worker.generation} is no longer fork safe, can't refork")
                 end
@@ -865,7 +870,7 @@ module Pitchfork
           if @refork_condition && Info.fork_safe? && !worker.outdated?
             if @refork_condition.met?(worker, logger)
               proc_name status: "requests: #{worker.requests_count}, spawning mold"
-              if spawn_mold(worker.generation)
+              if spawn_mold(worker)
                 logger.info("worker=#{worker.nr} gen=#{worker.generation} Refork condition met, promoting ourselves")
               end
               @refork_condition.backoff!
@@ -880,14 +885,16 @@ module Pitchfork
       end
     end
 
-    def spawn_mold(current_generation)
+    def spawn_mold(worker)
       return false unless @promotion_lock.try_lock
+
+      worker.update_deadline(@spawn_timeout)
 
       @before_fork&.call(self)
 
       begin
-        Pitchfork.fork_sibling("spawn_mold") do
-          mold = Worker.new(nil, pid: Process.pid, generation: current_generation)
+        fork_sibling("spawn_mold") do
+          mold = Worker.new(nil, pid: Process.pid, generation: worker.generation)
           mold.promote!(@spawn_timeout)
           mold.start_promotion(@control_socket[1])
           mold_loop(mold)
@@ -1001,6 +1008,62 @@ module Pitchfork
       handler = TimeoutHandler.new(self, worker, @after_worker_timeout)
       handler.timeout_request = SoftTimeout.request(@soft_timeout, handler)
       handler
+    end
+
+    FORK_TIMEOUT = 5
+
+    def fork_sibling(role, &block)
+      if REFORKING_AVAILABLE
+        r, w = Pitchfork::Info.keep_ios(IO.pipe)
+        # We double fork so that the new worker is re-attached back
+        # to the master.
+        # This requires either PR_SET_CHILD_SUBREAPER which is exclusive to Linux 3.4
+        # or the master to be PID 1.
+        if middle_pid = FORK_LOCK.synchronize { Process.fork } # parent
+          w.close
+          # We need to wait(2) so that the middle process doesn't end up a zombie.
+          # The process only call fork again an exit so it should be pretty fast.
+          # However it might need to execute some `Process._fork` or `at_exit` callbacks,
+          # as well as Ruby's cleanup procedure to run finalizers etc, and there is a risk
+          # of deadlock.
+          # So in case it takes more than 5 seconds to exit, we kill it.
+          # TODO: rather than to busy loop here, we handle it in the worker/mold loop
+          process_wait_with_timeout(middle_pid, FORK_TIMEOUT)
+          pid_str = r.gets
+          r.close
+          if pid_str
+            Integer(pid_str)
+          else
+            raise ForkFailure, "fork_sibling didn't succeed in #{FORK_TIMEOUT} seconds"
+          end
+        else # first child
+          r.close
+          Process.setproctitle("<pitchfork fork_sibling(#{role})>")
+          pid = Pitchfork.clean_fork do
+            # detach into a grand child
+            w.close
+            yield
+          end
+          w.puts(pid)
+          w.close
+          exit
+        end
+      else
+        clean_fork(&block)
+      end
+    end
+
+    def process_wait_with_timeout(pid, timeout)
+      (timeout * 50).times do
+        _, status = Process.waitpid2(pid, Process::WNOHANG)
+        return status if status
+        sleep 0.02 # 50 * 20ms => 1s
+      end
+
+      # The process didn't exit in the allotted time, so we kill it.
+      Process.kill(@timeout_signal.call(pid), pid)
+      _, status = Process.waitpid2(pid)
+      status
     end
   end
 end
