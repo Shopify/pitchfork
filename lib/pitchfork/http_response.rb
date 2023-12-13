@@ -14,6 +14,8 @@ module Pitchfork
     STATUS_CODES = defined?(Rack::Utils::HTTP_STATUS_CODES) ?
                    Rack::Utils::HTTP_STATUS_CODES : {}
 
+    ILLEGAL_HEADER_VALUE = /[\x00-\x08\x0A-\x1F]/
+
     # internal API, code will always be common-enough-for-even-old-Rack
     def err_response(code, response_start_sent)
       "#{response_start_sent ? '' : 'HTTP/1.1 '}" \
@@ -23,10 +25,16 @@ module Pitchfork
     def append_header(buf, key, value)
       case value
       when Array # Rack 3
-        value.each { |v| buf << "#{key}: #{v}\r\n" }
+        value.each do |v|
+          next if ILLEGAL_HEADER_VALUE.match?(v)
+          buf << "#{key}: #{v}\r\n"
+        end
       when /\n/ # Rack 2
         # avoiding blank, key-only cookies with /\n+/
-        value.split(/\n+/).each { |v| buf << "#{key}: #{v}\r\n" }
+        value.split(/\n+/).each do |v|
+          next if ILLEGAL_HEADER_VALUE.match?(v)
+          buf << "#{key}: #{v}\r\n"
+        end
       else
         buf << "#{key}: #{value}\r\n"
       end
