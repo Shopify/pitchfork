@@ -1,5 +1,8 @@
 # Unreleased
 
+# 0.11.0
+
+- Drop invalid response headers.
 - Enforce `spawn_timeout` for molds too.
 - Gracefully shutdown the server if the mold appear to be corrupted (#79).
 - Add more information in proctitle when forking a new sibbling.
