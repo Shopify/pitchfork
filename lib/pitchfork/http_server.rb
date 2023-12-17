@@ -1049,7 +1049,7 @@ module Pitchfork
           exit
         end
       else
-        clean_fork(&block)
+        Pitchfork.clean_fork(&block)
       end
     end
 
