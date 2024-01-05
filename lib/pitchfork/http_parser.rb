@@ -193,7 +193,12 @@ module Pitchfork
 
     # called by ext/pitchfork_http/pitchfork_http.rl via rb_funcall
     def self.is_chunked?(v) # :nodoc:
-      vals = v.split(/[ \t]*,[ \t]*/).map!(&:downcase)
+      vals = v.split(',')
+      vals.each do |val|
+        val.strip!
+        val.downcase!
+      end
+
       if vals.pop == 'chunked'.freeze
         return true unless vals.include?('chunked'.freeze)
         raise Pitchfork::HttpParserError, 'double chunked', []
