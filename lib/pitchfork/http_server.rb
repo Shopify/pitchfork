@@ -722,6 +722,7 @@ module Pitchfork
 
       proc_name status: "requests: #{worker.requests_count}, processing: #{env["PATH_INFO"]}"
 
+      env["pitchfork.worker"] = worker
       timeout_handler.rack_env = env
       env["pitchfork.timeout"] = timeout_handler
 
