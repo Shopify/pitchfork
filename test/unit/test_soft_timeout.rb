@@ -23,6 +23,17 @@ module Pitchfork
       timeout&.finished
     end
 
+    def test_reduce_deadline
+      called = []
+      timeout = SoftTimeout.request(2.5, -> (thread) { called << thread })
+      timeout.extend_deadline(-2)
+      sleep 1
+      assert_equal [Thread.current], called
+      assert_predicate timeout, :done?
+    ensure
+      timeout&.finished
+    end
+
     def test_cancel
       called = []
       timeout = SoftTimeout.request(0.5, -> (thread) { called << thread })
