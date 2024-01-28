@@ -49,7 +49,7 @@
   nothing to accept().
 
 * Since non-blocking accept() is used, there can be a thundering
-  herd when an occasional client connects when application
+  herd when an occasional client connects when the application
   *is not busy*.  The thundering herd problem should not affect
   applications that are running all the time since worker processes
   will only select()/accept() outside of the application dispatch.
