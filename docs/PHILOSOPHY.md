@@ -80,8 +80,8 @@ Suitable options include `nginx`, `caddy` and likely several others.
 One of the main advantages of threaded servers over preforking servers is their
 lower memory usage.
 
-However `pitchfork` solves this with its reforking feature. If enabled and properly configured
-it very significantly increase Copy-on-Write performance, closing the gap with threaded servers.
+However `pitchfork` solves this with its reforking feature. If enabled and properly configured,
+it can very significantly increase Copy-on-Write performance, closing the gap with threaded servers.
 
 ## Assume Modern Deployment Methods
 

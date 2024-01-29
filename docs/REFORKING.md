@@ -21,7 +21,7 @@ forked processes are essentially free.
 So in theory, preforking servers shouldn't use more memory than threaded servers.
 
 However, in a Ruby process, there is generally a lot of memory regions that are lazily initialized.
-This include the Ruby Virtual Machine inline caches, JITed code if you use YJIT, and also
+This includes the Ruby Virtual Machine inline caches, JITed code if you use YJIT, and also
 some common patterns in applications, such as memoization:
 
 ```ruby
@@ -35,13 +35,13 @@ end
 However, since workers are forked right after boot, most codepaths have never been executed,
 so most of these caches are not yet initialized.
 
-As more code get executed, more an more memory pages get invalidated. If you were to graph the ratio
-of shared memory of a ruby process over time, you'd likely see a logarithmic curve, with a quick degradation
+As more code gets executed, more and more memory pages get invalidated. If you were to graph the ratio
+of shared memory of a Ruby process over time, you'd likely see a logarithmic curve, with a quick degradation
 during the first few processed request as the most common code paths get warmed up, and then a stabilization.
 
 ### Reforking
 
-That is where reforking helps. Since move of these invalidations only happens when a codepath is executed for the
+That is where reforking helps. Since most of these invalidations only happen when a code path is executed for the
 first time, if you take a warmed up worker out of rotation, and use it to fork new workers, warmed up pages will
 be shared again, and most of them won't be invalidated anymore.
 
@@ -123,9 +123,9 @@ PID   COMMAND
 ```
 
 However the `pitchfork` master process registers itself as a "child subreaper" via [`PR_SET_CHILD_SUBREAPER`](https://man7.org/linux/man-pages/man2/prctl.2.html).
-This means any descendant process that is orphaned will be re-parented as a child of the master rather than a child of the init process (pid 1).
+This means that any descendant process that is orphaned will be re-parented as a child of the master process rather than a child of the init process (pid 1).
 
-With this in mind, the mold forks twice to create an orphaned process that will get re-attached to the master,
+With this in mind, the mold forks twice to create an orphaned process that will get re-attached to the master process,
 effectively forking a sibling rather than a child. Similarly, workers do the same when forking new molds.
 This technique eases killing previous generations of molds and workers.
 

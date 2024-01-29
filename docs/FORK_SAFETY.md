@@ -3,11 +3,11 @@
 Because `pitchfork` is a preforking server, your application code and libraries
 must be fork safe.
 
-Generally code might be fork-unsafe for one of two reasons
+Generally, code might be fork-unsafe for one of two reasons.
 
 ## Inherited Connection
 
-When a process is forked, any open file descriptor (sockets, files, pipes, etc)
+When a process is forked, any open file descriptors (sockets, files, pipes, etc)
 end up shared between the parent and child process. This is never what you
 want, so any code keeping persistent connections should close them either
 before or after the fork happens.
@@ -39,7 +39,7 @@ The documentation of any database client or network library you use should be
 read with care to figure out how to disconnect it, and whether it is best to
 do it before or after fork.
 
-Since the most common Ruby application servers `Puma`, `Unicorn` and `Passenger`
+Since the most common Ruby application servers like `Puma`, `Unicorn` and `Passenger`
 have forking at least as an option, the requirements are generally well documented.
 
 However what is novel with `Pitchfork`, is that processes can be forked more than once.
@@ -61,7 +61,7 @@ So any libraries that spawn a background thread for periodical work may need to 
 that a fork happened and that it should restart its thread.
 
 Just like with connections, some libraries take on them to automatically restart their background
-thread when they detect a fork happened.
+thread when they detect that a fork happened.
 
 # Refork Safety
 
@@ -71,7 +71,7 @@ but not work in Pitchfork when reforking is enabled.
 This is because it is not uncommon for network connections or background threads to only be
 initialized upon the first request. As such they're not inherited on the first fork.
 
-However when reforking is enabled, new processes as forked out of warmed up process, as such
+However when reforking is enabled, new processes are forked out of a warmed up process, as such
 any lazily created connection is much more likely to have been created.
 
 As such, if you enable reforking for the first time, it is heavily recommended to first do it
@@ -88,4 +88,4 @@ impact of discovering such bug.
 - The `ruby-vips` gem binds the `libvips` image processing library that isn't fork safe.
   (https://github.com/libvips/libvips/discussions/3577)
 
-No other gem is known to be incompatible for now, but if you find one please open an issue to add it to the list.
+No other gem is known to be incompatible for now, but if you find one, please open an issue to add it to the list.
