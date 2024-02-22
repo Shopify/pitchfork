@@ -88,4 +88,6 @@ impact of discovering such bug.
 - The `ruby-vips` gem binds the `libvips` image processing library that isn't fork safe.
   (https://github.com/libvips/libvips/discussions/3577)
 
+- Any gem binding with `libgobject`, such as the `gda` gem, likely aren't fork safe.
+
 No other gem is known to be incompatible for now, but if you find one, please open an issue to add it to the list.
