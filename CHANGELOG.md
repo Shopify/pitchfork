@@ -1,5 +1,7 @@
 # Unreleased
 
+- Fix Ruby 3.4-dev compatibility.
+
 # 0.11.0
 
 - Drop invalid response headers.
