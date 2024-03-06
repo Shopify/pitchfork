@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.11.1
+
 - Fix Ruby 3.4-dev compatibility.
 
 # 0.11.0
