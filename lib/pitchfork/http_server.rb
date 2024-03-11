@@ -732,7 +732,7 @@ module Pitchfork
         end
       end
 
-      env["rack.after_reply"] = []
+      env["rack.response_finished"] = env["rack.after_reply"] = []
 
       status, headers, body = @app.call(env)
 
@@ -758,11 +758,21 @@ module Pitchfork
         client.close # flush and uncork socket immediately, no keepalive
       end
       env
-    rescue => e
-      handle_error(client, e)
+    rescue => application_error
+      handle_error(client, application_error)
       env
     ensure
-      env["rack.after_reply"].each(&:call) if env
+      if env
+        env["rack.response_finished"].each do |callback|
+          if callback.arity == 0
+            callback.call
+          else
+            callback.call(env, status, headers, application_error)
+          end
+        rescue => callback_error
+          Pitchfork.log_error(@logger, "rack.after_reply error", callback_error)
+        end
+      end
       timeout_handler.finished
       env
     end
