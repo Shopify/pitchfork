@@ -35,6 +35,7 @@ module BaseWebServerTests
   class TestRackAfterReply
     def initialize
       @called = false
+      @valid_arguments = false
     end
 
     def call(env)
@@ -42,12 +43,22 @@ module BaseWebServerTests
       end
 
       env["rack.after_reply"] << -> { raise "oops" }
+      env["rack.response_finished"] << method(:check_arguments)
       env["rack.after_reply"] << -> { @called = true }
 
-      [200, { 'content-type' => 'text/plain' }, ["after_reply_called: #{@called}"]]
+      [200, { 'content-type' => 'text/plain' }, ["after_reply_called: #{@called}\nresponse_finished_called: #{@valid_arguments}\n"]]
     rescue Pitchfork::ClientShutdown, Pitchfork::HttpParserError => e
       $stderr.syswrite("#{e.class}: #{e.message} #{e.backtrace.empty?}\n")
       raise e
+    end
+
+    def check_arguments(env, status, headers, application_error)
+      return unless env.is_a?(Hash) && env["SERVER_PROTOCOL"]
+      return unless status == 200
+      return unless headers.is_a?(Hash) && headers.key?("content-type")
+      return unless application_error.nil?
+
+      @valid_arguments = true
     end
   end
 
@@ -142,6 +153,7 @@ class WebServerStartTest < Pitchfork::Test
     responses = sock.read(4096)
     assert_match %r{\AHTTP/1.[01] 200\b}, responses
     assert_match %r{^after_reply_called: false}, responses
+    assert_match %r{^response_finished_called: false}, responses
 
     sock = tcp_socket('127.0.0.1', @port)
     sock.syswrite("GET / HTTP/1.0\r\n\r\n")
@@ -149,6 +161,7 @@ class WebServerStartTest < Pitchfork::Test
     responses = sock.read(4096)
     assert_match %r{\AHTTP/1.[01] 200\b}, responses
     assert_match %r{^after_reply_called: true}, responses
+    assert_match %r{^response_finished_called: true}, responses
 
     sock.close
   end
