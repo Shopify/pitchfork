@@ -41,6 +41,7 @@ module BaseWebServerTests
       while env['rack.input'].read(4096)
       end
 
+      env["rack.after_reply"] << -> { raise "oops" }
       env["rack.after_reply"] << -> { @called = true }
 
       [200, { 'content-type' => 'text/plain' }, ["after_reply_called: #{@called}"]]

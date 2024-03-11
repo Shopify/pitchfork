@@ -762,7 +762,13 @@ module Pitchfork
       handle_error(client, e)
       env
     ensure
-      env["rack.after_reply"].each(&:call) if env
+      if env
+        env["rack.after_reply"].each do |callback|
+          callback.call
+        rescue => error
+          Pitchfork.log_error(@logger, "rack.after_reply error", error)
+        end
+      end
       timeout_handler.finished
       env
     end

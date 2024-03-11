@@ -1,5 +1,7 @@
 # Unreleased
 
+- Don't break the `rack.after_reply` callback chain if one callback raises (#97).
+
 # 0.11.1
 
 - Fix Ruby 3.4-dev compatibility.
