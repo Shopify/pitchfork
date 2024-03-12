@@ -4,9 +4,6 @@ require 'pitchfork/shared_memory'
 
 module Pitchfork
   module Info
-    @workers_count = 0
-    @fork_safe = true
-
     class WeakSet # :nodoc
       def initialize
         @map = ObjectSpace::WeakMap.new
@@ -27,42 +24,68 @@ module Pitchfork
       end
     end
 
-    @kept_ios = WeakSet.new
-
-    class << self
-      attr_accessor :workers_count
-
-      def keep_io(io)
-        raise ArgumentError, "#{io.inspect} doesn't respond to :to_io" unless io.respond_to?(:to_io)
-        @kept_ios << io
-        io
-      end
-
-      def keep_ios(ios)
-        ios.each { |io| keep_io(io) }
-      end
-
-      def close_all_ios!
-        ignored_ios = [$stdin, $stdout, $stderr, STDIN, STDOUT, STDERR].uniq.compact
-
-        @kept_ios.each do |io_like|
-          ignored_ios << (io_like.is_a?(IO) ? io_like : io_like.to_io)
+    if RUBY_VERSION < "3.2.3" && RUBY_ENGINE == "ruby"
+      class << self
+        def keep_io(io)
+          io # noop
         end
 
-        ObjectSpace.each_object(IO) do |io|
-          if io_open?(io) && io_autoclosed?(io) && !ignored_ios.include?(io)
-            if io.is_a?(TCPSocket)
-              # If we inherited a TCP Socket, calling #close directly could send FIN or RST.
-              # So we first reopen /dev/null to avoid that.
-              io.reopen(File::NULL)
-            end
-            begin
-              io.close
-            rescue Errno::EBADF
+        def keep_ios(ios)
+          ios # noop
+        end
+
+        def close_all_ios!
+          raise NoMethodError, <<~MSG
+            Your Ruby version is subject to a bug that prevent `.close_all_ios!` from working.
+            See: https://bugs.ruby-lang.org/issues/19531.
+
+            Consider upgrading to Ruby 3.2.3+
+          MSG
+        end
+      end
+    else
+      @kept_ios = WeakSet.new
+
+      class << self
+        def keep_io(io)
+          raise ArgumentError, "#{io.inspect} doesn't respond to :to_io" unless io.respond_to?(:to_io)
+          @kept_ios << io
+          io
+        end
+
+        def keep_ios(ios)
+          ios.each { |io| keep_io(io) }
+        end
+
+        def close_all_ios!
+          ignored_ios = [$stdin, $stdout, $stderr, STDIN, STDOUT, STDERR].uniq.compact
+
+          @kept_ios.each do |io_like|
+            ignored_ios << (io_like.is_a?(IO) ? io_like : io_like.to_io)
+          end
+
+          ObjectSpace.each_object(IO) do |io|
+            if io_open?(io) && io_autoclosed?(io) && !ignored_ios.include?(io)
+              if io.is_a?(TCPSocket)
+                # If we inherited a TCP Socket, calling #close directly could send FIN or RST.
+                # So we first reopen /dev/null to avoid that.
+                io.reopen(File::NULL)
+              end
+              begin
+                io.close
+              rescue Errno::EBADF
+              end
             end
           end
         end
       end
+    end
+
+    @workers_count = 0
+    @fork_safe = true
+
+    class << self
+      attr_accessor :workers_count
 
       def fork_safe?
         @fork_safe

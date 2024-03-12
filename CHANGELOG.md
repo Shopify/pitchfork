@@ -1,5 +1,7 @@
 # Unreleased
 
+- Disable IO tracking on Rubies older than 3.2.3 to avoid running into https://bugs.ruby-lang.org/issues/19531.
+  This Ruby bug can lead to memory corruption that cause VM crashes when calling various IO methods.
 - Implement `rack.response_finished` (#97).
 - Don't break the `rack.after_reply` callback chain if one callback raises (#97).
 
