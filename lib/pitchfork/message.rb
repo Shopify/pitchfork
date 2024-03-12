@@ -14,6 +14,7 @@ module Pitchfork
     FD = Struct.new(:index)
 
     def initialize(socket)
+      raise ArgumentError, "expected a socket, got: #{socket.inspect}" unless socket
       @socket = socket
     end
 
