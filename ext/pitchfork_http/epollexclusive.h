@@ -50,7 +50,6 @@ static VALUE prep_readers(VALUE cls, VALUE readers)
 	for (i = 0; i < RARRAY_LEN(readers); i++) {
 		int rc;
 		struct epoll_event e;
-		rb_io_t *fptr;
 		VALUE io = rb_ary_entry(readers, i);
 
 		e.data.u64 = i; /* the reason readers shouldn't change */
