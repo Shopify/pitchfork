@@ -1,4 +1,5 @@
 # -*- encoding: binary -*-
+# frozen_string_literal: true
 require 'pitchfork/shared_memory'
 
 module Pitchfork

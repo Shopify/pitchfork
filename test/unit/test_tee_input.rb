@@ -1,4 +1,5 @@
 # -*- encoding: binary -*-
+# frozen_string_literal: true
 
 require 'test_helper'
 
@@ -44,7 +45,7 @@ class TestTeeInput < Pitchfork::Test
     @wr.close
     line = ti.gets
     assert_equal(4096 * 4 * 3 + 5 + $/.size, line.size)
-    assert_equal("hello" << ("ffff" * 4096 * 3) << "#$/", line)
+    assert_equal("hello".b << ("ffff" * 4096 * 3) << "#$/", line)
     line = ti.gets
     assert_equal "foo#$/", line
     assert_nil ti.gets
@@ -88,7 +89,7 @@ class TestTeeInput < Pitchfork::Test
   def test_read_with_buffer
     r = init_request('hello')
     ti = TeeInput.new(@rd, r)
-    buf = ''
+    buf = ''.b
     rv = ti.read(4, buf)
     assert_equal 'hell', rv
     assert_equal 'hell', buf

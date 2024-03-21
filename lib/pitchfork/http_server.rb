@@ -1,4 +1,6 @@
 # -*- encoding: binary -*-
+# frozen_string_literal: true
+
 require 'pitchfork/pitchfork_http'
 require 'pitchfork/flock'
 require 'pitchfork/soft_timeout'
@@ -91,7 +93,7 @@ module Pitchfork
     # in new projects
     LISTENERS = []
 
-    NOOP = '.'.freeze
+    NOOP = '.'
 
     # :startdoc:
     # This Hash is considered a stable interface and changing its contents
@@ -696,7 +698,7 @@ module Pitchfork
 
     def e103_response_write(client, headers)
       rss = @request.response_start_sent
-      buf = rss ? "103 Early Hints\r\n" : "HTTP/1.1 103 Early Hints\r\n"
+      buf = (rss ? "103 Early Hints\r\n" : "HTTP/1.1 103 Early Hints\r\n").b
       headers.each { |key, value| append_header(buf, key, value) }
       buf << (rss ? "\r\nHTTP/1.1 ".freeze : "\r\n".freeze)
       client.write(buf)
@@ -710,7 +712,7 @@ module Pitchfork
       client.write(@request.response_start_sent ?
                    "100 Continue\r\n\r\nHTTP/1.1 ".freeze :
                    "HTTP/1.1 100 Continue\r\n\r\n".freeze)
-      env.delete('HTTP_EXPECT'.freeze)
+      env.delete('HTTP_EXPECT')
     end
 
     # once a client is accepted, it is processed in its entirety here

@@ -1,4 +1,5 @@
 # -*- encoding: binary -*-
+# frozen_string_literal: true
 
 # Copyright (c) 2005 Zed A. Shaw
 # You can redistribute it and/or modify it under the same terms as Ruby 1.8 or
@@ -346,7 +347,7 @@ module Pitchfork
       ).each do |path|
         parser = HttpParser.new
         req = parser.env
-        sorta_safe = %(GET #{path} HTTP/1.1\r\n\r\n)
+        sorta_safe = +%(GET #{path} HTTP/1.1\r\n\r\n)
         assert_equal req, parser.headers(req, sorta_safe)
         assert_equal path, req['REQUEST_URI']
         assert_equal '', sorta_safe
@@ -364,14 +365,14 @@ module Pitchfork
       # make sure we can recover
       parser.clear
       req.clear
-      assert_equal req, parser.headers(req, "GET / HTTP/1.0\r\n\r\n")
+      assert_equal req, parser.headers(req, "GET / HTTP/1.0\r\n\r\n".b)
       assert ! parser.keepalive?
     end
 
     def test_piecemeal
       parser = HttpParser.new
       req = parser.env
-      http = "GET"
+      http = "GET".b
       assert_nil parser.headers(req, http)
       assert_nil parser.headers(req, http)
       assert_nil parser.headers(req, http << " / HTTP/1.0")
@@ -433,7 +434,7 @@ module Pitchfork
       "#{URI::REGEXP::PATTERN::UNRESERVED};:&=+$,".split(//).each do |char|
         parser = HttpParser.new
         req = parser.env
-        http = "GET http://#{char}@example.com/ HTTP/1.0\r\n\r\n"
+        http = +"GET http://#{char}@example.com/ HTTP/1.0\r\n\r\n"
         assert_equal req, parser.headers(req, http)
         assert_equal 'http', req['rack.url_scheme']
         assert_equal '/', req['REQUEST_URI']
@@ -526,7 +527,7 @@ module Pitchfork
       parser = HttpParser.new
       req = parser.env
       url = "http://[::1]/foo?q=bar"
-      http = "GET #{url} HTTP/1.1\r\n" \
+      http = +"GET #{url} HTTP/1.1\r\n" \
              "Host: bad.example.com\r\n\r\n"
       assert_equal req, parser.headers(req, http)
       assert_equal 'http', req['rack.url_scheme']
@@ -548,7 +549,7 @@ module Pitchfork
       parser = HttpParser.new
       req = parser.env
       url = "http://[::a]/"
-      http = "GET #{url} HTTP/1.1\r\n" \
+      http = +"GET #{url} HTTP/1.1\r\n" \
              "Host: bad.example.com\r\n\r\n"
       assert_equal req, parser.headers(req, http)
       assert_equal 'http', req['rack.url_scheme']
@@ -565,7 +566,7 @@ module Pitchfork
       parser = HttpParser.new
       req = parser.env
       url = "http://[::B]/"
-      http = "GET #{url} HTTP/1.1\r\n" \
+      http = +"GET #{url} HTTP/1.1\r\n" \
              "Host: bad.example.com\r\n\r\n"
       assert_equal req, parser.headers(req, http)
       assert_equal 'http', req['rack.url_scheme']
@@ -582,7 +583,7 @@ module Pitchfork
       parser = HttpParser.new
       req = parser.env
       url = "https://[::1]:/foo?q=bar"
-      http = "GET #{url} HTTP/1.1\r\n" \
+      http = +"GET #{url} HTTP/1.1\r\n" \
              "Host: bad.example.com\r\n\r\n"
       assert_equal req, parser.headers(req, http)
       assert_equal 'https', req['rack.url_scheme']
@@ -604,7 +605,7 @@ module Pitchfork
       parser = HttpParser.new
       req = parser.env
       url = "https://[::1]:666/foo?q=bar"
-      http = "GET #{url} HTTP/1.1\r\n" \
+      http = +"GET #{url} HTTP/1.1\r\n" \
              "Host: bad.example.com\r\n\r\n"
       assert_equal req, parser.headers(req, http)
       assert_equal 'https', req['rack.url_scheme']
@@ -704,7 +705,7 @@ module Pitchfork
       %w(GETT HEADR XGET XHEAD).each { |m|
         parser = HttpParser.new
         req = parser.env
-        s = "#{m} /forums/1/topics/2375?page=1#posts-17408 HTTP/1.1\r\n\r\n"
+        s = +"#{m} /forums/1/topics/2375?page=1#posts-17408 HTTP/1.1\r\n\r\n".b
         ok = parser.headers(req, s)
         assert ok
         assert_equal '/forums/1/topics/2375?page=1', req['REQUEST_URI']
@@ -769,7 +770,7 @@ module Pitchfork
       end
 
       # then large headers are rejected too
-      get = "GET /#{rand_data(10,120)} HTTP/1.1\r\n"
+      get = +"GET /#{rand_data(10,120)} HTTP/1.1\r\n"
       get << "X-Test: test\r\n" * (80 * 1024)
       parser.buf << get
       assert_raises(Pitchfork::HttpParserError,Pitchfork::RequestURITooLongError) do

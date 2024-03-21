@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'integration_test_helper'
 
 class ReforkingTest < Pitchfork::IntegrationTest

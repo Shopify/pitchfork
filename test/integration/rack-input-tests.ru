@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 # SHA1 checksum generator
 require 'digest/sha1'
 use Rack::ContentLength

@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 # Example application that echoes read data back to the HTTP client.
 # This emulates the old echo protocol people used to run.
 #

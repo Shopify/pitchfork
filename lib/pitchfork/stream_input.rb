@@ -1,4 +1,5 @@
 # -*- encoding: binary -*-
+# frozen_string_literal: true
 
 module Pitchfork
   # When processing uploads, pitchfork may expose a StreamInput object under
@@ -17,7 +18,7 @@ module Pitchfork
       @socket = socket
       @parser = request
       @buf = request.buf
-      @rbuf = ''
+      @rbuf = +''
       @bytes_read = 0
       filter_body(@rbuf, @buf) unless @buf.empty?
     end
@@ -41,7 +42,7 @@ module Pitchfork
     # ios.read(length [, buffer]) will return immediately if there is
     # any data and only block when nothing is available (providing
     # IO#readpartial semantics).
-    def read(length = nil, rv = '')
+    def read(length = nil, rv = ''.b)
       if length
         if length <= @rbuf.size
           length < 0 and raise ArgumentError, "negative length #{length} given"
@@ -79,16 +80,16 @@ module Pitchfork
     # unlike IO#gets.
     def gets(sep = $/)
       if sep.nil?
-        read_all(rv = '')
+        read_all(rv = ''.b)
         return rv.empty? ? nil : rv
       end
       re = /\A(.*?#{Regexp.escape(sep)})/
 
       begin
-        @rbuf.sub!(re, '') and return $1
+        @rbuf.sub!(re, ''.b) and return $1
         return @rbuf.empty? ? nil : @rbuf.slice!(0, @rbuf.size) if eof?
         @socket.readpartial(@@io_chunk_size, @buf) or eof!
-        filter_body(once = '', @buf)
+        filter_body(once = ''.b, @buf)
         @rbuf << once
       end while true
     end

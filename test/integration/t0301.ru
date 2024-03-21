@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 #\-N --debug
 run(lambda do |env|
   case env['PATH_INFO']

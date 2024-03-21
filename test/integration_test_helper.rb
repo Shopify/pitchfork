@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'test_helper'
 
 module Pitchfork
@@ -53,6 +54,10 @@ module Pitchfork
         FileUtils.rm_rf(@pwd)
       else
         $stderr.puts("Working directory left at: #{@pwd}")
+        if ENV["CI"]
+          $stderr.puts "-" * 40
+          $stderr.puts(File.read(File.join(@pwd, "stderr.log")))
+        end
       end
 
       super

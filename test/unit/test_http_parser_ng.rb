@@ -1,4 +1,5 @@
 # -*- encoding: binary -*-
+# frozen_string_literal: true
 
 require 'test_helper'
 
@@ -100,7 +101,7 @@ module Pitchfork
 
     def test_identity_byte_headers
       req = @parser.env
-      str = "PUT / HTTP/1.1\r\n"
+      str = "PUT / HTTP/1.1\r\n".b
       str << "Content-Length: 123\r\n"
       str << "\r"
       hdr = @parser.buf
@@ -115,7 +116,7 @@ module Pitchfork
       assert ! @parser.keepalive?
       assert @parser.headers?
       assert_equal 123, @parser.content_length
-      dst = ""
+      dst = "".b
       buf = '.' * 123
       @parser.filter_body(dst, buf)
       assert_equal '.' * 123, dst
@@ -136,7 +137,7 @@ module Pitchfork
       assert_equal 0, str.size
       assert ! @parser.keepalive?
       assert @parser.headers?
-      dst = ""
+      dst = "".b
       buf = '.' * 123
       @parser.filter_body(dst, buf)
       assert_equal '.' * 123, dst
@@ -153,7 +154,7 @@ module Pitchfork
       assert_equal 0, str.size
       assert ! @parser.keepalive?
       assert @parser.headers?
-      dst = ""
+      dst = "".b
       buf = '.' * 123
       @parser.filter_body(dst, buf)
       assert_equal '.' * 123, dst
@@ -171,7 +172,7 @@ module Pitchfork
       assert_equal '123', req['CONTENT_LENGTH']
       assert_equal 123, str.size
       assert_equal body, str
-      tmp = ''
+      tmp = +''
       assert_nil @parser.filter_body(tmp, str)
       assert_equal 0, str.size
       assert_equal tmp, body
@@ -185,7 +186,7 @@ module Pitchfork
       assert_equal Hash, @parser.parse.class
       assert_equal 1, str.size
       assert_equal 'a', str
-      tmp = ''
+      tmp = +''
       assert_nil @parser.filter_body(tmp, str)
       assert_equal "", str
       assert_equal "a", tmp
@@ -204,7 +205,7 @@ module Pitchfork
       assert_equal Hash, @parser.parse.class
       assert_equal 2, str.size
       assert_equal 'aG', str
-      tmp = ''
+      tmp = +''
       assert_nil @parser.filter_body(tmp, str)
       assert_equal "G", str
       assert_equal "G", @parser.filter_body(tmp, str)
@@ -219,13 +220,13 @@ module Pitchfork
       str << "PUT / HTTP/1.1\r\ntransfer-Encoding: chunked\r\n\r\n"
       assert_equal req, @parser.parse, "msg=#{str}"
       assert_equal 0, str.size
-      tmp = ""
+      tmp = "".b
       assert_nil @parser.filter_body(tmp, str << "6")
       assert_equal 0, tmp.size
       assert_nil @parser.filter_body(tmp, str << "\r\n")
       assert_equal 0, str.size
       assert_equal 0, tmp.size
-      tmp = ""
+      tmp = "".b
       assert_nil @parser.filter_body(tmp, str << "..")
       assert_equal "..", tmp
       assert_nil @parser.filter_body(tmp, str << "abcd\r\n0\r\n")
@@ -245,7 +246,7 @@ module Pitchfork
       str << "PUT / HTTP/1.1\r\ntransfer-Encoding: chunked\r\n\r\n"
       assert_equal req, @parser.parse, "msg=#{str}"
       assert_equal 0, str.size
-      tmp = ""
+      tmp = "".b
       assert_equal str, @parser.filter_body(tmp, str << "0\r\n\r\n")
       assert_equal "", tmp
     end
@@ -256,13 +257,13 @@ module Pitchfork
       req = @parser.env
       assert_equal req, @parser.parse
       assert_equal 0, str.size
-      tmp = ""
+      tmp = "".b
       assert_nil @parser.filter_body(tmp, str << "6")
       assert_equal 0, tmp.size
       assert_nil @parser.filter_body(tmp, str << "\r\n")
       assert_equal "", str
       assert_equal 0, tmp.size
-      tmp = ""
+      tmp = "".b
       assert_nil @parser.filter_body(tmp, str << "..")
       assert_equal 2, tmp.size
       assert_equal "..", tmp
@@ -289,7 +290,7 @@ module Pitchfork
              "4000\r\nabcd"
       req = @parser.env
       assert_equal req, @parser.parse
-      tmp = ''
+      tmp = +''
       assert_nil @parser.filter_body(tmp, str)
       assert_equal '', str
       str << ' ' * 16300
@@ -315,7 +316,7 @@ module Pitchfork
       str << "PUT / HTTP/1.1\r\ntransfer-Encoding: chunked\r\n\r\n" \
              "1\r\na\r\n2\r\n..\r\n0\r\n"
       assert_equal req, @parser.parse
-      tmp = ''
+      tmp = +''
       assert_nil @parser.filter_body(tmp, str)
       assert_equal 'a..', tmp
       rv = @parser.filter_body(tmp, str)
@@ -331,8 +332,8 @@ module Pitchfork
       req = @parser.env
       assert_equal req, @parser.parse
       assert_equal "", buf
-      tmp = ''
-      body = ''
+      tmp = +''
+      body = +''
       str = chunked[0..-2]
       str.each_byte { |byte|
         assert_nil @parser.filter_body(tmp, buf << byte.chr)
@@ -354,7 +355,7 @@ module Pitchfork
       assert_equal req, @parser.parse
       assert_equal 'Content-MD5', req['HTTP_TRAILER']
       assert_nil req['HTTP_CONTENT_MD5']
-      tmp = ''
+      tmp = +''
       assert_nil @parser.filter_body(tmp, str)
       assert_equal 'a..', tmp
       md5_b64 = [ Digest::MD5.digest(tmp) ].pack('m').strip.freeze
@@ -384,7 +385,7 @@ module Pitchfork
       assert_equal req, @parser.parse
       assert_equal 'Content-MD5', req['HTTP_TRAILER']
       assert_nil req['HTTP_CONTENT_MD5']
-      tmp = ''
+      tmp = +''
       assert_nil @parser.filter_body(tmp, str)
       assert_equal 'a..', tmp
       md5_b64 = [ Digest::MD5.digest(tmp) ].pack('m').strip.freeze
@@ -413,7 +414,7 @@ module Pitchfork
       req = @parser.env
       assert_equal req, @parser.parse
       assert_nil @parser.content_length
-      @parser.filter_body('', str)
+      @parser.filter_body(''.b, str)
       assert ! @parser.keepalive?
     end
 
@@ -435,7 +436,7 @@ module Pitchfork
              "#{n.to_s(16)}\r\na\r\n2\r\n..\r\n0\r\n"
       assert_equal req, @parser.parse
       assert_nil @parser.content_length
-      assert_raises(HttpParserError) { @parser.filter_body('', str) }
+      assert_raises(HttpParserError) { @parser.filter_body(''.b, str) }
     end
 
     def test_overflow_content_length
@@ -451,7 +452,7 @@ module Pitchfork
       req = @parser.env
       assert_equal req, @parser.parse
       assert_nil @parser.content_length
-      assert_raises(HttpParserError) { @parser.filter_body("", @parser.buf) }
+      assert_raises(HttpParserError) { @parser.filter_body("".b, @parser.buf) }
     end
 
     def test_bad_content_length
@@ -468,7 +469,7 @@ module Pitchfork
              "1\r\na\r\n2\r\n..\r\n0\r\n"
       assert_equal req, @parser.parse
       assert_equal 'Transfer-Encoding', req['HTTP_TRAILER']
-      tmp = ''
+      tmp = +''
       assert_nil @parser.filter_body(tmp, str)
       assert_equal 'a..', tmp
       assert_equal '', str
@@ -589,7 +590,7 @@ module Pitchfork
     def test_chunked_overrides_content_length
       order = [ 'Transfer-Encoding: chunked', 'Content-Length: 666' ]
       %w(a b).each do |x|
-        str = "PUT /#{x} HTTP/1.1\r\n" \
+        str = +"PUT /#{x} HTTP/1.1\r\n" \
               "#{order.join("\r\n")}" \
               "\r\n\r\na\r\nhelloworld\r\n0\r\n\r\n"
         order.reverse!
@@ -598,7 +599,7 @@ module Pitchfork
         assert_equal 'chunked', env['HTTP_TRANSFER_ENCODING']
         assert_equal '666', env['CONTENT_LENGTH'],
           'Content-Length logged so the app can log a possible client bug/attack'
-        @parser.filter_body(dst = '', str)
+        @parser.filter_body(dst = ''.b, str)
         assert_equal 'helloworld', dst
         @parser.parse # handle the non-existent trailer
         assert @parser.next?
@@ -609,7 +610,7 @@ module Pitchfork
       str = "PUT /x HTTP/1.1\r\n" \
             "Transfer-Encoding: gzip\r\n" \
             "Transfer-Encoding: chunked\r\n" \
-            "\r\n"
+            "\r\n".b
       env = @parser.headers({}, str)
       assert_equal 'gzip,chunked', env['HTTP_TRANSFER_ENCODING']
       assert_nil @parser.content_length
@@ -617,7 +618,7 @@ module Pitchfork
       @parser.clear
       str = "PUT /x HTTP/1.1\r\n" \
             "Transfer-Encoding: gzip, chunked\r\n" \
-            "\r\n"
+            "\r\n".b
       env = @parser.headers({}, str)
       assert_equal 'gzip, chunked', env['HTTP_TRANSFER_ENCODING']
       assert_nil @parser.content_length
@@ -677,7 +678,7 @@ module Pitchfork
     end
 
     def test_pipelined_requests
-      host = "example.com"
+      host = "example.com".b
       expect = {
         "HTTP_HOST" => host,
         "SERVER_NAME" => host,

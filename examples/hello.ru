@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 run lambda { |env|
   /\A100-continue\z/i =~ env['HTTP_EXPECT'] and return [100, {}, []]
   body = "Hello World!\n"

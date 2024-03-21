@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 require "net/http"
 
 app_path = File.expand_path('../examples/constant_caches.ru', __dir__)

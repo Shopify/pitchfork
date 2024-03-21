@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 module Pitchfork
   # fallback for non-Linux and Linux <4.5 systems w/o EPOLLEXCLUSIVE
   class SelectWaiter # :nodoc:

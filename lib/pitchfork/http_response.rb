@@ -1,4 +1,5 @@
 # -*- encoding: binary -*-
+# frozen_string_literal: true
 # :enddoc:
 
 module Pitchfork
@@ -48,10 +49,10 @@ module Pitchfork
       if headers
         code = status.to_i
         msg = STATUS_CODES[code]
-        start = req.response_start_sent ? ''.freeze : 'HTTP/1.1 '.freeze
+        start = req.response_start_sent ? '' : 'HTTP/1.1 '
         buf = "#{start}#{msg ? %Q(#{code} #{msg}) : status}\r\n" \
               "Date: #{httpdate}\r\n" \
-              "Connection: close\r\n"
+              "Connection: close\r\n".b
         headers.each do |key, value|
           case key
           when %r{\A(?:Date|Connection)\z}i

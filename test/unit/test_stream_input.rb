@@ -1,4 +1,5 @@
 # -*- encoding: binary -*-
+# frozen_string_literal: true
 
 require 'test_helper'
 
@@ -97,7 +98,7 @@ class TestStreamInput < Pitchfork::Test
     @wr.close
     line = si.gets
     assert_equal(4096 * 4 * 3 + 5 + $/.size, line.size)
-    assert_equal("hello" << ("ffff" * 4096 * 3) << "#$/", line)
+    assert_equal("hello".b << ("ffff" * 4096 * 3) << "#$/", line)
     line = si.gets
     assert_equal "foo#$/", line
     assert_nil si.gets
@@ -108,7 +109,7 @@ class TestStreamInput < Pitchfork::Test
   def test_read_with_buffer
     r = init_request('hello')
     si = Pitchfork::StreamInput.new(@rd, r)
-    buf = ''
+    buf = ''.b
     rv = si.read(4, buf)
     assert_equal 'hell', rv
     assert_equal 'hell', buf
@@ -120,12 +121,12 @@ class TestStreamInput < Pitchfork::Test
   def test_read_with_buffer_clobbers
     r = init_request('hello')
     si = Pitchfork::StreamInput.new(@rd, r)
-    buf = 'foo'
+    buf = 'foo'.b
     assert_equal 'hello', si.read(nil, buf)
     assert_equal 'hello', buf
     assert_equal '', si.read(nil, buf)
     assert_equal '', buf
-    buf = 'asdf'
+    buf = 'asdf'.b
     assert_nil si.read(5, buf)
     assert_equal '', buf
   end
@@ -134,14 +135,14 @@ class TestStreamInput < Pitchfork::Test
     r = init_request('hello')
     si = Pitchfork::StreamInput.new(@rd, r)
     assert_equal '', si.read(0)
-    buf = 'asdf'
+    buf = 'asdf'.b
     rv = si.read(0, buf)
     assert_equal rv.object_id, buf.object_id
     assert_equal '', buf
     assert_equal 'hello', si.read
     assert_nil si.read(5)
     assert_equal '', si.read(0)
-    buf = 'hello'
+    buf = 'hello'.b
     rv = si.read(0, buf)
     assert_equal rv.object_id, buf.object_id
     assert_equal '', rv
@@ -158,7 +159,7 @@ class TestStreamInput < Pitchfork::Test
   def test_gets_read_mix_chunked
     r = @parser = Pitchfork::HttpParser.new
     body = "6\r\nhello"
-    @buf = "POST / HTTP/1.1\r\n" \
+    @buf = +"POST / HTTP/1.1\r\n" \
            "Host: localhost\r\n" \
            "Transfer-Encoding: chunked\r\n" \
            "\r\n#{body}"
@@ -187,7 +188,7 @@ class TestStreamInput < Pitchfork::Test
   def init_request(body, size = nil)
     @parser = Pitchfork::HttpParser.new
     body = body.to_s.freeze
-    @buf = "POST / HTTP/1.1\r\n" \
+    @buf = +"POST / HTTP/1.1\r\n" \
            "Host: localhost\r\n" \
            "Content-Length: #{size || body.size}\r\n" \
            "\r\n#{body}"

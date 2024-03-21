@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 # Minimal sample configuration file for Pitchfork
 
 # listen 2007 # by default Pitchfork listens on port 8080

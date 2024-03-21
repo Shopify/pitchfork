@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 # -*- encoding: binary -*-
+# frozen_string_literal: true
 # Reads from stdin and outputs the SHA1 hex digest of the input
 
 require 'digest/sha1'
