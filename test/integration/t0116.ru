@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 #\ -E none
 use Rack::ContentLength
 use Rack::ContentType, 'text/plain'

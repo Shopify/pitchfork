@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 # -*- encoding: binary -*-
 # simple chunked HTTP PUT request generator (and just that),
 # it reads stdin and writes to stdout so socat can write to a

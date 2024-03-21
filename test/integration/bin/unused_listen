@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 # -*- encoding: binary -*-
 # this is to remain compatible with the unused_port function in the
 # Unicorn test/test_helper.rb file

@@ -1,4 +1,5 @@
 # -*- encoding: binary -*-
+# frozen_string_literal: true
 
 module Pitchfork
   # Acts like tee(1) on an input input to provide a input-like stream
@@ -42,7 +43,7 @@ module Pitchfork
       @len = request.content_length
       super
       @tmp = @len && @len <= @@client_body_buffer_size ?
-             StringIO.new("") : new_tmpio
+             StringIO.new.binmode : new_tmpio
     end
 
     # :call-seq:
@@ -121,7 +122,7 @@ module Pitchfork
 
     # consumes the stream of the socket
     def consume!
-      junk = ""
+      junk = "".b
       nil while read(@@io_chunk_size, junk)
     end
 

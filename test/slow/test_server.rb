@@ -1,4 +1,5 @@
 # -*- encoding: binary -*-
+# frozen_string_literal: true
 
 # Copyright (c) 2005 Zed A. Shaw
 # You can redistribute it and/or modify it under the same terms as Ruby 1.8 or
@@ -271,7 +272,7 @@ class WebServerTest < Pitchfork::Test
   def do_test(string, chunk, close_after=nil, shutdown_delay=0)
     # Do not use instance variables here, because it needs to be thread safe
     socket = tcp_socket("127.0.0.1", @port);
-    request = StringIO.new(string)
+    request = StringIO.new(+string)
     chunks_out = 0
 
     while data = request.read(chunk)

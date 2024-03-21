@@ -1,4 +1,5 @@
 # -*- encoding: binary -*-
+# frozen_string_literal: true
 # :enddoc:
 # no stable API here
 
@@ -19,10 +20,10 @@ module Pitchfork
       "SERVER_SOFTWARE" => "Pitchfork #{Pitchfork::Const::UNICORN_VERSION}"
     }
 
-    NULL_IO = StringIO.new("")
+    NULL_IO = StringIO.new.binmode
 
     # :stopdoc:
-    HTTP_RESPONSE_START = [ 'HTTP'.freeze, '/1.1 '.freeze ]
+    HTTP_RESPONSE_START = [ 'HTTP', '/1.1 ' ]
     EMPTY_ARRAY = [].freeze
     @@input_class = Pitchfork::TeeInput
     @@check_client_connection = false
@@ -104,7 +105,7 @@ module Pitchfork
     end
 
     def hijacked?
-      env.include?('rack.hijack_io'.freeze)
+      env.include?('rack.hijack_io')
     end
 
     if Raindrops.const_defined?(:TCP_Info)
@@ -199,11 +200,11 @@ module Pitchfork
         val.downcase!
       end
 
-      if vals.pop == 'chunked'.freeze
-        return true unless vals.include?('chunked'.freeze)
+      if vals.pop == 'chunked'
+        return true unless vals.include?('chunked')
         raise Pitchfork::HttpParserError, 'double chunked', []
       end
-      return false unless vals.include?('chunked'.freeze)
+      return false unless vals.include?('chunked')
       raise Pitchfork::HttpParserError, 'chunked not last', []
     end
   end

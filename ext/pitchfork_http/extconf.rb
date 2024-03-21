@@ -1,4 +1,5 @@
 # -*- encoding: binary -*-
+# frozen_string_literal: true
 require 'mkmf'
 
 have_const("PR_SET_CHILD_SUBREAPER", "sys/prctl.h")

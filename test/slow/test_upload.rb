@@ -1,4 +1,5 @@
 # -*- encoding: binary -*-
+# frozen_string_literal: true
 
 # Copyright (c) 2009 Eric Wong
 require 'test_helper'
@@ -102,13 +103,13 @@ class UploadTest < Pitchfork::Test
     start_server(@sha1_app)
     assert_equal 256, length
     sock = tcp_socket(@addr, @port)
-    hdr = "PUT / HTTP/1.0\r\nContent-Length: #{length}\r\n\r\n"
+    hdr = +"PUT / HTTP/1.0\r\nContent-Length: #{length}\r\n\r\n"
     @count.times do
       buf = @random.sysread(@bs)
       @sha1.update(buf)
       hdr << buf
       sock.syswrite(hdr)
-      hdr = ''
+      hdr = ''.b
       sleep 0.6
     end
     read = sock.read.split(/\r\n/)

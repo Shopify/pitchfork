@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 # Sample verbose configuration file for Pitchfork
 
 # Use at least one worker per core if you're on a dedicated server,

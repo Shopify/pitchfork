@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 class ChunkedBody
   def each(&block)
     ('A'..'Z').each do |char|

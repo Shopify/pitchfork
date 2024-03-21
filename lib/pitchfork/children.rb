@@ -1,4 +1,5 @@
 # -*- encoding: binary -*-
+# frozen_string_literal: true
 
 module Pitchfork
   # This class keep tracks of the state of all the master children.

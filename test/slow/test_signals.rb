@@ -1,4 +1,5 @@
 # -*- encoding: binary -*-
+# frozen_string_literal: true
 
 # Copyright (c) 2009 Eric Wong
 # You can redistribute it and/or modify it under the same terms as Ruby 1.8 or
@@ -131,7 +132,7 @@ class SignalsTest < Pitchfork::Test
     wait_workers_ready("test_stderr.#{$$}.log", 1)
     sock = tcp_socket('127.0.0.1', @port)
     sock.syswrite("GET / HTTP/1.0\r\n\r\n")
-    buf = ''
+    buf = ''.b
     header_len = pid = nil
     buf = sock.sysread(16384, buf)
     pid = buf[/\r\nX-Pid: (\d+)\r\n/, 1].to_i
