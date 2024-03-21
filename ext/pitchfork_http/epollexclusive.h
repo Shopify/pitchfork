@@ -11,9 +11,10 @@
 #if defined(HAVE_EPOLL_CREATE1)
 #  include <sys/epoll.h>
 #  include <errno.h>
-#  include <ruby/io.h>
 #  include <ruby/thread.h>
 #endif /* __linux__ */
+
+#include <ruby/io.h>
 
 #if defined(EPOLLEXCLUSIVE) && defined(HAVE_EPOLL_CREATE1)
 #  define USE_EPOLL (1)
