@@ -514,6 +514,7 @@ module Pitchfork
           next
         else # worker is out of time
           next_sleep = 0
+          child.deadline = now + 1
           hard_timeout(child)
         end
       end
