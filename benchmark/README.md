@@ -2,7 +2,7 @@
 
 ## Copy on Write Efficiency
 
-This benchmark aimed to compare real memory usage of differnet servers.
+This benchmark aimed to compare real memory usage of different servers.
 
 For instance, Puma 2 workers + 2 threads:
 
