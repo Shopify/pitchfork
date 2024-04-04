@@ -188,7 +188,7 @@ The second "hard" timeout, is the sum of `timeout` and `cleanup`.
 Workers taking longer than this time period to be ready to handle a new
 request will be forcibly killed (via `SIGKILL`).
 
-Neither of these timeout mecanisms should be routinely relied on, and should
+Neither of these timeout mechanisms should be routinely relied on, and should
 instead be considered as a last line of defense in case you application
 is impacted by bugs causing unexpectedly slow response time, or fully stuck
 processes.
