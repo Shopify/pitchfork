@@ -1,5 +1,11 @@
 # Unreleased
 
+# 0.13.0
+
+- Fix compatibility with `--enable-frozen-string-literal` in preparation for Ruby 3.4.
+- Extend timed out workers deadline after sending signals to avoid flooding.
+- Fix compilation with Ruby 2.7 and older on macOS.
+
 # 0.12.0
 
 - Disable IO tracking on Rubies older than 3.2.3 to avoid running into https://bugs.ruby-lang.org/issues/19531.
