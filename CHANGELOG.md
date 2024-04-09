@@ -1,5 +1,7 @@
 # Unreleased
 
+- Add `X-Request-Id` header in the workers proctitle if present.
+
 # 0.13.0
 
 - Fix compatibility with `--enable-frozen-string-literal` in preparation for Ruby 3.4.
