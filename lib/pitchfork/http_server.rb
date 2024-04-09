@@ -723,7 +723,11 @@ module Pitchfork
       @request = Pitchfork::HttpParser.new
       env = @request.read(client)
 
-      proc_name status: "requests: #{worker.requests_count}, processing: #{env["PATH_INFO"]}"
+      status = "requests: #{worker.requests_count}, processing: #{env["PATH_INFO"]}"
+      if request_id = env["HTTP_X_REQUEST_ID"]
+        status += ", request_id: #{request_id}"
+      end
+      proc_name status: status
 
       env["pitchfork.worker"] = worker
       timeout_handler.rack_env = env
