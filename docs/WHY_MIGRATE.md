@@ -39,6 +39,11 @@ pid file management, hot reload have been stripped.
 
 Pitchfork only kept features that makes sense in a containerized world.
 
+### Migration Guide
+
+If the above points convinced you to make the switch, take a look at the [migration guide](MIGRATING_FROM_UNICORN.md).
+It will go over the most common changes you will need to make to use Pitchfork.
+
 ## Coming from Puma
 
 Generally speaking, compared to (threaded) Puma, Pitchfork *may* offer better latency and isolation at the expense of throughput.
