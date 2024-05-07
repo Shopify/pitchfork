@@ -95,32 +95,6 @@ module Pitchfork
 
     NOOP = '.'
 
-    # :startdoc:
-    # This Hash is considered a stable interface and changing its contents
-    # will allow you to switch between different installations of Pitchfork
-    # or even different installations of the same applications without
-    # downtime.  Keys of this constant Hash are described as follows:
-    #
-    # * 0 - the path to the pitchfork executable
-    # * :argv - a deep copy of the ARGV array the executable originally saw
-    # * :cwd - the working directory of the application, this is where
-    # you originally started Pitchfork.
-    # TODO: Can we get rid of this?
-    START_CTX = {
-      :argv => ARGV.map(&:dup),
-      0 => $0.dup,
-    }
-    # We favor ENV['PWD'] since it is (usually) symlink aware for Capistrano
-    # and like systems
-    START_CTX[:cwd] = begin
-      a = File.stat(pwd = ENV['PWD'])
-      b = File.stat(Dir.pwd)
-      a.ino == b.ino && a.dev == b.dev ? pwd : Dir.pwd
-    rescue
-      Dir.pwd
-    end
-    # :stopdoc:
-
     # Creates a working server on host:port (strange things happen if
     # port isn't a Number).  Use HttpServer::run to start the server and
     # HttpServer.run.join to join the thread that's processing
@@ -140,7 +114,7 @@ module Pitchfork
       self.config = Pitchfork::Configurator.new(options)
       self.listener_opts = {}
 
-      proc_name role: 'monitor', status: START_CTX[:argv].join(' ')
+      proc_name role: 'monitor', status: ARGV.join(' ')
 
       # We use @control_socket differently in the master and worker processes:
       #
@@ -296,7 +270,7 @@ module Pitchfork
     def join
       @respawn = true
 
-      proc_name role: 'monitor', status: START_CTX[:argv].join(' ')
+      proc_name role: 'monitor', status: ARGV.join(' ')
 
       logger.info "master process ready" # test_exec.rb relies on this message
       if @ready_pipe
@@ -1008,7 +982,7 @@ module Pitchfork
       @proctitle_role = role if role
       @proctitle_status = status if status
 
-      Process.setproctitle("#{File.basename(START_CTX[0])} #{@proctitle_role} - #{@proctitle_status}")
+      Process.setproctitle("#{File.basename($PROGRAM_NAME)} #{@proctitle_role} - #{@proctitle_status}")
     end
 
     def bind_listeners!
@@ -1016,7 +990,6 @@ module Pitchfork
       if listeners.empty?
         listeners << Pitchfork::Const::DEFAULT_LISTEN
         @init_listeners << Pitchfork::Const::DEFAULT_LISTEN
-        START_CTX[:argv] << "-l#{Pitchfork::Const::DEFAULT_LISTEN}"
       end
       listeners.each { |addr| listen(addr) }
       raise ArgumentError, "no listeners" if LISTENERS.empty?
