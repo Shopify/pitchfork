@@ -299,8 +299,13 @@ end
 ```ruby
 after_mold_fork do |server, mold|
   Database.disconnect!
+
+  # Ruby < 3.3
   3.times { GC.start } # promote surviving objects to oldgen
   GC.compact
+
+  # Ruby >= 3.3
+  Process.warmup
 end
 ```
 
