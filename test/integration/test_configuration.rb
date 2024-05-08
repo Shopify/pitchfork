@@ -9,10 +9,8 @@ class ConfigurationTest < Pitchfork::IntegrationTest
       listen "#{addr}:#{port}"
       worker_processes 1
 
-      request_count = 0
       after_request_complete do |server, worker, env|
-        request_count += 1
-        $stderr.puts "[after_request_complete] request_count=\#{request_count} path=\#{env['PATH_INFO']}"
+        $stderr.puts "[after_request_complete] worker_requests_count=\#{worker.requests_count} path=\#{env['PATH_INFO']}"
       end
 
       before_worker_exit do |server, worker|
@@ -21,7 +19,7 @@ class ConfigurationTest < Pitchfork::IntegrationTest
     CONFIG
 
     assert_healthy("http://#{addr}:#{port}")
-    assert_stderr("[after_request_complete] request_count=1 path=/")
+    assert_stderr("[after_request_complete] worker_requests_count=1 path=/")
     assert_healthy("http://#{addr}:#{port}")
 
     assert_clean_shutdown(pid)

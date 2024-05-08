@@ -849,8 +849,8 @@ module Pitchfork
                 worker.update(client)
               else
                 request_env = process_client(client, worker, prepare_timeout(worker))
-                @after_request_complete&.call(self, worker, request_env)
                 worker.increment_requests_count
+                @after_request_complete&.call(self, worker, request_env)
               end
               worker.update_deadline(@timeout)
             end
