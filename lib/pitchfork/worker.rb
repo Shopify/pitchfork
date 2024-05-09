@@ -32,14 +32,6 @@ module Pitchfork
       end
     end
 
-    def meminfo
-      @meminfo ||= MemInfo.new(pid) if pid
-    end
-
-    def refresh
-      meminfo&.update
-    end
-
     def exiting?
       @exiting
     end

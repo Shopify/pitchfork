@@ -17,11 +17,6 @@ module Pitchfork
       @pending_molds = {} # Worker promoted to mold, not yet acknowledged
     end
 
-    def refresh
-      @workers.each_value(&:refresh)
-      @molds.each_value(&:refresh)
-    end
-
     def register(child)
       # Children always start as workers, never molds, so we know they have a `#nr`.
       @pending_workers[child.nr] = @workers[child.nr] = child
@@ -153,14 +148,6 @@ module Pitchfork
 
     def workers_count
       @workers.size
-    end
-
-    def total_pss
-      total_pss = MemInfo.new(Process.pid).pss
-      @children.each do |_, worker|
-        total_pss += worker.meminfo.pss if worker.meminfo
-      end
-      total_pss
     end
   end
 end
