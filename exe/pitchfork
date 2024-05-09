@@ -64,7 +64,7 @@ op = OptionParser.new("", 24, '  ') do |opts|
     warn "-s/--server only exists for compatibility with rackup"
   end
 
-  # Unicorn-specific stuff
+  # Pitchfork-specific stuff
   opts.on("-l", "--listen {HOST:PORT|PATH}",
           "listen on HOST:PORT or PATH",
           "this may be specified multiple times",
@@ -72,11 +72,11 @@ op = OptionParser.new("", 24, '  ') do |opts|
     options[:listeners] << address
   end
 
-  opts.on("-c", "--config-file FILE", "Unicorn-specific config file") do |f|
+  opts.on("-c", "--config-file FILE", "Pitchfork-specific config file") do |f|
     options[:config_file] = f
   end
 
-  # I'm avoiding Unicorn-specific config options on the command-line.
+  # I'm avoiding Pitchfork-specific config options on the command-line.
   # IMNSHO, config options on the command-line are redundant given
   # config files and make things unnecessarily complicated with multiple
   # places to look for a config option.
@@ -89,7 +89,7 @@ op = OptionParser.new("", 24, '  ') do |opts|
   end
 
   opts.on_tail("-v", "--version", "Show version") do
-    puts "#{cmd} v#{Pitchfork::Const::UNICORN_VERSION}"
+    puts "#{cmd} v#{Pitchfork::VERSION} (based on Unicorn v#{Pitchfork::Const::UNICORN_VERSION})"
     exit
   end
 
