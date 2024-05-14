@@ -67,7 +67,7 @@ module Pitchfork
     end
 
     def test_keepalive_requests_with_next?
-      req = "GET / HTTP/1.1\r\nHost: example.com\r\n\r\n".freeze
+      req = "GET / HTTP/1.1\r\nHost: example.com\r\n\r\n"
       expect = {
         "SERVER_NAME" => "example.com",
         "HTTP_HOST" => "example.com",
@@ -362,7 +362,7 @@ module Pitchfork
       rv = @parser.filter_body(tmp, str)
       assert_equal rv.object_id, str.object_id
       assert_equal '', str
-      md5_hdr = "Content-MD5: #{md5_b64}\r\n".freeze
+      md5_hdr = "Content-MD5: #{md5_b64}\r\n"
       str << md5_hdr
       assert_nil @parser.trailers(req, str)
       assert_equal md5_b64, req['HTTP_CONTENT_MD5']
@@ -393,7 +393,7 @@ module Pitchfork
       assert_equal rv.object_id, str.object_id
       assert_equal '', str
       assert_nil @parser.trailers(req, str)
-      md5_hdr = "Content-MD5: #{md5_b64}\r\n".freeze
+      md5_hdr = "Content-MD5: #{md5_b64}\r\n"
       md5_hdr.each_byte { |byte|
         str << byte.chr
         assert_nil @parser.trailers(req, str)

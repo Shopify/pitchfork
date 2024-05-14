@@ -1,0 +1,5 @@
+AllCops:
+  DisabledByDefault: true
+
+Style/RedundantFreeze:
+  Enabled: true

@@ -65,7 +65,7 @@ module Pitchfork
             append_header(buf, key, value)
           end
         end
-        socket.write(buf << "\r\n".freeze)
+        socket.write(buf << "\r\n")
       end
 
       if hijack

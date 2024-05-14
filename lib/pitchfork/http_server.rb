@@ -675,18 +675,14 @@ module Pitchfork
       rss = @request.response_start_sent
       buf = (rss ? "103 Early Hints\r\n" : "HTTP/1.1 103 Early Hints\r\n").b
       headers.each { |key, value| append_header(buf, key, value) }
-      buf << (rss ? "\r\nHTTP/1.1 ".freeze : "\r\n".freeze)
+      buf << (rss ? "\r\nHTTP/1.1 " : "\r\n")
       client.write(buf)
     end
 
     def e100_response_write(client, env)
-      # We use String#freeze to avoid allocations under Ruby 2.1+
-      # Not many users hit this code path, so it's better to reduce the
-      # constant table sizes even for Ruby 2.0 users who'll hit extra
-      # allocations here.
       client.write(@request.response_start_sent ?
-                   "100 Continue\r\n\r\nHTTP/1.1 ".freeze :
-                   "HTTP/1.1 100 Continue\r\n\r\n".freeze)
+                   "100 Continue\r\n\r\nHTTP/1.1 " :
+                   "HTTP/1.1 100 Continue\r\n\r\n")
       env.delete('HTTP_EXPECT')
     end
 
