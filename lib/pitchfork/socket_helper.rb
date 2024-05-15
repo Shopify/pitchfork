@@ -72,7 +72,7 @@ module Pitchfork
         rescue => e
           logger.error("#{sock_name(sock)} " \
                        "failed to set accept_filter=#{name} (#{e.inspect})")
-          logger.error("perhaps accf_http(9) needs to be loaded".freeze)
+          logger.error("perhaps accf_http(9) needs to be loaded")
         end if arg != got
       end
     end
