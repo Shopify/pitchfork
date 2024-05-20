@@ -114,7 +114,7 @@ module Pitchfork
       def check_client_connection(socket) # :nodoc:
         if TCPSocket === socket
           # Raindrops::TCP_Info#get!, #state (reads struct tcp_info#tcpi_state)
-          raise Errno::EPIPE, "client closed connection".freeze,
+          raise Errno::EPIPE, "client closed connection",
                 EMPTY_ARRAY if closed_state?(TCPI.get!(socket).state)
         else
           write_http_header(socket)
@@ -160,7 +160,7 @@ module Pitchfork
         if TCPSocket === socket && @@tcpi_inspect_ok
           opt = socket.getsockopt(Socket::IPPROTO_TCP, Socket::TCP_INFO).inspect
           if opt =~ /\bstate=(\S+)/
-            raise Errno::EPIPE, "client closed connection".freeze,
+            raise Errno::EPIPE, "client closed connection",
                   EMPTY_ARRAY if closed_state_str?($1)
           else
             @@tcpi_inspect_ok = false

@@ -6,7 +6,7 @@ require 'test_helper'
 class TestSocketHelper < Pitchfork::Test
   include Pitchfork::SocketHelper
   attr_reader :logger
-  GET_SLASH = "GET / HTTP/1.0\r\n\r\n".freeze
+  GET_SLASH = "GET / HTTP/1.0\r\n\r\n"
 
   def setup
     @log_tmp = Tempfile.new 'logger'
