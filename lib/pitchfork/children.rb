@@ -4,22 +4,30 @@
 module Pitchfork
   # This class keep tracks of the state of all the master children.
   class Children
-    attr_reader :mold
+    attr_reader :mold, :service
     attr_accessor :last_generation
 
     def initialize
       @last_generation = 0
-      @children = {} # All children, including molds, indexed by PID.
+      @children = {} # All children, including molds and services, indexed by PID.
       @workers = {} # Workers indexed by their `nr`.
       @molds = {} # Molds, index by PID.
       @mold = nil # The latest mold, if any.
+      @service = nil
       @pending_workers = {} # Pending workers indexed by their `nr`.
       @pending_molds = {} # Worker promoted to mold, not yet acknowledged
     end
 
     def register(child)
       # Children always start as workers, never molds, so we know they have a `#nr`.
+      unless child.nr
+        raise "[BUG] Trying to register a child without an `nr`: #{child.inspect}"
+      end
       @pending_workers[child.nr] = @workers[child.nr] = child
+    end
+
+    def register_service(service)
+      @service = service
     end
 
     def register_mold(mold)
@@ -39,6 +47,11 @@ module Pitchfork
         @pending_molds[mold.pid] = mold
         @children[mold.pid] = mold
         return mold
+      when Message::ServiceSpawned
+        service = @service
+        service.update(message)
+        @children[service.pid] = service
+        return service
       end
 
       child = @children[message.pid] || (message.nr && @workers[message.nr])
@@ -73,11 +86,16 @@ module Pitchfork
         @pending_molds.delete(child.pid)
         @molds.delete(child.pid)
         @workers.delete(child.nr)
+
         if @mold == child
           @pending_workers.reject! do |nr, worker|
             worker.generation == @mold.generation
           end
           @mold = nil
+        end
+
+        if @service == child
+          @service = nil
         end
       end
       child

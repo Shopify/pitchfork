@@ -11,7 +11,8 @@ module Pitchfork
     SHUTDOWN_OFFSET = 1
     MOLD_TICK_OFFSET = 2
     MOLD_PROMOTION_TICK_OFFSET = 3
-    WORKER_TICK_OFFSET = 4
+    SERVICE_TICK_OFFSET = 4
+    WORKER_TICK_OFFSET = 5
 
     DROPS = [Raindrops.new(PER_DROP)]
 
@@ -52,6 +53,10 @@ module Pitchfork
 
     def mold_promotion_deadline
       self[MOLD_PROMOTION_TICK_OFFSET]
+    end
+
+    def service_deadline
+      self[SERVICE_TICK_OFFSET]
     end
 
     def worker_deadline(worker_nr)

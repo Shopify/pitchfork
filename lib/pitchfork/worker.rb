@@ -6,7 +6,7 @@ module Pitchfork
   # This class and its members can be considered a stable interface
   # and will not change in a backwards-incompatible fashion between
   # releases of pitchfork.  Knowledge of this class is generally not
-  # not needed for most users of pitchfork.
+  # needed for most users of pitchfork.
   #
   # Some users may want to access it in the after_worker_fork/after_mold_fork hooks.
   # See the Pitchfork::Configurator RDoc for examples.
@@ -24,12 +24,7 @@ module Pitchfork
       @to_io = @master = nil
       @exiting = false
       @requests_count = 0
-      if nr
-        @deadline_drop = SharedMemory.worker_deadline(nr)
-        self.deadline = 0
-      else
-        promoted!(nil)
-      end
+      init_deadline
     end
 
     def exiting?
@@ -86,6 +81,10 @@ module Pitchfork
       send_message_nonblock(Message::SpawnWorker.new(new_worker.nr))
     end
 
+    def spawn_service(_new_service)
+      send_message_nonblock(Message::SpawnService.new)
+    end
+
     def promote!(timeout)
       @generation += 1
       promoted!(timeout)
@@ -101,6 +100,10 @@ module Pitchfork
 
     def mold?
       @mold
+    end
+
+    def service?
+      false
     end
 
     def to_io # IO.select-compatible
@@ -212,6 +215,15 @@ module Pitchfork
 
     private
 
+    def init_deadline
+      if nr
+        @deadline_drop = SharedMemory.worker_deadline(@nr)
+        self.deadline = 0
+      else
+        promoted!(nil)
+      end
+    end
+
     def pipe=(socket)
       raise ArgumentError, "pipe can't be nil" unless socket
       Info.keep_io(socket)
@@ -231,6 +243,30 @@ module Pitchfork
         # worker will be reaped soon
       end
       success
+    end
+  end
+
+  class Service < Worker
+    def initialize(pid: nil, generation: 0)
+      super(nil, pid: pid, generation: generation)
+    end
+
+    def service?
+      true
+    end
+
+    def register_to_master(control_socket)
+      create_socketpair!
+      message = Message::ServiceSpawned.new(@pid, generation, @master)
+      control_socket.sendmsg(message)
+      @master.close
+    end
+
+    private
+
+    def init_deadline
+      @deadline_drop = SharedMemory.service_deadline
+      self.deadline = 0
     end
   end
 end

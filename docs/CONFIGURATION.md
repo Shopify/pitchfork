@@ -422,6 +422,39 @@ after_request_complete do |server, worker, env|
 end
 ```
 
+### `before_service_worker_ready` (experimental)
+
+Experimental and may change at any point.
+
+If defined, Pitchfork will spawn one extra worker, called a service worker
+which doesn't accept incoming requests, but allows to perform service tasks
+such as warming node local caches or emitting metrics.
+
+Service workers are never promoted to molds, so it is safe to use threads and
+other fork unsafe APIs.
+
+This callback MUST not block. It should start one or multiple background threads
+to perform tasks at regular intervals.
+
+```ruby
+before_service_worker_ready do |server, service_worker|
+  Thread.new do
+    loop do
+      MyApp.emit_utilization_metrics
+      sleep 1
+    end
+  end
+end
+```
+
+### `before_service_worker_exit` (experimental)
+
+Experimental and may change at any point.
+
+Optional.
+
+Called whenever the service worker is exiting. This allow to do a clean shutdown.
+
 ## Reforking
 
 ### `refork_after`
