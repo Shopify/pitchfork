@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 require 'mkmf'
 
+append_cflags("-fvisibility=hidden")
 have_const("PR_SET_CHILD_SUBREAPER", "sys/prctl.h")
 have_func("rb_enc_interned_str", "ruby.h") # Ruby 3.0+
 have_func("rb_io_descriptor", "ruby.h") # Ruby 3.1+

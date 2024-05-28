@@ -4254,7 +4254,7 @@ static VALUE HttpParser_rssget(VALUE self)
   assert(!NIL_P(var) && "missed global field"); \
 } while (0)
 
-void Init_pitchfork_http(void)
+RUBY_FUNC_EXPORTED void Init_pitchfork_http(void)
 {
   VALUE mPitchfork;
 
