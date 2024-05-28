@@ -27,7 +27,6 @@ module Pitchfork
     EMPTY_ARRAY = [].freeze
     @@input_class = Pitchfork::TeeInput
     @@check_client_connection = false
-    @@tcpi_inspect_ok = Socket.const_defined?(:TCP_INFO)
 
     def self.input_class
       @@input_class
@@ -108,80 +107,26 @@ module Pitchfork
       env.include?('rack.hijack_io')
     end
 
-    if Raindrops.const_defined?(:TCP_Info)
-      TCPI = Raindrops::TCP_Info.allocate
-
+    if Socket.const_defined?(:TCP_INFO) # Linux
       def check_client_connection(socket) # :nodoc:
         if TCPSocket === socket
-          # Raindrops::TCP_Info#get!, #state (reads struct tcp_info#tcpi_state)
-          raise Errno::EPIPE, "client closed connection",
-                EMPTY_ARRAY if closed_state?(TCPI.get!(socket).state)
+          begin
+            tcp_info = socket.getsockopt(Socket::IPPROTO_TCP, Socket::TCP_INFO)
+          rescue IOError, SystemCallError
+            return write_http_header(socket)
+          end
+
+          case tcp_info.data.unpack1("C")
+          when 6, 7, 8, 9, 11 # TIME_WAIT, CLOSE, CLOSE_WAIT, LAST_ACK, CLOSING
+            raise Errno::EPIPE, "client closed connection", EMPTY_ARRAY
+          end
         else
           write_http_header(socket)
-        end
-      end
-
-      if Raindrops.const_defined?(:TCP)
-        # raindrops 0.18.0+ supports FreeBSD + Linux using the same names
-        # Evaluate these hash lookups at load time so we can
-        # generate an opt_case_dispatch instruction
-        eval <<-EOS
-        def closed_state?(state) # :nodoc:
-          case state
-          when #{Raindrops::TCP[:ESTABLISHED]}
-            false
-          when #{Raindrops::TCP.values_at(
-                :CLOSE_WAIT, :TIME_WAIT, :CLOSE, :LAST_ACK, :CLOSING).join(',')}
-            true
-          else
-            false
-          end
-        end
-        EOS
-      else
-        # raindrops before 0.18 only supported TCP_INFO under Linux
-        def closed_state?(state) # :nodoc:
-          case state
-          when 1 # ESTABLISHED
-            false
-          when 8, 6, 7, 9, 11 # CLOSE_WAIT, TIME_WAIT, CLOSE, LAST_ACK, CLOSING
-            true
-          else
-            false
-          end
         end
       end
     else
-
-      # Ruby 2.2+ can show struct tcp_info as a string Socket::Option#inspect.
-      # Not that efficient, but probably still better than doing unnecessary
-      # work after a client gives up.
       def check_client_connection(socket) # :nodoc:
-        if TCPSocket === socket && @@tcpi_inspect_ok
-          opt = socket.getsockopt(Socket::IPPROTO_TCP, Socket::TCP_INFO).inspect
-          if opt =~ /\bstate=(\S+)/
-            raise Errno::EPIPE, "client closed connection",
-                  EMPTY_ARRAY if closed_state_str?($1)
-          else
-            @@tcpi_inspect_ok = false
-            write_http_header(socket)
-          end
-          opt.clear
-        else
-          write_http_header(socket)
-        end
-      end
-
-      def closed_state_str?(state)
-        case state
-        when 'ESTABLISHED'
-          false
-        # not a typo, ruby maps TCP_CLOSE (no 'D') to state=CLOSED (w/ 'D')
-        when 'CLOSE_WAIT', 'TIME_WAIT', 'CLOSED', 'LAST_ACK', 'CLOSING'
-          true
-        else
-          false
-        end
+        write_http_header(socket)
       end
     end
 
