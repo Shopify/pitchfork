@@ -52,6 +52,8 @@ module Pitchfork
           "repead unknown process (#{status.inspect})"
         elsif worker.mold?
           "mold pid=#{worker.pid rescue 'unknown'} gen=#{worker.generation rescue 'unknown'} reaped (#{status.inspect})"
+        elsif worker.service?
+          "service pid=#{worker.pid rescue 'unknown'} gen=#{worker.generation rescue 'unknown'} reaped (#{status.inspect})"
         else
           "worker=#{worker.nr rescue 'unknown'} pid=#{worker.pid rescue 'unknown'} gen=#{worker.generation rescue 'unknown'} reaped (#{status.inspect})"
         end
@@ -75,6 +77,8 @@ module Pitchfork
       :check_client_connection => false,
       :rewindable_input => true,
       :client_body_buffer_size => Pitchfork::Const::MAX_BODY,
+      :before_service_worker_ready => nil,
+      :before_service_worker_exit => nil,
     }
     #:startdoc:
 
@@ -174,6 +178,14 @@ module Pitchfork
 
     def after_request_complete(*args, &block)
       set_hook(:after_request_complete, block_given? ? block : args[0], 3)
+    end
+
+    def before_service_worker_ready(&block)
+      set_hook(:before_service_worker_ready, block, 2)
+    end
+
+    def before_service_worker_exit(&block)
+      set_hook(:before_service_worker_exit, block, 2)
     end
 
     def timeout(seconds, cleanup: 2)

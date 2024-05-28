@@ -77,7 +77,7 @@ module Pitchfork
 
     # :stopdoc:
     attr_accessor :app, :timeout, :timeout_signal, :soft_timeout, :cleanup_timeout, :spawn_timeout, :worker_processes,
-                  :before_fork, :after_worker_fork, :after_mold_fork,
+                  :before_fork, :after_worker_fork, :after_mold_fork, :before_service_worker_ready, :before_service_worker_exit,
                   :listener_opts, :children,
                   :orig_app, :config, :ready_pipe,
                   :default_middleware, :early_hints
@@ -348,6 +348,9 @@ module Pitchfork
       when Message::MoldSpawned
         new_mold = @children.update(message)
         logger.info("mold pid=#{new_mold.pid} gen=#{new_mold.generation} spawned")
+      when Message::ServiceSpawned
+        new_service = @children.update(message)
+        logger.info("service pid=#{new_service.pid} gen=#{new_service.generation} spawned")
       when Message::MoldReady
         old_molds = @children.molds
         new_mold = @children.update(message)
@@ -398,6 +401,20 @@ module Pitchfork
           @before_worker_exit.call(self, worker)
         rescue => error
           Pitchfork.log_error(logger, "before_worker_exit error", error)
+        end
+      end
+      Process.exit
+    end
+
+    def service_exit(service)
+      logger.info "service pid=#{service.pid} gen=#{service.generation} exiting"
+      proc_name status: "exiting"
+
+      if @before_service_worker_exit
+        begin
+          @before_service_worker_exit.call(self, service)
+        rescue => error
+          Pitchfork.log_error(logger, "before_service_worker_exit error", error)
         end
       end
       Process.exit
@@ -564,6 +581,69 @@ module Pitchfork
       worker
     end
 
+    def service_loop(service)
+      readers = init_service_process(service)
+      waiter = prep_readers(readers)
+
+      ready = readers.dup
+
+      if @before_service_worker_ready
+        begin
+          @before_service_worker_ready.call(self, service)
+        rescue => error
+          Pitchfork.log_error(logger, "before_service_worker_ready", error)
+          Process.exit(1)
+        end
+      end
+
+      proc_name status: "ready"
+
+      while readers[0]
+        begin
+          service.update_deadline(@timeout)
+          while sock = ready.shift
+            # Pitchfork::Worker#accept_nonblock is not like accept(2) at all,
+            # but that will return false
+            client = sock.accept_nonblock(exception: false)
+
+            case client
+            when false, :wait_readable
+              # no message, keep looping
+            end
+
+            service.update_deadline(@timeout)
+          end
+
+          # timeout so we can update .deadline and keep parent from SIGKILL-ing us
+          service.update_deadline(@timeout)
+
+
+          waiter.get_readers(ready, readers, @timeout * 500) # to milliseconds, but halved
+        rescue => e
+          Pitchfork.log_error(@logger, "listen loop error", e) if readers[0]
+        end
+      end
+    end
+
+    def spawn_service(service, detach:)
+      logger.info("service gen=#{service.generation} spawning...")
+
+      # We set the deadline before spawning the child so that if for some
+      # reason it gets stuck before reaching the worker loop,
+      # the monitor process will kill it.
+      service.update_deadline(@spawn_timeout)
+      @before_fork&.call(self)
+      fork_sibling("spawn_service") do
+        service.pid = Process.pid
+
+        after_fork_internal
+        service_loop(service)
+        service_exit(service)
+      end
+
+      service
+    end
+
     def spawn_initial_mold
       mold = Worker.new(nil)
       mold.create_socketpair!
@@ -580,6 +660,21 @@ module Pitchfork
     end
 
     def spawn_missing_workers
+      if @before_service_worker_ready && !@children.service
+        service = Pitchfork::Service.new
+        if REFORKING_AVAILABLE
+          service.generation = @children.mold&.generation || 0
+
+          unless @children.mold&.spawn_service(service)
+            @logger.error("Failed to send a spawn_service command")
+          end
+        else
+          spawn_service(service, detach: false)
+        end
+
+        @children.register_service(service)
+      end
+
       worker_nr = -1
       until (worker_nr += 1) == @worker_processes
         if @children.nr_alive?(worker_nr)
@@ -617,9 +712,18 @@ module Pitchfork
     end
 
     def maintain_worker_count
-      (off = @children.workers_count - worker_processes) == 0 and return
-      off < 0 and return spawn_missing_workers
-      @children.each_worker { |w| w.nr >= worker_processes and w.soft_kill(:TERM) }
+      off = @children.workers_count - worker_processes
+      off -= 1 if @before_service_worker_ready && !@children.service
+
+      if off < 0
+        spawn_missing_workers
+      elsif off > 0
+        @children.each_worker do |worker|
+          if worker.nr >= worker_processes
+            worker.soft_kill(:TERM)
+          end
+        end
+      end
     end
 
     def restart_outdated_workers
@@ -631,6 +735,16 @@ module Pitchfork
       # once to minimize the impact on capacity.
       max_pending_workers = (worker_processes * 0.1).ceil
       workers_to_restart = max_pending_workers - @children.restarting_workers_count
+
+      if service = @children.service
+        if service.outdated?
+          if service.soft_kill(:TERM)
+            logger.info("Sent SIGTERM to service pid=#{service.pid} gen=#{service.generation}")
+          else
+            logger.info("Failed to send SIGTERM to service pid=#{service.pid} gen=#{service.generation}")
+          end
+        end
+      end
 
       if workers_to_restart > 0
         outdated_workers = @children.workers.select { |w| !w.exiting? && w.generation < @children.mold.generation }
@@ -791,6 +905,17 @@ module Pitchfork
       readers
     end
 
+    def init_service_process(service)
+      proc_name role: "(gen:#{service.generation}) mold", status: "init"
+      service.register_to_master(@control_socket[1])
+      readers = [service]
+      trap(:QUIT) { nuke_listeners!(readers) }
+      trap(:TERM) { nuke_listeners!(readers) }
+      trap(:INT) { nuke_listeners!(readers); exit!(0) }
+      proc_name role: "(gen:#{service.generation}) service", status: "ready"
+      readers
+    end
+
     def init_mold_process(mold)
       proc_name role: "(gen:#{mold.generation}) mold", status: "init"
       after_mold_fork.call(self, mold)
@@ -832,24 +957,25 @@ module Pitchfork
             # Pitchfork::Worker#accept_nonblock is not like accept(2) at all,
             # but that will return false
             client = sock.accept_nonblock(exception: false)
-            client = false if client == :wait_readable
-            if client
-              case client
-              when Message::PromoteWorker
-                if Info.fork_safe?
-                  spawn_mold(worker)
-                else
-                  logger.error("worker=#{worker.nr} gen=#{worker.generation} is no longer fork safe, can't refork")
-                end
-              when Message
-                worker.update(client)
+
+            case client
+            when false, :wait_readable
+              # no message, keep looping
+            when Message::PromoteWorker
+              if Info.fork_safe?
+                spawn_mold(worker)
               else
-                request_env = process_client(client, worker, prepare_timeout(worker))
-                worker.increment_requests_count
-                @after_request_complete&.call(self, worker, request_env)
+                logger.error("worker=#{worker.nr} gen=#{worker.generation} is no longer fork safe, can't refork")
               end
-              worker.update_deadline(@timeout)
+            when Message
+              worker.update(client)
+            else
+              request_env = process_client(client, worker, prepare_timeout(worker))
+              worker.increment_requests_count
+              @after_request_complete&.call(self, worker, request_env)
             end
+
+            worker.update_deadline(@timeout)
           end
 
           # timeout so we can update .deadline and keep parent from SIGKILL-ing us
@@ -927,6 +1053,22 @@ module Pitchfork
                   retry
                 else
                   @logger.fatal("mold pid=#{mold.pid} gen=#{mold.generation} Failed to spawn a worker twice in a row. Corrupted mold process?")
+                  Process.exit(1)
+                end
+              rescue => error
+                raise BootFailure, error.message
+              end
+            when Message::SpawnService
+              retries = 1
+              begin
+                spawn_service(Service.new(generation: mold.generation), detach: true)
+              rescue ForkFailure
+                if retries > 0
+                  @logger.fatal("mold pid=#{mold.pid} gen=#{mold.generation} Failed to spawn a service. Retrying.")
+                  retries -= 1
+                  retry
+                else
+                  @logger.fatal("mold pid=#{mold.pid} gen=#{mold.generation} Failed to spawn a service twice in a row. Corrupted mold process?")
                   Process.exit(1)
                 end
               rescue => error
