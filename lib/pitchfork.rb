@@ -120,25 +120,6 @@ module Pitchfork
       exc.backtrace.each { |line| logger.error(line) }
     end
 
-    F_SETPIPE_SZ = 1031 if RUBY_PLATFORM =~ /linux/
-
-    def pipe # :nodoc:
-      IO.pipe.each do |io|
-        # shrink pipes to minimize impact on /proc/sys/fs/pipe-user-pages-soft
-        # limits.
-        if defined?(F_SETPIPE_SZ)
-          begin
-            io.fcntl(F_SETPIPE_SZ, Raindrops::PAGE_SIZE)
-          rescue Errno::EINVAL
-            # old kernel
-          rescue Errno::EPERM
-            # resizes fail if Linux is close to the pipe limit for the user
-            # or if the user does not have permissions to resize
-          end
-        end
-      end
-    end
-
     def socketpair
       pair = UNIXSocket.socketpair(@socket_type).map { |s| MessageSocket.new(s) }
       pair[0].close_write

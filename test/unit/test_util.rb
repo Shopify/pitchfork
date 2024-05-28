@@ -15,37 +15,12 @@ class TestUtil < Pitchfork::Test
     parent.close
   end
 
-  def test_pipe
-    r, w = Pitchfork.pipe
-    assert r
-    assert w
-
-    return if RUBY_PLATFORM !~ /linux/
-
-    begin
-      f_getpipe_sz = 1032
-      IO.pipe do |a, b|
-        a_sz = a.fcntl(f_getpipe_sz)
-        b.fcntl(f_getpipe_sz)
-        assert_kind_of Integer, a_sz
-        r_sz = r.fcntl(f_getpipe_sz)
-        assert_equal Raindrops::PAGE_SIZE, r_sz
-        assert_operator a_sz, :>=, r_sz
-      end
-    rescue Errno::EINVAL
-      # Linux <= 2.6.34
-    end
-  ensure
-    w.close
-    r.close
-  end
-
   TestMessage = Pitchfork::Message.new(:text, :pipe)
   def test_message_socket
     child, parent = Pitchfork.socketpair
     child_pid = fork do
       parent.sendmsg('just text')
-      read, write = Pitchfork.pipe
+      read, write = IO.pipe
       message = TestMessage.new('rich message', write)
       parent.sendmsg(message)
       write.close
