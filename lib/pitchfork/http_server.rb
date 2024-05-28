@@ -804,7 +804,7 @@ module Pitchfork
 
     if Pitchfork.const_defined?(:Waiter)
       def prep_readers(readers)
-        Pitchfork::Waiter.prep_readers(readers)
+        Pitchfork::Info.keep_io(Pitchfork::Waiter.prep_readers(readers))
       end
     else
       require_relative 'select_waiter'
