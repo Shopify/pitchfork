@@ -1,12 +1,9 @@
 # frozen_string_literal: true
 
-require 'raindrops'
-
 module Pitchfork
   module SharedMemory
     extend self
 
-    PER_DROP = Raindrops::PAGE_SIZE / Raindrops::SIZE
     CURRENT_GENERATION_OFFSET = 0
     SHUTDOWN_OFFSET = 1
     MOLD_TICK_OFFSET = 2
@@ -14,28 +11,28 @@ module Pitchfork
     SERVICE_TICK_OFFSET = 4
     WORKER_TICK_OFFSET = 5
 
-    DROPS = [Raindrops.new(PER_DROP)]
+    PAGES = [MemoryPage.new(MemoryPage::SLOTS)]
 
     def current_generation
-      DROPS[0][CURRENT_GENERATION_OFFSET]
+      PAGES[0][CURRENT_GENERATION_OFFSET]
     end
 
     def current_generation=(value)
-      DROPS[0][CURRENT_GENERATION_OFFSET] = value
+      PAGES[0][CURRENT_GENERATION_OFFSET] = value
     end
 
     def shutting_down!
-      DROPS[0][SHUTDOWN_OFFSET] = 1
+      PAGES[0][SHUTDOWN_OFFSET] = 1
     end
 
     def shutting_down?
-      DROPS[0][SHUTDOWN_OFFSET] > 0
+      PAGES[0][SHUTDOWN_OFFSET] > 0
     end
 
     class Field
       def initialize(offset)
-        @drop = DROPS.fetch(offset / PER_DROP)
-        @offset = offset % PER_DROP
+        @drop = PAGES.fetch(offset / MemoryPage::SLOTS)
+        @offset = offset % MemoryPage::SLOTS
       end
 
       def value
@@ -72,9 +69,9 @@ module Pitchfork
     #
     # However this doesn't account for TTIN signals that increase the
     # number of workers, but we should probably remove that feature too.
-    def preallocate_drops(workers_count)
-      0.upto(((WORKER_TICK_OFFSET + workers_count) / PER_DROP.to_f).ceil) do |i|
-        DROPS[i] ||= Raindrops.new(PER_DROP)
+    def preallocate_pages(workers_count)
+      0.upto(((WORKER_TICK_OFFSET + workers_count) / MemoryPage::SLOTS.to_f).ceil) do |i|
+        PAGES[i] ||= MemoryPage.new(MemoryPage::SLOTS)
       end
     end
   end

@@ -3,7 +3,7 @@ require 'test_helper'
 
 class TestWorker < Pitchfork::Test
   def test_create_many_workers
-    Pitchfork::SharedMemory.preallocate_drops(1024)
+    Pitchfork::SharedMemory.preallocate_pages(1024)
 
     now = Time.now.to_i
     (0...1024).each do |i|
