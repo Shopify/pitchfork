@@ -1,7 +1,10 @@
 # Unreleased
 
+# 0.14.0
+
 - Remove the dependency on `raindrops`.
 - Add `X-Request-Id` header in the workers proctitle if present.
+- Added experimental service workers.
 
 # 0.13.0
 
