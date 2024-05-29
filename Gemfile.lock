@@ -3,7 +3,6 @@ PATH
   specs:
     pitchfork (0.13.0)
       rack (>= 2.0)
-      raindrops (~> 0.7)
 
 GEM
   remote: https://rubygems.org/
@@ -13,7 +12,6 @@ GEM
     puma (6.4.2)
       nio4r (~> 2.0)
     rack (3.0.10)
-    raindrops (0.20.1)
     rake (13.0.6)
     rake-compiler (1.2.1)
       rake

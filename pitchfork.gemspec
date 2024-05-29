@@ -19,7 +19,6 @@ Gem::Specification.new do |s|
 
   s.required_ruby_version = ">= 2.5.0"
 
-  s.add_dependency(%q<raindrops>, '~> 0.7')
   s.add_dependency(%q<rack>, '>= 2.0')
 
   # Note: To avoid ambiguity, we intentionally avoid the SPDX-compatible

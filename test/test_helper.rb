@@ -40,8 +40,8 @@ end
 module Pitchfork
   class Test < Minitest::Test
     def before_setup
-      Pitchfork::SharedMemory::DROPS.clear
-      Pitchfork::SharedMemory.preallocate_drops(4)
+      Pitchfork::SharedMemory::PAGES.clear
+      Pitchfork::SharedMemory.preallocate_pages(4)
     end
 
     private

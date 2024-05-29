@@ -2,7 +2,6 @@
 # frozen_string_literal: true
 require 'etc'
 require 'stringio'
-require 'raindrops'
 require 'io/wait'
 
 begin

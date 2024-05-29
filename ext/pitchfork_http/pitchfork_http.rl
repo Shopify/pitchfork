@@ -16,6 +16,7 @@
 #include "child_subreaper.h"
 
 void init_pitchfork_httpdate(void);
+void init_pitchfork_memory_page(VALUE);
 
 #define UH_FL_CHUNKED  0x1
 #define UH_FL_HASBODY  0x2
@@ -960,7 +961,7 @@ static VALUE HttpParser_rssget(VALUE self)
   assert(!NIL_P(var) && "missed global field"); \
 } while (0)
 
-void Init_pitchfork_http(void)
+RUBY_FUNC_EXPORTED void Init_pitchfork_http(void)
 {
   VALUE mPitchfork;
 
@@ -1024,5 +1025,6 @@ void Init_pitchfork_http(void)
 
   init_epollexclusive(mPitchfork);
   init_child_subreaper(mPitchfork);
+  init_pitchfork_memory_page(mPitchfork);
 }
 #undef SET_GLOBAL

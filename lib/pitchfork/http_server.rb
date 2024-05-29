@@ -147,7 +147,7 @@ module Pitchfork
         :QUIT, :INT, :TERM, :USR2, :TTIN, :TTOU ]
 
       Info.workers_count = worker_processes
-      SharedMemory.preallocate_drops(worker_processes)
+      SharedMemory.preallocate_pages(worker_processes)
     end
 
     # Runs the thing.  Returns self so you can run join on it
