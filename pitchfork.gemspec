@@ -19,7 +19,8 @@ Gem::Specification.new do |s|
 
   s.required_ruby_version = ">= 2.5.0"
 
-  s.add_dependency(%q<rack>, '>= 2.0')
+  s.add_dependency('rack', '>= 2.0')
+  s.add_dependency('logger')
 
   # Note: To avoid ambiguity, we intentionally avoid the SPDX-compatible
   # 'Ruby' here since Ruby 1.9.3 switched to BSD-2-Clause, but we
