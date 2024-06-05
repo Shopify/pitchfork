@@ -26,6 +26,8 @@ module Pitchfork
       :tcp_nodelay => true,
     }
 
+    private
+
     # configure platform-specific options (only tested on Linux 2.6 so far)
     def accf_arg(af_name)
       [ af_name, nil ].pack('a16a240')
@@ -64,7 +66,7 @@ module Pitchfork
       elsif respond_to?(:accf_arg)
         name = opt[:accept_filter]
         name = DEFAULTS[:accept_filter] if name.nil?
-        sock.listen(opt[:backlog])
+        sock.listen(compute_backlog(opt))
         got = (sock.getsockopt(:SOL_SOCKET, :SO_ACCEPTFILTER) rescue nil).to_s
         arg = accf_arg(name)
         begin
@@ -89,9 +91,17 @@ module Pitchfork
         sock.setsockopt(:SOL_SOCKET, :SO_SNDBUF, sndbuf) if sndbuf
         log_buffer_sizes(sock, " after: ")
       end
-      sock.listen(opt[:backlog])
+      sock.listen(compute_backlog(opt))
     rescue => e
       Pitchfork.log_error(logger, "#{sock_name(sock)} #{opt.inspect}", e)
+    end
+
+    def compute_backlog(opt)
+      backlog = opt[:backlog]
+      if backlog > 0 && opt[:queues]
+        return backlog / opt[:queues]
+      end
+      backlog
     end
 
     def log_buffer_sizes(sock, pfx = '')

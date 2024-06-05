@@ -60,6 +60,10 @@ The following options may be specified (but are generally not needed):
 
   Default: `1024`
 
+  Note: if the `queue` option is used, each queue gets an equal share of the
+  total `backlog`. e.g. `backlog: 1028, queues: 8` create `8` sockets with a
+  backlog of `128`.
+
   Note: with the Linux kernel, the net.core.somaxconn sysctl defaults
   to 128, capping this value to 128.  Raising the sysctl allows a
   larger backlog (which may not be desirable with multiple,
@@ -135,6 +139,34 @@ The following options may be specified (but are generally not needed):
   ref: https://lwn.net/Articles/542629/
 
   Default: `false` (unset)
+
+- `queues: Integer`
+
+  Create multiple server sockets (using `reuseport`) and split them
+  between workers to ensure fairer load balancing.
+
+  Linux's `epoll+accept` queue is fundamentally LIFO (see a good writeup at
+  https://blog.cloudflare.com/the-sad-state-of-linux-socket-balancing/).
+
+  Because of this, the workers with the lowest PID will accept
+  disproportionally more requests than workers with higher PID.
+  It generally isn't a problem, especially when reforking is enabled, but for
+  applications that are routinely over provisioned, it may be desirable to
+  ensure all workers at least get some incoming requests so the can warm up.
+
+  Creating more than one queue allow to restrict which worker can process
+  a given incomming request, hence making the load balancing fairer.
+
+  However it is to be used with care, because if the queueing is made too
+  granular, this may cause pockets of request queueing.
+
+  Default: `1` (unset)
+
+- `queues_per_worker: Integer`
+
+  Controls how many queues each worker is assigned.
+
+  Default: `queues - 1`.
 
 - `umask: mode`
 
