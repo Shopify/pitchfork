@@ -230,7 +230,7 @@ module Pitchfork
     def listen(address, options = {})
       address = expand_addr(address)
       if String === address
-        [ :umask, :backlog, :sndbuf, :rcvbuf, :tries ].each do |key|
+        [ :umask, :backlog, :sndbuf, :rcvbuf, :tries, :queues, :queues_per_worker].each do |key|
           value = options[key] or next
           Integer === value or
             raise ArgumentError, "not an integer: #{key}=#{value.inspect}"

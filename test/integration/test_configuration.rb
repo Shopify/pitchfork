@@ -135,4 +135,22 @@ class ConfigurationTest < Pitchfork::IntegrationTest
 
     assert_clean_shutdown(pid)
   end
+
+  def test_listen_queues
+    addr, port = unused_port
+
+    pid = spawn_server(app: File.join(ROOT, "test/integration/env.ru"), config: <<~CONFIG)
+      listen "#{addr}:#{port}", queues: 2, workers_per_queue: 1
+      worker_processes 2
+    CONFIG
+
+    assert_stderr(/listening on addr=.* fd=\d+$/)
+    assert_stderr(/listening on addr=.* fd=\d+ \(SO_REUSEPORT\)$/)
+
+    4.times do
+      assert_healthy("http://#{addr}:#{port}")
+    end
+
+    assert_clean_shutdown(pid)
+  end
 end

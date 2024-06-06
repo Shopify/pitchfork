@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require 'pitchfork/pitchfork_http'
+require 'pitchfork/listeners'
 require 'pitchfork/flock'
 require 'pitchfork/soft_timeout'
 require 'pitchfork/shared_memory'
@@ -91,7 +92,7 @@ module Pitchfork
     # all bound listener sockets
     # note: this is public used by raindrops, but not recommended for use
     # in new projects
-    LISTENERS = []
+    LISTENERS = Listeners.new
 
     NOOP = '.'
 
@@ -196,6 +197,10 @@ module Pitchfork
     # replaces current listener set with +listeners+.  This will
     # close the socket if it will not exist in the new listener set
     def listeners=(listeners)
+      unless LISTENERS.empty?
+        raise "Listeners can only be initialized once"
+      end
+
       cur_names, dead_names = [], []
       listener_names.each do |name|
         if name.start_with?('/')
@@ -205,19 +210,7 @@ module Pitchfork
           cur_names << name
         end
       end
-      set_names = listener_names(listeners)
-      dead_names.concat(cur_names - set_names).uniq!
-
-      LISTENERS.delete_if do |io|
-        if dead_names.include?(sock_name(io))
-          (io.close rescue nil).nil? # true
-        else
-          set_server_sockopt(io, listener_opts[sock_name(io)])
-          false
-        end
-      end
-
-      (set_names - cur_names).each { |addr| listen(addr) }
+      listener_names(listeners).each { |addr| listen(addr) }
     end
 
     def logger=(obj)
@@ -233,12 +226,16 @@ module Pitchfork
     # A negative value for +:tries+ indicates the listen will be
     # retried indefinitely, this is useful when workers belonging to
     # different masters are spawned during a transparent upgrade.
-    def listen(address, opt = {}.merge(listener_opts[address] || {}))
+    def listen(address, opt = listener_opts[address] || {})
       address = config.expand_addr(address)
       return if String === address && listener_names.include?(address)
 
+      opt = opt.dup
       delay = opt[:delay] || 0.5
       tries = opt[:tries] || 5
+      queues = opt[:queues] ||= 1
+      opt[:reuseport] = true if queues > 1
+
       begin
         io = bind_listen(address, opt)
         unless TCPServer === io || UNIXServer === io
@@ -247,7 +244,7 @@ module Pitchfork
         end
         logger.info "listening on addr=#{sock_name(io)} fd=#{io.fileno}"
         Info.keep_io(io)
-        LISTENERS << io
+        LISTENERS << io unless queues > 1
         io
       rescue Errno::EADDRINUSE => err
         logger.error "adding listener failed addr=#{address} (in use)"
@@ -261,6 +258,29 @@ module Pitchfork
         logger.fatal "error adding listener addr=#{address}"
         raise err
       end
+
+      if queues > 1
+        ios = [io]
+
+        (queues - 1).times do
+          io = bind_listen(address, opt)
+          unless TCPServer === io || UNIXServer === io
+            io.autoclose = false
+            io = server_cast(io)
+          end
+          logger.info "listening on addr=#{sock_name(io)} fd=#{io.fileno} (SO_REUSEPORT)"
+          Info.keep_io(io)
+          ios << io
+        rescue => err
+          logger.fatal "error adding listener addr=#{address}"
+          raise err
+        end
+
+        io = Listeners::Group.new(ios, queues_per_worker: opt[:queues_per_worker] || queues - 1)
+        LISTENERS << io
+      end
+
+      io
     end
 
     # monitors children and receives signals forever
@@ -897,7 +917,7 @@ module Pitchfork
 
       @config = nil
       @listener_opts = @orig_app = nil
-      readers = LISTENERS.dup
+      readers = LISTENERS.for_worker(worker.nr)
       readers << worker
       trap(:QUIT) { nuke_listeners!(readers) }
       trap(:TERM) { nuke_listeners!(readers) }
