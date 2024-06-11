@@ -1,5 +1,10 @@
 # Unreleased
 
+- Fix compatibility with Rack 3.1.
+- Implement listen queues for fairer load balancing (optional).
+- Assume C99 compatible compiler.
+- Declare dependency on `logger` for Ruby 3.5 compatibility.
+
 # 0.14.0
 
 - Remove the dependency on `raindrops`.
