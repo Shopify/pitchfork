@@ -391,7 +391,8 @@ module Pitchfork
       @respawn = false
       SharedMemory.shutting_down!
       wait_for_pending_workers
-      self.listeners = []
+      LISTENERS.each(&:close).clear
+
       limit = Pitchfork.time_now + timeout
       until @children.empty? || Pitchfork.time_now > limit
         if graceful

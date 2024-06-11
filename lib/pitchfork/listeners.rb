@@ -47,6 +47,11 @@ module Pitchfork
           yield listener
         end
       end
+      self
+    end
+
+    def clear
+      @listeners.clear
     end
 
     def <<(listener)
