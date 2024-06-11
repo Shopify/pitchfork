@@ -26,6 +26,28 @@ class HttpBasicTest < Pitchfork::IntegrationTest
     assert_clean_shutdown(pid)
   end
 
+  def test_options_wildcard
+    addr, port = unused_port
+
+    pid = spawn_server(app: File.join(ROOT, "test/integration/env.ru"), config: <<~CONFIG)
+      listen "#{addr}:#{port}"
+    CONFIG
+
+    # Basic HTTP GET
+    assert_healthy("http://#{addr}:#{port}")
+
+    # OPTIONS * HTTP/1.1
+    Socket.tcp(addr, port) do |sock|
+      sock.print("OPTIONS * HTTP/1.1\r\n\r\n")
+      sock.close_write
+      result = sock.read
+
+      assert_equal "HTTP/1.1 200 OK", result.lines.first.strip
+    end
+
+    assert_clean_shutdown(pid)
+  end
+
   def test_chunked_encoding
     addr, port = unused_port
 
@@ -37,6 +59,7 @@ class HttpBasicTest < Pitchfork::IntegrationTest
     assert_healthy("http://#{addr}:#{port}")
 
     response = Net::HTTP.get_response(URI("http://#{addr}:#{port}"))
+    assert_instance_of Net::HTTPOK, response
     assert_equal "chunked", response["transfer-encoding"]
 
     assert_clean_shutdown(pid)

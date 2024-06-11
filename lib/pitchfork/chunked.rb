@@ -107,9 +107,9 @@ module Pitchfork
       if chunkable_version?(env[Rack::SERVER_PROTOCOL]) &&
          !STATUS_WITH_NO_ENTITY_BODY.key?(status.to_i) &&
          !headers[Rack::CONTENT_LENGTH] &&
-         !headers[Rack::TRANSFER_ENCODING]
+         !headers["transfer-encoding"]
 
-        headers[Rack::TRANSFER_ENCODING] = 'chunked'
+        headers["transfer-encoding"] = 'chunked'
         if headers['trailer']
           response[2] = TrailerBody.new(body)
         else
