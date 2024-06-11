@@ -28,8 +28,8 @@ module Pitchfork
       client = MockRequest.new("OPTIONS * HTTP/1.1\r\n" \
                                "Host: foo\r\n\r\n")
       env = @request.read(client)
-      assert_equal '', env['REQUEST_PATH']
-      assert_equal '', env['PATH_INFO']
+      assert_nil env['REQUEST_PATH']
+      assert_nil env['PATH_INFO']
       assert_equal '*', env['REQUEST_URI']
       assert_kind_of Array, @lint.call(env)
     end

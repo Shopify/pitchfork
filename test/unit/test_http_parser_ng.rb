@@ -522,19 +522,30 @@ module Pitchfork
         "/1;a=b" => { qs => "", pi => "/1;a=b" },
         "/1;a=b?" => { qs => "", pi => "/1;a=b" },
         "/1?a=b;c=d&e=f" => { qs => "a=b;c=d&e=f", pi => "/1" },
-        "*" => { qs => "", pi => "" },
-      }.each do |uri,expect|
+      }.each do |uri, expect|
         assert_equal req, @parser.headers(req.clear, str % [ uri ])
         req = req.dup
         @parser.clear
         assert_equal uri, req["REQUEST_URI"], "REQUEST_URI mismatch"
         assert_equal expect[qs], req[qs], "#{qs} mismatch"
         assert_equal expect[pi], req[pi], "#{pi} mismatch"
-        next if uri == "*"
         uri = URI.parse("http://example.com#{uri}")
         assert_equal uri.query.to_s, req[qs], "#{qs} mismatch URI.parse disagrees"
         assert_equal uri.path, req[pi], "#{pi} mismatch URI.parse disagrees"
       end
+    end
+
+    def test_path_info_option_wildcard
+      req = {}
+      uri = "*"
+      str = "OPTIONS %s HTTP/1.1\r\nHost: example.com\r\n\r\n"
+      assert_equal req, @parser.headers(req, str % [ uri ])
+      req = req.dup
+      @parser.clear
+
+      assert_equal uri, req["REQUEST_URI"], "REQUEST_URI mismatch"
+      assert_equal "", req["QUERY_STRING"], "QUERY_STRING mismatch"
+      assert_nil req["PATH_INFO"], "PATH_INFO mismatch"
     end
 
     def test_path_info_semicolon_absolute
