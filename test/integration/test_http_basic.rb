@@ -64,4 +64,40 @@ class HttpBasicTest < Pitchfork::IntegrationTest
 
     assert_clean_shutdown(pid)
   end
+
+  def test_streaming_partial_hijack
+    addr, port = unused_port
+
+    if Rack::RELEASE < "3"
+      skip("Partial highjack doesn't work in rack 2.x. because Rack::Link and Rack::ContentLenght don't handle a nil body")
+    end
+
+    pid = spawn_server(app: File.join(ROOT, "test/integration/apps/streaming_hijack.ru"), config: <<~CONFIG)
+      listen "#{addr}:#{port}"
+      worker_processes 1
+    CONFIG
+
+    assert_healthy("http://#{addr}:#{port}/health")
+
+    response = Net::HTTP.get_response(URI("http://#{addr}:#{port}/partial-hijack"))
+    assert_equal "Partial Hijack", response.body
+
+    assert_clean_shutdown(pid)
+  end
+
+  def test_streaming_full_hijack
+    addr, port = unused_port
+
+    pid = spawn_server(app: File.join(ROOT, "test/integration/apps/streaming_hijack.ru"), config: <<~CONFIG)
+      listen "#{addr}:#{port}"
+      worker_processes 1
+    CONFIG
+
+    assert_healthy("http://#{addr}:#{port}/health")
+
+    response = Net::HTTP.get_response(URI("http://#{addr}:#{port}/full-hijack"))
+    assert_equal "Full Hijack", response.body
+
+    assert_clean_shutdown(pid)
+  end
 end
