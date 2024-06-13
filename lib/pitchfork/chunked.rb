@@ -104,7 +104,9 @@ module Pitchfork
     def call(env)
       status, headers, body = response = @app.call(env)
 
-      if chunkable_version?(env[Rack::SERVER_PROTOCOL]) &&
+      if !env.key?('rack.hijack_io') && # full highjack
+         !headers['rack.hijack'] && # partial hijack
+          chunkable_version?(env[Rack::SERVER_PROTOCOL]) &&
          !STATUS_WITH_NO_ENTITY_BODY.key?(status.to_i) &&
          !headers[Rack::CONTENT_LENGTH] &&
          !headers["transfer-encoding"]

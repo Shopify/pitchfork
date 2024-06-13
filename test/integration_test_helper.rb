@@ -50,7 +50,7 @@ module Pitchfork
       end
 
       Dir.chdir(@_old_pwd)
-      if passed?
+      if passed? || skipped?
         FileUtils.rm_rf(@pwd)
       else
         $stderr.puts("Working directory left at: #{@pwd}")
@@ -181,7 +181,7 @@ module Pitchfork
 
     def spawn_server(*args, app:, config:, lint: true)
       File.write("pitchfork.conf.rb", config)
-      env = lint ? { "RACK_ENV" => "development" } : {}
+      env = lint ? {} : { "RACK_ENV" => "production" }
       spawn(env, BIN, app, "-c", "pitchfork.conf.rb", *args)
     end
 
