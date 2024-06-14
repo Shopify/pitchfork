@@ -40,3 +40,6 @@ jobs:
 
       - name: Tests Rack ${{ matrix.rack }} ${{ matrix.rubyopt }}
         run: bundle exec rake
+
+      - name: Ensure ragel output is up-to-date
+        run: git diff --exit-code

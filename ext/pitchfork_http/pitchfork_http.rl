@@ -36,12 +36,6 @@ void init_pitchfork_memory_page(VALUE);
 
 static unsigned int MAX_HEADER_LEN = 1024 * (80 + 32); /* same as Mongrel */
 
-/* this is only intended for use with Rainbows! */
-static VALUE set_maxhdrlen(VALUE self, VALUE len)
-{
-  return UINT2NUM(MAX_HEADER_LEN = NUM2UINT(len));
-}
-
 /* keep this small for other servers (e.g. yahns) since every client has one */
 struct http_parser {
   int cs; /* Ragel internal state */
@@ -1003,8 +997,6 @@ RUBY_FUNC_EXPORTED void Init_pitchfork_http(void)
    * to the limits of the file system used for +Dir.tmpdir+.
    */
   rb_define_const(cHttpParser, "LENGTH_MAX", OFFT2NUM(UH_OFF_T_MAX));
-
-  rb_define_singleton_method(cHttpParser, "max_header_len=", set_maxhdrlen, 1);
 
   init_common_fields();
   SET_GLOBAL(g_http_host, "HOST");
