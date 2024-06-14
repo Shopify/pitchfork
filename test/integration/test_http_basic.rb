@@ -51,6 +51,10 @@ class HttpBasicTest < Pitchfork::IntegrationTest
   def test_chunked_encoding
     addr, port = unused_port
 
+    if Rack::RELEASE < "3"
+      skip("Rack::Lint wraps the response body and responds to :call which prevents chunked encoding")
+    end
+
     pid = spawn_server(app: File.join(ROOT, "test/integration/apps/chunked.ru"), config: <<~CONFIG)
       listen "#{addr}:#{port}"
       worker_processes 1
@@ -69,7 +73,7 @@ class HttpBasicTest < Pitchfork::IntegrationTest
     addr, port = unused_port
 
     if Rack::RELEASE < "3"
-      skip("Partial highjack doesn't work in rack 2.x. because Rack::Link and Rack::ContentLenght don't handle a nil body")
+      skip("Partial hijack doesn't work in rack 2.x. because Rack::Lint and Rack::ContentLenght don't handle a nil body")
     end
 
     pid = spawn_server(app: File.join(ROOT, "test/integration/apps/streaming_hijack.ru"), config: <<~CONFIG)
@@ -97,6 +101,26 @@ class HttpBasicTest < Pitchfork::IntegrationTest
 
     response = Net::HTTP.get_response(URI("http://#{addr}:#{port}/full-hijack"))
     assert_equal "Full Hijack", response.body
+
+    assert_clean_shutdown(pid)
+  end
+
+  def test_streaming_body
+    addr, port = unused_port
+
+    if Rack::RELEASE < "3"
+      skip("Streaming Body doesn't work in rack 2.x. because Rack::Lint requires the body to respond to :each")
+    end
+
+    pid = spawn_server(app: File.join(ROOT, "test/integration/apps/streaming_body.ru"), config: <<~CONFIG)
+      listen "#{addr}:#{port}"
+      worker_processes 1
+    CONFIG
+
+    assert_healthy("http://#{addr}:#{port}")
+
+    response = Net::HTTP.get_response(URI("http://#{addr}:#{port}"))
+    assert_equal "Streaming Body", response.body
 
     assert_clean_shutdown(pid)
   end

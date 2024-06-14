@@ -106,6 +106,7 @@ module Pitchfork
 
       if !env.key?('rack.hijack_io') && # full highjack
          !headers['rack.hijack'] && # partial hijack
+         !body.respond_to?(:call) && # streaming body
           chunkable_version?(env[Rack::SERVER_PROTOCOL]) &&
          !STATUS_WITH_NO_ENTITY_BODY.key?(status.to_i) &&
          !headers[Rack::CONTENT_LENGTH] &&
