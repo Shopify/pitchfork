@@ -2,6 +2,7 @@
 
 - Fix compatibility with Rack 3.1.
 - Fix `rack.hijack` support.
+- Support Rack 3 streaming bodies.
 - Implement listen queues for fairer load balancing (optional).
 - Assume C99 compatible compiler.
 - Declare dependency on `logger` for Ruby 3.5 compatibility.

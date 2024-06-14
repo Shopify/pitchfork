@@ -71,8 +71,10 @@ module Pitchfork
       if hijack
         req.hijacked!
         hijack.call(socket)
-      else
+      elsif body.respond_to?(:each)
         body.each { |chunk| socket.write(chunk) }
+      else
+        body.call(socket)
       end
     end
   end
