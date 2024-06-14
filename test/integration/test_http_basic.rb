@@ -51,10 +51,6 @@ class HttpBasicTest < Pitchfork::IntegrationTest
   def test_chunked_encoding
     addr, port = unused_port
 
-    if Rack::RELEASE < "3"
-      skip("Rack::Lint wraps the response body and responds to :call which prevents chunked encoding")
-    end
-
     pid = spawn_server(app: File.join(ROOT, "test/integration/apps/chunked.ru"), config: <<~CONFIG)
       listen "#{addr}:#{port}"
       worker_processes 1
