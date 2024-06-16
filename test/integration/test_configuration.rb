@@ -140,7 +140,7 @@ class ConfigurationTest < Pitchfork::IntegrationTest
     addr, port = unused_port
 
     pid = spawn_server(app: File.join(ROOT, "test/integration/env.ru"), config: <<~CONFIG)
-      listen "#{addr}:#{port}", queues: 2, workers_per_queue: 1
+      listen "#{addr}:#{port}", queues: 2, queues_per_worker: 1
       worker_processes 2
     CONFIG
 
@@ -150,6 +150,26 @@ class ConfigurationTest < Pitchfork::IntegrationTest
     4.times do
       assert_healthy("http://#{addr}:#{port}")
     end
+
+    assert_clean_shutdown(pid)
+  end
+
+  def test_modify_internals
+    addr, port = unused_port
+
+    pid = spawn_server(app: File.join(ROOT, "test/integration/env.ru"), config: <<~CONFIG)
+      listen "#{addr}:#{port}", queues: 1
+      worker_processes 1
+
+      HttpParser::DEFAULTS["rack.url_scheme"] = "https"
+      Configurator::DEFAULTS[:logger].progname = "[FOO]"
+    CONFIG
+
+    assert_healthy("http://#{addr}:#{port}")
+
+    env = Net::HTTP.get(URI("http://#{addr}:#{port}/"))
+    assert_match('"rack.url_scheme"=>"https"', env)
+    assert_stderr(/\[FOO\]/)
 
     assert_clean_shutdown(pid)
   end
