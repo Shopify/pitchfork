@@ -154,6 +154,21 @@ class ConfigurationTest < Pitchfork::IntegrationTest
     assert_clean_shutdown(pid)
   end
 
+  def test_listener_names
+    addr, port = unused_port
+
+    pid = spawn_server(app: File.join(ROOT, "test/integration/apps/listener_names.ru"), config: <<~CONFIG)
+      listen "#{addr}:#{port}"
+      worker_processes 1
+    CONFIG
+
+    assert_healthy("http://#{addr}:#{port}")
+    listener_names = Net::HTTP.get(URI("http://#{addr}:#{port}"))
+    
+    assert_equal(["#{addr}:#{port}"].inspect, listener_names)
+    assert_clean_shutdown(pid)
+  end
+
   def test_modify_internals
     addr, port = unused_port
 
