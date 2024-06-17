@@ -154,6 +154,21 @@ class ConfigurationTest < Pitchfork::IntegrationTest
     assert_clean_shutdown(pid)
   end
 
+  def test_listener_names
+    addr, port = unused_port
+
+    pid = spawn_server(app: File.join(ROOT, "test/integration/apps/listener_names.ru"), config: <<~CONFIG)
+      listen "#{addr}:#{port}"
+      worker_processes 1
+    CONFIG
+
+    assert_healthy("http://#{addr}:#{port}")
+    listener_names = Net::HTTP.get(URI("http://#{addr}:#{port}"))
+    
+    assert_equal(["#{addr}:#{port}"].inspect, listener_names)
+    assert_clean_shutdown(pid)
+  end
+
   def test_modify_internals
     addr, port = unused_port
 
@@ -172,5 +187,33 @@ class ConfigurationTest < Pitchfork::IntegrationTest
     assert_stderr(/\[FOO\]/)
 
     assert_clean_shutdown(pid)
+  end
+
+  def test_at_exit_handlers
+    addr, port = unused_port
+
+    pid = spawn_server(app: File.join(ROOT, "test/integration/pid.ru"), config: <<~CONFIG)
+      listen "#{addr}:#{port}"
+
+      at_exit { \$stderr.puts("\#{Process.pid} BOTH") }
+      END { \$stderr.puts("\#{Process.pid} END BOTH") }
+      after_worker_fork do |_,_|
+        at_exit { \$stderr.puts("\#{Process.pid} WORKER ONLY") }
+        END { \$stderr.puts("\#{Process.pid} END WORKER ONLY") }
+      end
+    CONFIG
+
+    assert_healthy("http://#{addr}:#{port}")
+
+    worker_pid = Net::HTTP.get(URI("http://#{addr}:#{port}")).strip
+
+    assert_clean_shutdown(pid)
+    
+    assert_stderr("#{worker_pid} BOTH")
+    assert_stderr("#{pid} BOTH")
+    assert_stderr("#{worker_pid} END BOTH")
+    assert_stderr("#{pid} END BOTH")
+    assert_stderr("#{worker_pid} WORKER ONLY")
+    assert_stderr("#{worker_pid} END WORKER ONLY")
   end
 end

@@ -110,11 +110,6 @@ module Pitchfork
       @to_io.to_io
     end
 
-    # master fakes SIGQUIT using this
-    def quit # :nodoc:
-      @master = @master.close if @master
-    end
-
     def master=(socket)
       @master = MessageSocket.new(socket)
     end
