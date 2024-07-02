@@ -136,4 +136,28 @@ class HttpBasicTest < Pitchfork::IntegrationTest
 
     assert_clean_shutdown(pid)
   end
+
+  def test_http_upgrade
+    addr, port = unused_port
+
+    pid = spawn_server(app: File.join(ROOT, "test/integration/upgrade.ru"), config: <<~CONFIG)
+      listen "#{addr}:#{port}"
+      worker_processes 1
+    CONFIG
+
+    assert_healthy("http://#{addr}:#{port}")
+
+    Net::HTTP.start(addr, port) do |http|
+      request = Net::HTTP::Get.new("/")
+      request["Connection"] = "Upgrade"
+      request["Upgrade"] = "websocket"
+
+      # It should not be connection upgrade:
+      response = http.request(request)
+      assert_equal "200", response.code
+      assert_equal "Normal response", response.body
+    end
+
+    assert_clean_shutdown(pid)
+  end
 end

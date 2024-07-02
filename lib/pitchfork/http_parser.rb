@@ -93,6 +93,9 @@ module Pitchfork
       e['pitchfork.socket'] = socket
       e['rack.hijack'] = self
 
+      # We don't support connection upgrade:
+      e.delete('HTTP_UPGRADE')
+
       e.merge!(DEFAULTS)
     end
 
