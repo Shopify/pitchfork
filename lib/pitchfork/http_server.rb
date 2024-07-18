@@ -80,8 +80,7 @@ module Pitchfork
     attr_accessor :app, :timeout, :timeout_signal, :soft_timeout, :cleanup_timeout, :spawn_timeout, :worker_processes,
                   :before_fork, :after_worker_fork, :after_mold_fork, :before_service_worker_ready, :before_service_worker_exit,
                   :listener_opts, :children,
-                  :orig_app, :config, :ready_pipe,
-                  :default_middleware, :early_hints
+                  :orig_app, :config, :ready_pipe, :early_hints
     attr_writer   :after_worker_exit, :before_worker_exit, :after_worker_ready, :after_request_complete,
                   :refork_condition, :after_worker_timeout, :after_worker_hard_timeout, :after_monitor_ready
 
