@@ -1,4 +1,3 @@
-# -*- encoding: binary -*-
 # frozen_string_literal: true
 
 # Copyright (c) 2005 Zed A. Shaw
@@ -850,8 +849,30 @@ module Pitchfork
       assert_equal '', parser.env['HTTP_HOST']
     end
 
+    class StringSocket < StringIO
+      def initialize(string)
+        super(string.b)
+      end
+
+      def remote_address
+        Addrinfo.tcp("127.0.0.1", 80)
+      end
+    end
+
+    def test_ascii_header_encoding
+      env = HttpParser.new.read(StringSocket.new("GET / HTTP/1.1\r\nHost: example.com\r\n\r\n"))
+
+      assert_equal Encoding::UTF_8, env['HTTP_HOST'].encoding
+      assert_equal Encoding::UTF_8, env.keys.find { |k| k == 'HTTP_HOST' }.encoding
+    end
+
+    def test_non_ascii_header_encoding
+      env = HttpParser.new.read(StringSocket.new("GET / HTTP/1.1\r\nHost: €xample.com\r\n\r\n"))
+      assert_equal Encoding::BINARY, env['HTTP_HOST'].encoding
+      assert_equal Encoding::UTF_8, env.keys.find { |k| k == 'HTTP_HOST' }.encoding
+    end
+
     def test_memsize
-      require 'objspace'
       if ObjectSpace.respond_to?(:memsize_of)
         n = ObjectSpace.memsize_of(Pitchfork::HttpParser.new)
         assert_kind_of Integer, n
@@ -861,24 +882,20 @@ module Pitchfork
         assert_operator n, :<=, 96
         assert_operator n, :>, 0
       end
-    rescue LoadError
-      # not all Ruby implementations have objspace
     end
 
     def test_dedupe
       parser = HttpParser.new
       # n.b. String#freeze optimization doesn't work under modern test-unit
-      exp = -'HTTP_HOST'
-      get = "GET / HTTP/1.1\r\nHost: example.com\r\nHavpbea-fhpxf: true\r\n\r\n"
+      exp = 'HTTP_HOST'
+      get = "GET / HTTP/1.1\r\nHost: example.com\r\nHavpbea-fhpxf: true\r\n\r\n".b
       assert parser.add_parse(get)
       key = parser.env.keys.detect { |k| k == exp }
       assert_same exp, key
 
-      if RUBY_VERSION.to_r >= 2.6 # 2.6.0-rc1+
-        exp = -'HTTP_HAVPBEA_FHPXF'
-        key = parser.env.keys.detect { |k| k == exp }
-        assert_same exp, key
-      end
-    end if RUBY_VERSION.to_r >= 2.5 && RUBY_ENGINE == 'ruby'
+      exp = 'HTTP_HAVPBEA_FHPXF'
+      key = parser.env.keys.detect { |k| k == exp }
+      assert_equal Encoding::UTF_8, key.encoding
+    end
   end
 end
