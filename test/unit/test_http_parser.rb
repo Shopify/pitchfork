@@ -431,7 +431,7 @@ module Pitchfork
     # since Mongrel supported anything URI.parse supported, we're stuck
     # supporting everything URI.parse supports
     def test_absolute_uri_uri_parse
-      "#{URI::REGEXP::PATTERN::UNRESERVED};:&=+$,".split(//).each do |char|
+      "#{URI::RFC2396_REGEXP::PATTERN::UNRESERVED};:&=+$,".split(//).each do |char|
         parser = HttpParser.new
         req = parser.env
         http = +"GET http://#{char}@example.com/ HTTP/1.0\r\n\r\n"
