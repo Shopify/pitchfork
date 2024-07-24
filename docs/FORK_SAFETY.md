@@ -83,7 +83,8 @@ impact of discovering such bug.
 - The `grpc` isn't fork safe by default, but starting from version `1.57.0`, it does provide an experimental
   fork safe option that requires setting an environment variable before loading the library, and calling
   `GRPC.prefork`, `GRPC.postfork_parent` and `GRPC.postfork_child` around fork calls.
-  (https://github.com/grpc/grpc/pull/33430)
+  (https://github.com/grpc/grpc/pull/33430).
+  You can also use the [`grpc_fork_safety`](https://github.com/Shopify/grpc_fork_safety) gem to make it easier.
 
 - The `ruby-vips` gem binds the `libvips` image processing library that isn't fork safe.
   (https://github.com/libvips/libvips/discussions/3577)
