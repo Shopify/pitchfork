@@ -61,19 +61,20 @@ static struct common_field common_http_fields[] = {
 #define HTTP_PREFIX_LEN (sizeof(HTTP_PREFIX) - 1)
 static ID id_uminus;
 
+/* This helper is used to create rack env keys, they should be UTF-8 */
 #ifdef HAVE_RB_ENC_INTERNED_STR
 static VALUE str_new_dd_freeze(const char *ptr, long len)
 {
   if (RB_ENC_INTERNED_STR_NULL_CHECK && len == 0) {
-      return rb_enc_interned_str("", len, rb_ascii8bit_encoding());
+      return rb_enc_interned_str("", len, rb_utf8_encoding());
   } else {
-      return rb_enc_interned_str(ptr, len, rb_ascii8bit_encoding());
+      return rb_enc_interned_str(ptr, len, rb_utf8_encoding());
   }
 }
 #else
 static VALUE str_new_dd_freeze(const char *ptr, long len)
 {
-  VALUE str = rb_str_new(ptr, len);
+  VALUE str = rb_utf8_str_new(ptr, len);
   return rb_funcall(str, id_uminus, 0);
 }
 #endif
@@ -119,12 +120,14 @@ static VALUE find_common_field(const char *field, size_t flen)
  */
 static VALUE uncommon_field(const char *field, size_t flen)
 {
-  VALUE f = rb_str_new(NULL, HTTP_PREFIX_LEN + flen);
+  VALUE f = rb_utf8_str_new(NULL, HTTP_PREFIX_LEN + flen);
   memcpy(RSTRING_PTR(f), HTTP_PREFIX, HTTP_PREFIX_LEN);
   memcpy(RSTRING_PTR(f) + HTTP_PREFIX_LEN, field, flen);
   assert(*(RSTRING_PTR(f) + RSTRING_LEN(f)) == '\0' &&
          "string didn't end with \\0"); /* paranoia */
-  return f;
+  // We freeze the value because it will be used as a hash key,
+  // so if we don't Hash#[]= will dup it.
+  return rb_str_freeze(f);
 }
 
 #endif /* common_field_optimization_h */

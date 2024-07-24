@@ -89,7 +89,7 @@ static inline unsigned int ulong2uint(unsigned long n)
 #define LEN(AT, FPC) (ulong2uint(FPC - buffer) - hp->AT)
 #define MARK(M,FPC) (hp->M = ulong2uint((FPC) - buffer))
 #define PTR_TO(F) (buffer + hp->F)
-#define STR_NEW(M,FPC) rb_str_new(PTR_TO(M), LEN(M, FPC))
+#define STR_NEW(M,FPC) str_new(PTR_TO(M), LEN(M, FPC))
 #define STRIPPED_STR_NEW(M,FPC) stripped_str_new(PTR_TO(M), LEN(M, FPC))
 
 #define HP_FL_TEST(hp,fl) ((hp)->flags & (UH_FL_##fl))
@@ -102,13 +102,29 @@ static int is_lws(char c)
   return (c == ' ' || c == '\t');
 }
 
-static VALUE stripped_str_new(const char *str, long len)
+static inline VALUE str_new(const char *str, long len)
+{
+    VALUE rb_str = rb_str_new(str, len);
+    /* The Rack spec states:
+    > If the string values for CGI keys contain non-ASCII characters, they should use ASCII-8BIT encoding.
+    If they are ASCII, only the server is free to encode them as it wishes.
+    We chose to encode them as UTF-8 as any reasonable application would expect that today, and having the
+    same encoding as literal strings makes for slightly faster comparisons.
+    We'd like to also encode other strings that would be valid UTF-8 into UTF-8, but that would
+    violate the spec, so we leave them in BINARY aka ASCII-8BIT. */
+    if (rb_enc_str_asciionly_p(rb_str)) {
+        RB_ENCODING_SET_INLINED(rb_str, rb_utf8_encindex());
+    }
+    return rb_str;
+}
+
+static inline VALUE stripped_str_new(const char *str, long len)
 {
   long end;
 
   for (end = len - 1; end >= 0 && is_lws(str[end]); end--);
 
-  return rb_str_new(str, end + 1);
+  return str_new(str, end + 1);
 }
 
 /*
@@ -600,6 +616,12 @@ static VALUE HttpParser_alloc(VALUE klass)
   return TypedData_Make_Struct(klass, struct http_parser, &hp_type, hp);
 }
 
+#ifndef HAVE_RB_HASH_NEW_CAPA
+static inline VALUE rb_hash_new_capa(long capa) {
+    return rb_hash_new();
+}
+#endif
+
 /**
  * call-seq:
  *    parser.new => parser
@@ -612,7 +634,7 @@ static VALUE HttpParser_init(VALUE self)
 
   http_parser_init(hp);
   RB_OBJ_WRITE(self, &hp->buf, rb_str_new(NULL, 0));
-  RB_OBJ_WRITE(self, &hp->env, rb_hash_new());
+  RB_OBJ_WRITE(self, &hp->env, rb_hash_new_capa(32)); // Even the simplest request will have 10 keys
 
   return self;
 }

@@ -1,5 +1,7 @@
 # Unreleased
 
+- Encode pure ASCII strings in Rack env as UTF-8, as allowed by the rack spec.
+  Other strings remain as ASCII-8BIT aka BINARY as required by the rack spec.
 - Fix compatibility with Rack 3.1.
 - Fix `rack.hijack` support.
 - Support Rack 3 streaming bodies.

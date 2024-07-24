@@ -1,4 +1,3 @@
-# -*- encoding: binary -*-
 # frozen_string_literal: true
 # :enddoc:
 # no stable API here
