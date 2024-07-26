@@ -1,5 +1,8 @@
 # Unreleased
 
+- Use `exit!` for exiting the middle process when forking a new worker or mold. 
+  This skips `at_exit` and finalizer hooks, which shouldn't be needed.
+
 # 0.15.0
 
 - Encode pure ASCII strings in Rack env as UTF-8, as allowed by the rack spec.

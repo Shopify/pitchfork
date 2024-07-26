@@ -1173,9 +1173,8 @@ module Pitchfork
           w.close
           # We need to wait(2) so that the middle process doesn't end up a zombie.
           # The process only call fork again an exit so it should be pretty fast.
-          # However it might need to execute some `Process._fork` or `at_exit` callbacks,
-          # as well as Ruby's cleanup procedure to run finalizers etc, and there is a risk
-          # of deadlock.
+          # However it might need to execute some `Process._fork` callbacks,
+          # so there is a risk of deadlock.
           # So in case it takes more than 5 seconds to exit, we kill it.
           # TODO: rather than to busy loop here, we handle it in the worker/mold loop
           process_wait_with_timeout(middle_pid, FORK_TIMEOUT)
@@ -1196,7 +1195,12 @@ module Pitchfork
           end
           w.puts(pid)
           w.close
-          exit
+
+          # We use exit! to skip `at_exit` and finalizers.
+          # These will be ran when both the parent and child exit, this middle process
+          # is just an implementation detail and running these hooks here is more likely
+          # to cause issues than being actually needed.
+          exit!
         end
       else
         Pitchfork.clean_fork(&block)
