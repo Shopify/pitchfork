@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.16.0
+
 - Use `exit!` for exiting the middle process when forking a new worker or mold. 
   This skips `at_exit` and finalizer hooks, which shouldn't be needed.
 
