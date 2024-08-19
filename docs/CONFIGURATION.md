@@ -417,7 +417,7 @@ By default the cleanup timeout is 2 seconds.
 Called in the monitor process when a worker hard timeout is elapsed:
 
 ```ruby
-after_worker_timeout do |server, worker|
+after_worker_hard_timeout do |server, worker|
   $stderr.puts "Worker hard timeout, pid=#{worker.pid}"
 end
 ```
