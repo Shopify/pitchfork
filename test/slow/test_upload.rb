@@ -5,6 +5,8 @@
 require 'test_helper'
 
 class UploadTest < Pitchfork::Test
+  tag isolated: true
+
   include Pitchfork
 
   def setup

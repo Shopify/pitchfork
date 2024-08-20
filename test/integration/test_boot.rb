@@ -51,10 +51,10 @@ class TestBoot < Pitchfork::IntegrationTest
     end
 
     Dir.chdir(@_old_pwd)
-    if passed?
-      FileUtils.rm_rf(@pwd)
-    else
+    if __result__.failure?
       $stderr.puts("Working directory left at: #{@pwd}")
+    else
+      FileUtils.rm_rf(@pwd)
     end
   end
 

@@ -1,39 +1,28 @@
 # frozen_string_literal: true
 require "bundler/gem_tasks"
-require "rake/testtask"
 require "rake/extensiontask"
 
-Rake::TestTask.new("test:unit") do |t|
-  t.libs << "test"
-  t.libs << "lib"
-  t.test_files = FileList["test/unit/**/test_*.rb"]
-  t.options = '-v' if ENV['CI'] || ENV['VERBOSE']
-  t.warning = true
-end
-
-Rake::TestTask.new("test:integration") do |t|
-  t.libs << "test"
-  t.libs << "lib"
-  t.test_files = FileList["test/integration/**/test_*.rb"]
-  t.options = '-v' if ENV['CI'] || ENV['VERBOSE']
-  t.warning = true
-end
+require "megatest/test_task"
 
 namespace :test do
+  Megatest::TestTask.create(:unit) do |t|
+    t.tests = FileList["test/unit/**/test_*.rb"]
+    t.deps << :compile
+  end
+
+  Megatest::TestTask.create(:integration) do |t|
+    t.tests = FileList["test/integration/**/test_*.rb"]
+    t.deps << :compile
+  end
+
   # It's not so much that these tests are slow, but they tend to fork
   # and/or register signal handlers, so they if something goes wrong
   # they are likely to get stuck forever.
   # The unicorn test suite has historically ran them in individual process
   # so we continue to do that.
-  task slow: :compile do
-    tests = Dir["test/slow/**/*.rb"].flat_map do |test_file|
-      File.read(test_file).scan(/def (test_\w+)/).map do |test|
-        [test_file] + test
-      end
-    end
-    tests.each do |file, test|
-      sh "ruby", "-Ilib:test", file, "-n", test, "-v"
-    end
+  Megatest::TestTask.create(:slow) do |t|
+    t.tests = FileList["test/slow/**/test_*.rb"]
+    t.deps << :compile
   end
 
   # Unicorn had its own POSIX-shell based testing framework.

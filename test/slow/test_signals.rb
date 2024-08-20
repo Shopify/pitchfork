@@ -9,6 +9,8 @@
 require 'test_helper'
 
 class SignalsTest < Pitchfork::Test
+  tag isolated: true
+
   include Pitchfork
 
   class Dd

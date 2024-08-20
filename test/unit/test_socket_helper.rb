@@ -150,7 +150,8 @@ class TestSocketHelper < Pitchfork::Test
   end
 
   def test_tcp_defer_accept_default
-    return unless defined?(TCP_DEFER_ACCEPT)
+    skip("Missing TCP_DEFER_ACCEPT") unless defined?(TCP_DEFER_ACCEPT)
+
     port = unused_port @test_addr
     name = "#@test_addr:#{port}"
     sock = bind_listen(name)
@@ -159,7 +160,8 @@ class TestSocketHelper < Pitchfork::Test
   end
 
   def test_tcp_defer_accept_disable
-    return unless defined?(TCP_DEFER_ACCEPT)
+    skip("Missing TCP_DEFER_ACCEPT") unless defined?(TCP_DEFER_ACCEPT)
+
     port = unused_port @test_addr
     name = "#@test_addr:#{port}"
     sock = bind_listen(name, :tcp_defer_accept => false)
@@ -168,7 +170,8 @@ class TestSocketHelper < Pitchfork::Test
   end
 
   def test_tcp_defer_accept_nr
-    return unless defined?(TCP_DEFER_ACCEPT)
+    skip("Missing TCP_DEFER_ACCEPT") unless defined?(TCP_DEFER_ACCEPT)
+
     port = unused_port @test_addr
     name = "#@test_addr:#{port}"
     sock = bind_listen(name, :tcp_defer_accept => 60)
@@ -180,16 +183,18 @@ class TestSocketHelper < Pitchfork::Test
     port = begin
       unused_port "#@test6_addr"
     rescue Errno::EINVAL
-      return
+      skip("IPv6: EINVAL")
     end
     sock = bind_listen "[#@test6_addr]:#{port}", :ipv6only => true
     cur = sock.getsockopt(:IPPROTO_IPV6, :IPV6_V6ONLY).unpack('i')[0]
     assert_equal 1, cur
   rescue Errno::EAFNOSUPPORT
+    skip("IPv6: EAFNOSUPPORT")
   end
 
   def test_reuseport
-    return unless defined?(Socket::SO_REUSEPORT)
+    skip("Missing Socket::SO_REUSEPORT") unless defined?(TCP_DEFER_ACCEPT)
+
     port = unused_port @test_addr
     name = "#@test_addr:#{port}"
     sock = bind_listen(name, :reuseport => true)

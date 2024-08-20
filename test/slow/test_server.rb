@@ -91,6 +91,8 @@ end
 class WebServerStartTest < Pitchfork::Test
   include BaseWebServerTests
 
+  tag isolated: true
+
   def test_preload_app
     tmp = Tempfile.new('test_preload_app_config')
     Pitchfork::Info.keep_io(tmp)
@@ -287,6 +289,7 @@ class WebServerTest < Pitchfork::Test
     sleep(shutdown_delay)
     socket.write(" ") # Some platforms only raise the exception on attempted write
     socket.flush
+    assert true
   end
 
   def test_trickle_attack
@@ -303,6 +306,7 @@ class WebServerTest < Pitchfork::Test
     redirect_test_io do
       do_test("GET /test HTTP/BAD", 3)
     end
+    assert true
   end
 
   def test_logger_set

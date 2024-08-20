@@ -7,7 +7,7 @@ class TestConfigurator < Pitchfork::Test
     *(Pitchfork::Configurator::DEFAULTS.keys + %w(listener_opts listeners)))
 
   def test_config_init
-    Pitchfork::Configurator.new {}
+    assert(Pitchfork::Configurator.new {})
   end
 
   def test_expand_addr
@@ -127,7 +127,7 @@ class TestConfigurator < Pitchfork::Test
     expect = { :delay => 0.5 }
     listener = "127.0.0.1:12345"
     tmp.syswrite("listen '#{listener}', #{expect.inspect}\n")
-    Pitchfork::Configurator.new(:config_file => tmp.path)
+    assert Pitchfork::Configurator.new(:config_file => tmp.path)
   end
 
   def test_listen_option_int_delay
@@ -135,7 +135,7 @@ class TestConfigurator < Pitchfork::Test
     expect = { :delay => 5 }
     listener = "127.0.0.1:12345"
     tmp.syswrite("listen '#{listener}', #{expect.inspect}\n")
-    Pitchfork::Configurator.new(:config_file => tmp.path)
+    assert Pitchfork::Configurator.new(:config_file => tmp.path)
   end
 
   def test_check_client_connection

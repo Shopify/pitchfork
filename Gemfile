@@ -2,7 +2,7 @@
 
 source "https://rubygems.org"
 
-gem 'minitest'
+gem 'megatest', '>= 0.1.1'
 gem 'rake'
 gem 'rake-compiler'
 if ENV["RACK_VERSION"]
