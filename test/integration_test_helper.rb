@@ -50,14 +50,14 @@ module Pitchfork
       end
 
       Dir.chdir(@_old_pwd)
-      if passed? || skipped?
-        FileUtils.rm_rf(@pwd)
-      else
+      if __result__.failure?
         $stderr.puts("Working directory left at: #{@pwd}")
         if ENV["CI"]
           $stderr.puts "-" * 40
           $stderr.puts(File.read(File.join(@pwd, "stderr.log")))
         end
+      else
+        FileUtils.rm_rf(@pwd)
       end
 
       super
