@@ -193,7 +193,7 @@ class TestSocketHelper < Pitchfork::Test
   end
 
   def test_reuseport
-    skip("Missing Socket::SO_REUSEPORT") unless defined?(TCP_DEFER_ACCEPT)
+    skip("Missing Socket::SO_REUSEPORT") unless defined?(Socket::SO_REUSEPORT)
 
     port = unused_port @test_addr
     name = "#@test_addr:#{port}"
@@ -201,6 +201,7 @@ class TestSocketHelper < Pitchfork::Test
     cur = sock.getsockopt(:SOL_SOCKET, :SO_REUSEPORT).int
     assert_operator cur, :>, 0
   rescue Errno::ENOPROTOOPT
+    skip("Missing SO_REUSEPORT")
     # kernel does not support SO_REUSEPORT (older Linux)
   end
 end
