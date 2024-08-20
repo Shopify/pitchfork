@@ -51,10 +51,10 @@ class TestBoot < Pitchfork::IntegrationTest
     end
 
     Dir.chdir(@_old_pwd)
-    if passed?
-      FileUtils.rm_rf(@pwd)
-    else
+    if __result__.failure?
       $stderr.puts("Working directory left at: #{@pwd}")
+    else
+      FileUtils.rm_rf(@pwd)
     end
   end
 
@@ -105,9 +105,41 @@ class TestBoot < Pitchfork::IntegrationTest
     assert_healthy("http://#{addr}:#{port}")
 
     assert_stderr("worker=0 gen=0 ready")
-    assert_stderr(/worker=1 pid=\d+ gen=0 registered/)
+    assert_stderr(/worker=1 pid=(\d+) gen=0 registered/)
     assert_stderr(/worker=1 pid=\d+ gen=0 timed out, killing/, timeout: 4)
 
     assert_clean_shutdown(pid)
+  end
+
+  test "workers and mold exit on monitor crash", isolated: true do
+    skip("Missing CHILD_SUBREAPER") unless Pitchfork::CHILD_SUBREAPER_AVAILABLE
+
+    Pitchfork.enable_child_subreaper
+
+    addr, port = unused_port
+
+    pid = spawn_server(app: APP, config: <<~RUBY)
+      listen "#{addr}:#{port}"
+      worker_processes 2
+      timeout 3
+      refork_after [50, 100, 1000]
+    RUBY
+
+    assert_healthy("http://#{addr}:#{port}")
+    assert_stderr("worker=0 gen=0 ready")
+    assert_stderr("worker=1 gen=0 ready")
+
+    Process.kill(:KILL, pid)
+    Process.waitpid(pid)
+
+    assert_stderr(/worker=0 pid=(\d+) gen=0 exiting/, timeout: 5)
+    assert_stderr(/worker=1 pid=(\d+) gen=0 exiting/)
+
+    assert_raises Errno::ESRCH, Errno::ECHILD do
+      25.times do
+        Process.wait(-1, Process::WNOHANG)
+        sleep 0.2
+      end
+    end
   end
 end

@@ -19,7 +19,6 @@ ENV['NO_PROXY'] ||= ENV['UNICORN_TEST_ADDR'] || '127.0.0.1'
 DEFAULT_TRIES = 100
 DEFAULT_RES = 0.2
 
-require 'minitest/autorun'
 require 'net/http'
 require 'digest/sha1'
 require 'uri'
@@ -38,7 +37,7 @@ if ENV['DEBUG']
 end
 
 module Pitchfork
-  class Test < Minitest::Test
+  class Test < Megatest::Test
     def before_setup
       Pitchfork::SharedMemory::PAGES.clear
       Pitchfork::SharedMemory.preallocate_pages(4)

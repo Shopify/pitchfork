@@ -9,6 +9,8 @@
 require 'test_helper'
 
 class SignalsTest < Pitchfork::Test
+  tag isolated: true
+
   include Pitchfork
 
   class Dd
@@ -42,37 +44,6 @@ class SignalsTest < Pitchfork::Test
 
   def teardown
     reset_sig_handlers
-  end
-
-  def test_worker_dies_on_dead_master
-    pid = fork {
-      app = lambda { |env| [ 200, {'X-Pid' => "#$$" }, [] ] }
-      opts = @server_opts.merge(:timeout => 3)
-      redirect_test_io { HttpServer.new(app, opts).start.join }
-    }
-    wait_workers_ready("test_stderr.#{pid}.log", 1)
-    sock = tcp_socket('127.0.0.1', @port)
-    sock.syswrite("GET / HTTP/1.0\r\n\r\n")
-    buf = sock.readpartial(4096)
-    assert_nil sock.close
-    buf =~ /\bX-Pid: (\d+)\b/ or raise Exception
-    child = $1.to_i
-    wait_master_ready("test_stderr.#{pid}.log")
-    wait_workers_ready("test_stderr.#{pid}.log", 1)
-    Process.kill(:KILL, pid)
-    Process.waitpid(pid)
-    File.unlink("test_stderr.#{pid}.log", "test_stdout.#{pid}.log")
-    t0 = Time.now
-    assert child
-    assert t0
-    assert_raises(Errno::ESRCH) { 25.times { Process.kill(0, child); sleep 0.2 } }
-    child = nil
-    assert((Time.now - t0) < 60)
-  ensure
-    if child
-      puts "SIGKILL child pid=#{child}"
-      Process.kill(:KILL, child)
-    end
   end
 
   def test_sleepy_kill

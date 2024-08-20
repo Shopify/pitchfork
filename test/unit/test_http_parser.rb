@@ -873,15 +873,15 @@ module Pitchfork
     end
 
     def test_memsize
-      if ObjectSpace.respond_to?(:memsize_of)
-        n = ObjectSpace.memsize_of(Pitchfork::HttpParser.new)
-        assert_kind_of Integer, n
-        # need to update this when 128-bit machines come out
-        # n.b. actual struct size on 64-bit is 56 bytes + 40 bytes for RVALUE
-        # Ruby <= 2.2 objspace did not count the 40-byte RVALUE, 2.3 does.
-        assert_operator n, :<=, 96
-        assert_operator n, :>, 0
-      end
+      require "objspace"
+
+      n = ObjectSpace.memsize_of(Pitchfork::HttpParser.new)
+      assert_kind_of Integer, n
+      # need to update this when 128-bit machines come out
+      # n.b. actual struct size on 64-bit is 56 bytes + 40 bytes for RVALUE
+      # Ruby <= 2.2 objspace did not count the 40-byte RVALUE, 2.3 does.
+      assert_operator n, :<=, 96
+      assert_operator n, :>, 0
     end
 
     def test_dedupe
