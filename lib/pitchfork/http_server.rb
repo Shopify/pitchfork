@@ -885,7 +885,6 @@ module Pitchfork
         end
       end
       timeout_handler.finished
-      env
     end
 
     def nuke_listeners!(readers)
