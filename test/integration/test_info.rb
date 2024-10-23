@@ -14,7 +14,7 @@ class InfoTest < Pitchfork::IntegrationTest
     assert_stderr "worker=3 gen=0 ready"
 
     response = http_get("http://#{addr}:#{port}/")
-    assert_equal "{:workers_count=>4, :live_workers_count=>4}", response.body
+    assert_equal({workers_count: 4, live_workers_count: 4}.inspect, response.body)
 
     Process.kill(:TTOU, pid)
     assert_stderr(/worker=3 pid=\d+ gen=0 reaped/)
@@ -22,7 +22,7 @@ class InfoTest < Pitchfork::IntegrationTest
     assert_stderr(/worker=2 pid=\d+ gen=0 reaped/)
 
     response = http_get("http://#{addr}:#{port}/")
-    assert_equal "{:workers_count=>4, :live_workers_count=>2}", response.body
+    assert_equal({workers_count: 4, live_workers_count: 2}.inspect, response.body)
 
     assert_clean_shutdown(pid)
   end

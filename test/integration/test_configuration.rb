@@ -183,7 +183,7 @@ class ConfigurationTest < Pitchfork::IntegrationTest
     assert_healthy("http://#{addr}:#{port}")
 
     env = Net::HTTP.get(URI("http://#{addr}:#{port}/"))
-    assert_match('"rack.url_scheme"=>"https"', env)
+    assert_match({"rack.url_scheme"=>"https"}.inspect[1..-2], env)
     assert_stderr(/\[FOO\]/)
 
     assert_clean_shutdown(pid)
