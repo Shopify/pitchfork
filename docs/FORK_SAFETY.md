@@ -91,4 +91,7 @@ impact of discovering such bug.
 
 - Any gem binding with `libgobject`, such as the `gda` gem, likely aren't fork safe.
 
+- If you use `jemalloc`, [the version `5.2` is known to have a fork safety bug that can cause childs to lock up](https://github.com/jemalloc/jemalloc/issues/2019).
+  Make sure to upgrade to version `5.3`.
+
 No other gem is known to be incompatible for now, but if you find one, please open an issue to add it to the list.
