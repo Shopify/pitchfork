@@ -1,5 +1,7 @@
 # Unreleased
 
+- Assume config file is located at `config/pitchfork.rb` if `-c` argument isn't provided.
+
 # 0.16.0
 
 - Use `exit!` for exiting the middle process when forking a new worker or mold. 
