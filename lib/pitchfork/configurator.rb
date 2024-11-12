@@ -85,7 +85,7 @@ module Pitchfork
     def initialize(defaults = {}) #:nodoc:
       self.set = Hash.new(:unset)
       @use_defaults = defaults.delete(:use_defaults)
-      self.config_file = defaults.delete(:config_file)
+      self.config_file = defaults.delete(:config_file) { "config/pitchfork.rb" if File.exist?("config/pitchfork.rb") }
 
       set.merge!(DEFAULTS) if @use_defaults
       defaults.each { |key, value| self.__send__(key, value) }
