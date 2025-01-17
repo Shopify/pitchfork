@@ -79,6 +79,7 @@ module Pitchfork
       :client_body_buffer_size => Pitchfork::Const::MAX_BODY,
       :before_service_worker_ready => nil,
       :before_service_worker_exit => nil,
+      :setpgid => false,
     }
     #:startdoc:
 
@@ -205,6 +206,10 @@ module Pitchfork
       else
         raise ArgumentError, "timeout_signal must be a symbol or a proc"
       end
+    end
+
+    def setpgid(bool)
+      set_bool(:setpgid, bool)
     end
 
     def spawn_timeout(seconds)
