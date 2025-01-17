@@ -42,7 +42,7 @@ jobs:
           bundler-cache: true
 
       - name: Install packages
-        run: sudo apt-get install -y ragel socat netcat
+        run: sudo apt-get install -y ragel socat netcat-openbsd
 
       - name: Tests Rack ${{ matrix.rack }} ${{ matrix.rubyopt }}
         run: bundle exec rake
