@@ -168,6 +168,18 @@ The following options may be specified (but are generally not needed):
 
   Default: `queues - 1`.
 
+- `setpgid: true or false`
+
+  When enabled, child processes will be made into a group leader with a pgid matching
+  their pid. The child process will no longer be in the foreground process group of
+  its control terminal.
+
+  This can break debugging sessions and interactive terminals inside the worker
+  processes. Set it to `false` if you need to activate a debugging session or read from
+  `STDIN` inside a worker process.
+
+  Default: `true` (enabled)
+
 - `umask: mode`
 
   Sets the file mode creation mask for UNIX sockets.

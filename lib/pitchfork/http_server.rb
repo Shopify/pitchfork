@@ -80,7 +80,7 @@ module Pitchfork
     attr_accessor :app, :timeout, :timeout_signal, :soft_timeout, :cleanup_timeout, :spawn_timeout, :worker_processes,
                   :before_fork, :after_worker_fork, :after_mold_fork, :before_service_worker_ready, :before_service_worker_exit,
                   :listener_opts, :children,
-                  :orig_app, :config, :ready_pipe, :early_hints
+                  :orig_app, :config, :ready_pipe, :early_hints, :setpgid
     attr_writer   :after_worker_exit, :before_worker_exit, :after_worker_ready, :after_request_complete,
                   :refork_condition, :after_worker_timeout, :after_worker_hard_timeout, :after_monitor_ready
 
@@ -667,7 +667,7 @@ module Pitchfork
     def spawn_initial_mold
       mold = Worker.new(nil)
       mold.create_socketpair!
-      mold.pid = Pitchfork.clean_fork do
+      mold.pid = Pitchfork.clean_fork(setpgid: setpgid) do
         mold.pid = Process.pid
         @promotion_lock.try_lock
         mold.after_fork_in_child
@@ -1187,7 +1187,7 @@ module Pitchfork
         else # first child
           r.close
           Process.setproctitle("<pitchfork fork_sibling(#{role})>")
-          pid = Pitchfork.clean_fork do
+          pid = Pitchfork.clean_fork(setpgid: setpgid) do
             # detach into a grand child
             w.close
             yield
@@ -1202,7 +1202,7 @@ module Pitchfork
           exit!
         end
       else
-        Pitchfork.clean_fork(&block)
+        Pitchfork.clean_fork(setpgid: setpgid, &block)
       end
     end
 
