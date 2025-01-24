@@ -18,10 +18,10 @@ both the request and response in between `pitchfork` and slow clients.
 * Shared-Nothing architecture: workers all run within their own isolated
   address space and only serve one client at a time for maximum performance
   and robustness. Concurrent requests don't need to compete for the GVL,
-  or impact each others latency when triggering garbage collection.
+  or impact each other's latency when triggering garbage collection.
   It also does not care if your application is thread-safe or not.
 
-* Reforking: `pitchfork` can be configured to periodically promote a warmed up worker
+* Reforking: `pitchfork` can be configured to periodically promote a warmed-up worker
   as the new template from which workers are forked. This dramatically improves
   the proportion of shared memory, making processes use only marginally more
   memory than threads would.
@@ -31,10 +31,10 @@ both the request and response in between `pitchfork` and slow clients.
 * Process management: `pitchfork` will reap and restart workers that
   die from broken apps. There is no need to manage multiple processes
   or ports yourself. `pitchfork` can spawn and manage any number of
-  worker processes you choose to scale to your backend.
+  worker processes you choose to scale your backend to.
 
-* Adaptative timeout: request timeout can be extended dynamically on a
-  per request basis, which allows to keep a strict overall timeout for
+* Adaptative timeout: request timeouts can be extended dynamically on a
+  per-request basis, which allows you to keep a strict overall timeout for
   most endpoints, but allow a few endpoints to take longer.
 
 * Load balancing is done entirely by the operating system kernel.
@@ -42,8 +42,8 @@ both the request and response in between `pitchfork` and slow clients.
 
 ## When to Use
 
-Pitchfork isn't inherently better than other Ruby application servers, it mostly
-focus on different tradeoffs.
+Pitchfork isn't inherently better than other Ruby application servers; it mostly
+focuses on different tradeoffs.
 
 If you are fine with your current server, it's best to stick with it.
 
@@ -52,7 +52,7 @@ If there is a problem you are trying to solve, please read the
 
 ## Requirements
 
-Ruby(MRI) Version 2.5 and above.
+Ruby(MRI) Version 2.5 or above.
 
 `pitchfork` can be used on any Unix-like system, however the reforking
 feature requires `PR_SET_CHILD_SUBREAPER` which is a Linux 3.4 (May 2012) feature.
@@ -93,7 +93,7 @@ address:port or a UNIX socket.
 
 ### Configuration File(s)
 
-`pitchfork` will look for the config.ru file used by rackup in APP_ROOT.
+`pitchfork` will look for the config.ru file used by rackup in `APP_ROOT`.
 
 For deployments, it can use a config file for pitchfork-specific options
 specified by the `--config-file/-c` command-line switch.
@@ -108,8 +108,8 @@ supported.  Run `pitchfork -h` to see command-line options.
 
 ## Relation to Unicorn
 
-Pitchfork initially started as a Unicorn patch, however some of Unicorn features
-as well as Unicorn policy of supporting extremely old Ruby version made it challenging.
+Pitchfork initially started as a Unicorn patch, however some Unicorn features
+as well as the Unicorn policy of supporting extremely old Ruby version made it challenging.
 
 Forking was the occasion to significantly reduce the complexity.
 
@@ -134,6 +134,6 @@ Thanks to Eric Wong and all Unicorn and Mongrel contributors over the years.
 Pitchfork would have been much harder to implement otherwise.
 
 Thanks to Will Jordan who implemented Puma's "fork worker" experimental feature
-which have been a significant inspiration for Pitchfork.
+which has been a significant inspiration for Pitchfork.
 
 Thanks to Peter Bui for letting us use the `pitchfork` name on Rubygems.
