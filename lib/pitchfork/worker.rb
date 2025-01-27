@@ -208,6 +208,14 @@ module Pitchfork
       @master&.close
     end
 
+    def to_log
+      if mold?
+        pid ? "mold gen=#{generation} pid=#{pid}" : "mold gen=#{generation}"
+      else
+        pid ? "worker=#{nr} gen=#{generation} pid=#{pid}" : "worker=#{nr} gen=#{generation}"
+      end
+    end
+
     private
 
     def init_deadline
@@ -255,6 +263,10 @@ module Pitchfork
       message = Message::ServiceSpawned.new(@pid, generation, @master)
       control_socket.sendmsg(message)
       @master.close
+    end
+
+    def to_log
+      pid ? "service gen=#{generation} pid=#{pid}" : "service gen=#{generation}"
     end
 
     private

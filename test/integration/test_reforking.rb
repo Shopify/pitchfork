@@ -13,8 +13,8 @@ class ReforkingTest < Pitchfork::IntegrationTest
       CONFIG
 
       assert_healthy("http://#{addr}:#{port}")
-      assert_stderr "worker=0 gen=0 ready"
-      assert_stderr "worker=1 gen=0 ready"
+      assert_stderr(/worker=0 gen=0 pid=\d+ ready/)
+      assert_stderr(/worker=1 gen=0 pid=\d+ ready/)
 
       9.times do
         assert_equal true, healthy?("http://#{addr}:#{port}")
@@ -22,8 +22,8 @@ class ReforkingTest < Pitchfork::IntegrationTest
 
       assert_stderr "refork condition met, promoting ourselves", timeout: 3
       assert_stderr "Terminating old mold gen=0 pid="
-      assert_stderr "worker=0 gen=1 ready"
-      assert_stderr "worker=1 gen=1 ready"
+      assert_stderr(/worker=0 gen=1 pid=\d+ ready/)
+      assert_stderr(/worker=1 gen=1 pid=\d+ ready/)
 
       File.truncate("stderr.log", 0)
 
@@ -31,8 +31,8 @@ class ReforkingTest < Pitchfork::IntegrationTest
         assert_equal true, healthy?("http://#{addr}:#{port}")
       end
 
-      assert_stderr "worker=0 gen=2 ready", timeout: 3
-      assert_stderr "worker=1 gen=2 ready"
+      assert_stderr(/worker=0 gen=2 pid=\d+ ready/, timeout: 3)
+      assert_stderr(/worker=1 gen=2 pid=\d+ ready/)
 
       assert_clean_shutdown(pid)
     end
@@ -50,8 +50,8 @@ class ReforkingTest < Pitchfork::IntegrationTest
       CONFIG
 
       assert_healthy("http://#{addr}:#{port}")
-      assert_stderr "worker=0 gen=0 ready"
-      assert_stderr "worker=1 gen=0 ready"
+      assert_stderr(/worker=0 gen=0 pid=\d+ ready/)
+      assert_stderr(/worker=1 gen=0 pid=\d+ ready/)
 
       9.times do
         assert_equal true, healthy?("http://#{addr}:#{port}")
@@ -86,8 +86,8 @@ class ReforkingTest < Pitchfork::IntegrationTest
       CONFIG
 
       assert_healthy("http://#{addr}:#{port}")
-      assert_stderr "worker=0 gen=0 ready"
-      assert_stderr "worker=1 gen=0 ready", timeout: 5
+      assert_stderr(/worker=0 gen=0 pid=\d+ ready/)
+      assert_stderr(/worker=1 gen=0 pid=\d+ ready/, timeout: 5)
 
       9.times do
         assert_equal true, healthy?("http://#{addr}:#{port}")
@@ -126,8 +126,8 @@ class ReforkingTest < Pitchfork::IntegrationTest
       CONFIG
 
       assert_healthy("http://#{addr}:#{port}")
-      assert_stderr "worker=0 gen=0 ready"
-      assert_stderr "worker=1 gen=0 ready", timeout: 5
+      assert_stderr(/worker=0 gen=0 pid=\d+ ready/)
+      assert_stderr(/worker=1 gen=0 pid=\d+ ready/, timeout: 5)
 
       7.times do
         assert_equal true, healthy?("http://#{addr}:#{port}")
@@ -141,8 +141,8 @@ class ReforkingTest < Pitchfork::IntegrationTest
         assert_equal true, healthy?("http://#{addr}:#{port}")
       end
 
-      assert_stderr "worker=0 gen=1 ready", timeout: 15
-      assert_stderr "worker=1 gen=1 ready"
+      assert_stderr(/worker=0 gen=1 pid=\d+ ready/, timeout: 15)
+      assert_stderr(/worker=1 gen=1 pid=\d+ ready/)
 
       assert_clean_shutdown(pid)
     end
@@ -171,8 +171,8 @@ class ReforkingTest < Pitchfork::IntegrationTest
       CONFIG
 
       assert_healthy("http://#{addr}:#{port}")
-      assert_stderr "worker=0 gen=0 ready"
-      assert_stderr "worker=1 gen=0 ready", timeout: 5
+      assert_stderr(/worker=0 gen=0 pid=\d+ ready/)
+      assert_stderr(/worker=1 gen=0 pid=\d+ ready/, timeout: 5)
 
       7.times do
         assert_equal true, healthy?("http://#{addr}:#{port}")
@@ -186,8 +186,8 @@ class ReforkingTest < Pitchfork::IntegrationTest
         assert_equal true, healthy?("http://#{addr}:#{port}")
       end
 
-      assert_stderr "worker=0 gen=1 ready", timeout: 5
-      assert_stderr "worker=1 gen=1 ready"
+      assert_stderr(/worker=0 gen=1 pid=\d+ ready/, timeout: 5)
+      assert_stderr(/worker=1 gen=1 pid=\d+ ready/)
 
       assert_clean_shutdown(pid)
     end
@@ -202,8 +202,8 @@ class ReforkingTest < Pitchfork::IntegrationTest
       CONFIG
 
       assert_healthy("http://#{addr}:#{port}")
-      assert_stderr "worker=0 gen=0 ready"
-      assert_stderr "worker=1 gen=0 ready"
+      assert_stderr(/worker=0 gen=0 pid=\d+ ready/)
+      assert_stderr(/worker=1 gen=0 pid=\d+ ready/)
 
       20.times do
         assert_equal true, healthy?("http://#{addr}:#{port}")
@@ -223,14 +223,14 @@ class ReforkingTest < Pitchfork::IntegrationTest
       CONFIG
 
       assert_healthy("http://#{addr}:#{port}")
-      assert_stderr "worker=0 gen=0 ready"
-      assert_stderr "worker=1 gen=0 ready"
+      assert_stderr(/worker=0 gen=0 pid=\d+ ready/)
+      assert_stderr(/worker=1 gen=0 pid=\d+ ready/)
 
       Process.kill(:USR2, pid)
 
       assert_stderr "Terminating old mold gen=0 pid="
-      assert_stderr "worker=0 gen=1 ready"
-      assert_stderr "worker=1 gen=1 ready"
+      assert_stderr(/worker=0 gen=1 pid=\d+ ready/)
+      assert_stderr(/worker=1 gen=1 pid=\d+ ready/)
 
       assert_healthy("http://#{addr}:#{port}")
       assert_clean_shutdown(pid)
@@ -251,7 +251,7 @@ class ReforkingTest < Pitchfork::IntegrationTest
       CONFIG
 
       assert_healthy("http://#{addr}:#{port}")
-      assert_stderr "worker=0 gen=0 ready"
+      assert_stderr(/worker=0 gen=0 pid=\d+ ready/)
 
       Process.kill(:USR2, pid)
 
@@ -275,16 +275,16 @@ class ReforkingTest < Pitchfork::IntegrationTest
       CONFIG
 
       assert_healthy("http://#{addr}:#{port}")
-      assert_stderr "worker=0 gen=0 ready"
-      assert_stderr "worker=4 gen=0 ready"
+      assert_stderr(/worker=0 gen=0 pid=\d+ ready/)
+      assert_stderr(/worker=4 gen=0 pid=\d+ ready/)
 
       Process.kill(:USR2, pid)
 
-      assert_stderr "worker=0 gen=1 ready"
-      assert_stderr "worker=1 gen=1 ready"
-      assert_stderr "worker=2 gen=1 ready"
-      assert_stderr "worker=3 gen=1 ready"
-      assert_stderr "worker=4 gen=1 ready"
+      assert_stderr(/worker=0 gen=1 pid=\d+ ready/)
+      assert_stderr(/worker=1 gen=1 pid=\d+ ready/)
+      assert_stderr(/worker=2 gen=1 pid=\d+ ready/)
+      assert_stderr(/worker=3 gen=1 pid=\d+ ready/)
+      assert_stderr(/worker=4 gen=1 pid=\d+ ready/)
 
       assert_clean_shutdown(pid)
 

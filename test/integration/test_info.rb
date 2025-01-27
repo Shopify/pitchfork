@@ -11,7 +11,7 @@ class InfoTest < Pitchfork::IntegrationTest
     CONFIG
 
     assert_healthy("http://#{addr}:#{port}")
-    assert_stderr "worker=3 gen=0 ready"
+    assert_stderr(/worker=3 gen=0 pid=\d+ ready/)
 
     response = http_get("http://#{addr}:#{port}/")
     assert_equal({workers_count: 4, live_workers_count: 4}.inspect, response.body)

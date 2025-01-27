@@ -104,7 +104,7 @@ class TestBoot < Pitchfork::IntegrationTest
 
     assert_healthy("http://#{addr}:#{port}")
 
-    assert_stderr("worker=0 gen=0 ready")
+    assert_stderr(/worker=0 gen=0 pid=\d+ ready/)
     assert_stderr(/worker=1 gen=0 pid=\d+ registered/)
     assert_stderr(/worker=1 gen=0 pid=\d+ timed out, killing/, timeout: 4)
 
@@ -126,8 +126,8 @@ class TestBoot < Pitchfork::IntegrationTest
     RUBY
 
     assert_healthy("http://#{addr}:#{port}")
-    assert_stderr("worker=0 gen=0 ready")
-    assert_stderr("worker=1 gen=0 ready")
+    assert_stderr(/worker=0 gen=0 pid=\d+ ready/)
+    assert_stderr(/worker=1 gen=0 pid=\d+ ready/)
 
     Process.kill(:KILL, pid)
     Process.waitpid(pid)

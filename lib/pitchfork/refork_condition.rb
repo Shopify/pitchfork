@@ -19,7 +19,7 @@ module Pitchfork
           if worker.requests_count >= limit
             return false if backoff?
 
-            logger.info("worker=#{worker.nr} pid=#{worker.pid} processed #{worker.requests_count} requests, triggering a refork")
+            logger.info("#{worker.to_log} processed #{worker.requests_count} requests, triggering a refork")
             return true
           end
         end

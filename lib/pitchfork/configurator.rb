@@ -41,21 +41,17 @@ module Pitchfork
       :worker_processes => 1,
       :before_fork => nil,
       :after_worker_fork => lambda { |server, worker|
-        server.logger.info("worker=#{worker.nr} gen=#{worker.generation} pid=#{$$} spawned")
+        server.logger.info("#{worker.to_log} spawned")
       },
       :after_mold_fork => lambda { |server, worker|
-        server.logger.info("mold gen=#{worker.generation} pid=#{$$} spawned")
+        server.logger.info("#{worker.to_log} spawned")
       },
       :before_worker_exit => nil,
       :after_worker_exit => lambda { |server, worker, status|
         m = if worker.nil?
           "reaped unknown process (#{status.inspect})"
-        elsif worker.mold?
-          "mold gen=#{worker.generation rescue 'unknown'} pid=#{worker.pid rescue 'unknown'} reaped (#{status.inspect})"
-        elsif worker.service?
-          "service gen=#{worker.generation rescue 'unknown'} pid=#{worker.pid rescue 'unknown'} reaped (#{status.inspect})"
         else
-          "worker=#{worker.nr rescue 'unknown'} gen=#{worker.generation rescue 'unknown'} pid=#{worker.pid rescue 'unknown'} reaped (#{status.inspect})"
+          "#{worker.to_log} reaped (#{status.inspect})"
         end
         if status.success?
           server.logger.info(m)
@@ -64,7 +60,7 @@ module Pitchfork
         end
       },
       :after_worker_ready => lambda { |server, worker|
-        server.logger.info("worker=#{worker.nr} gen=#{worker.generation} ready")
+        server.logger.info("#{worker.to_log} ready")
       },
       :after_monitor_ready => lambda { |server|
         server.logger.info("monitor pid=#{Process.pid} ready")
