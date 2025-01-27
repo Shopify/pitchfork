@@ -49,13 +49,13 @@ module Pitchfork
       :before_worker_exit => nil,
       :after_worker_exit => lambda { |server, worker, status|
         m = if worker.nil?
-          "repead unknown process (#{status.inspect})"
+          "reaped unknown process (#{status.inspect})"
         elsif worker.mold?
-          "mold pid=#{worker.pid rescue 'unknown'} gen=#{worker.generation rescue 'unknown'} reaped (#{status.inspect})"
+          "mold gen=#{worker.generation rescue 'unknown'} pid=#{worker.pid rescue 'unknown'} reaped (#{status.inspect})"
         elsif worker.service?
-          "service pid=#{worker.pid rescue 'unknown'} gen=#{worker.generation rescue 'unknown'} reaped (#{status.inspect})"
+          "service gen=#{worker.generation rescue 'unknown'} pid=#{worker.pid rescue 'unknown'} reaped (#{status.inspect})"
         else
-          "worker=#{worker.nr rescue 'unknown'} pid=#{worker.pid rescue 'unknown'} gen=#{worker.generation rescue 'unknown'} reaped (#{status.inspect})"
+          "worker=#{worker.nr rescue 'unknown'} gen=#{worker.generation rescue 'unknown'} pid=#{worker.pid rescue 'unknown'} reaped (#{status.inspect})"
         end
         if status.success?
           server.logger.info(m)
@@ -67,7 +67,7 @@ module Pitchfork
         server.logger.info("worker=#{worker.nr} gen=#{worker.generation} ready")
       },
       :after_monitor_ready => lambda { |server|
-        server.logger.info("Monitor pid=#{Process.pid} ready")
+        server.logger.info("monitor pid=#{Process.pid} ready")
       },
       :after_worker_timeout => nil,
       :after_worker_hard_timeout => nil,

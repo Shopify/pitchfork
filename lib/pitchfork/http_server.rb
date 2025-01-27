@@ -363,19 +363,19 @@ module Pitchfork
       when Message::WorkerSpawned
         worker = @children.update(message)
         # TODO: should we send a message to the worker to acknowledge?
-        logger.info "worker=#{worker.nr} pid=#{worker.pid} gen=#{worker.generation} registered"
+        logger.info "worker=#{worker.nr} gen=#{worker.generation} pid=#{worker.pid} registered"
       when Message::MoldSpawned
         new_mold = @children.update(message)
-        logger.info("mold pid=#{new_mold.pid} gen=#{new_mold.generation} spawned")
+        logger.info("mold gen=#{new_mold.generation} pid=#{new_mold.pid} spawned")
       when Message::ServiceSpawned
         new_service = @children.update(message)
-        logger.info("service pid=#{new_service.pid} gen=#{new_service.generation} spawned")
+        logger.info("service gen=#{new_service.generation} pid=#{new_service.pid} spawned")
       when Message::MoldReady
         old_molds = @children.molds
         new_mold = @children.update(message)
-        logger.info("mold pid=#{new_mold.pid} gen=#{new_mold.generation} ready")
+        logger.info("mold gen=#{new_mold.generation} pid=#{new_mold.pid} ready")
         old_molds.each do |old_mold|
-          logger.info("Terminating old mold pid=#{old_mold.pid} gen=#{old_mold.generation}")
+          logger.info("Terminating old mold gen=#{old_mold.generation} pid=#{old_mold.pid}")
           old_mold.soft_kill(:TERM)
         end
       else
@@ -413,7 +413,7 @@ module Pitchfork
     end
 
     def worker_exit(worker)
-      logger.info "worker=#{worker.nr} pid=#{worker.pid} gen=#{worker.generation} exiting"
+      logger.info "worker=#{worker.nr} gen=#{worker.generation} pid=#{worker.pid} exiting"
       proc_name status: "exiting"
 
       if @before_worker_exit
@@ -427,7 +427,7 @@ module Pitchfork
     end
 
     def service_exit(service)
-      logger.info "service pid=#{service.pid} gen=#{service.generation} exiting"
+      logger.info "service gen=#{service.generation} pid=#{service.pid} exiting"
       proc_name status: "exiting"
 
       if @before_service_worker_exit
@@ -549,9 +549,9 @@ module Pitchfork
       end
 
       if child.mold?
-        logger.error "mold pid=#{child.pid} gen=#{child.generation} timed out, killing"
+        logger.error "mold gen=#{child.generation} pid=#{child.pid} timed out, killing"
       else
-        logger.error "worker=#{child.nr} pid=#{child.pid} gen=#{child.generation} timed out, killing"
+        logger.error "worker=#{child.nr} gen=#{child.generation} pid=#{child.pid} timed out, killing"
       end
       @children.hard_kill(@timeout_signal.call(child.pid), child) # take no prisoners for hard timeout violations
     end
@@ -759,9 +759,9 @@ module Pitchfork
       if service = @children.service
         if service.outdated?
           if service.soft_kill(:TERM)
-            logger.info("Sent SIGTERM to service pid=#{service.pid} gen=#{service.generation}")
+            logger.info("Sent SIGTERM to service gen=#{service.generation} pid=#{service.pid}")
           else
-            logger.info("Failed to send SIGTERM to service pid=#{service.pid} gen=#{service.generation}")
+            logger.info("Failed to send SIGTERM to service gen=#{service.generation} pid=#{service.pid}")
           end
         end
       end
@@ -770,10 +770,10 @@ module Pitchfork
         outdated_workers = @children.workers.select { |w| !w.exiting? && w.generation < @children.mold.generation }
         outdated_workers.each do |worker|
           if worker.soft_kill(:TERM)
-            logger.info("Sent SIGTERM to worker=#{worker.nr} pid=#{worker.pid} gen=#{worker.generation}")
+            logger.info("Sent SIGTERM to worker=#{worker.nr} gen=#{worker.generation} pid=#{worker.pid}")
             workers_to_restart -= 1
           else
-            logger.info("Failed to send SIGTERM to worker=#{worker.nr} pid=#{worker.pid} gen=#{worker.generation}")
+            logger.info("Failed to send SIGTERM to worker=#{worker.nr} gen=#{worker.generation} pid=#{worker.pid}")
           end
           break if workers_to_restart <= 0
         end
@@ -1005,7 +1005,7 @@ module Pitchfork
             if @refork_condition.met?(worker, logger)
               proc_name status: "requests: #{worker.requests_count}, spawning mold"
               if spawn_mold(worker)
-                logger.info("worker=#{worker.nr} gen=#{worker.generation} Refork condition met, promoting ourselves")
+                logger.info("worker=#{worker.nr} gen=#{worker.generation} refork condition met, promoting ourselves")
               end
               @refork_condition.backoff!
             end
@@ -1068,11 +1068,11 @@ module Pitchfork
                 spawn_worker(Worker.new(message.nr, generation: mold.generation), detach: true)
               rescue ForkFailure
                 if retries > 0
-                  @logger.fatal("mold pid=#{mold.pid} gen=#{mold.generation} Failed to spawn a worker. Retrying.")
+                  @logger.fatal("mold gen=#{mold.generation} pid=#{mold.pid} failed to spawn a worker, retrying")
                   retries -= 1
                   retry
                 else
-                  @logger.fatal("mold pid=#{mold.pid} gen=#{mold.generation} Failed to spawn a worker twice in a row. Corrupted mold process?")
+                  @logger.fatal("mold gen=#{mold.generation} pid=#{mold.pid} failed to spawn a worker twice in a row - corrupted mold process?")
                   Process.exit(1)
                 end
               rescue => error
@@ -1084,11 +1084,11 @@ module Pitchfork
                 spawn_service(Service.new(generation: mold.generation), detach: true)
               rescue ForkFailure
                 if retries > 0
-                  @logger.fatal("mold pid=#{mold.pid} gen=#{mold.generation} Failed to spawn a service. Retrying.")
+                  @logger.fatal("mold gen=#{mold.generation} pid=#{mold.pid} failed to spawn a service, retrying")
                   retries -= 1
                   retry
                 else
-                  @logger.fatal("mold pid=#{mold.pid} gen=#{mold.generation} Failed to spawn a service twice in a row. Corrupted mold process?")
+                  @logger.fatal("mold gen=#{mold.generation} pid=#{mold.pid} failed to spawn a service twice in a row - corrupted mold process?")
                   Process.exit(1)
                 end
               rescue => error

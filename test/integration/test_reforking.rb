@@ -20,8 +20,8 @@ class ReforkingTest < Pitchfork::IntegrationTest
         assert_equal true, healthy?("http://#{addr}:#{port}")
       end
 
-      assert_stderr "Refork condition met, promoting ourselves", timeout: 3
-      assert_stderr "Terminating old mold pid="
+      assert_stderr "refork condition met, promoting ourselves", timeout: 3
+      assert_stderr "Terminating old mold gen=0 pid="
       assert_stderr "worker=0 gen=1 ready"
       assert_stderr "worker=1 gen=1 ready"
 
@@ -57,8 +57,8 @@ class ReforkingTest < Pitchfork::IntegrationTest
         assert_equal true, healthy?("http://#{addr}:#{port}")
       end
 
-      assert_stderr "Refork condition met, promoting ourselves", timeout: 3
-      assert_stderr(/mold pid=\d+ gen=1 reaped/)
+      assert_stderr "refork condition met, promoting ourselves", timeout: 3
+      assert_stderr(/mold gen=1 pid=\d+ reaped/)
 
       assert_equal true, healthy?("http://#{addr}:#{port}")
 
@@ -93,10 +93,10 @@ class ReforkingTest < Pitchfork::IntegrationTest
         assert_equal true, healthy?("http://#{addr}:#{port}")
       end
 
-      assert_stderr "Refork condition met, promoting ourselves", timeout: 3
+      assert_stderr "refork condition met, promoting ourselves", timeout: 3
 
-      assert_stderr "Failed to spawn a worker. Retrying."
-      assert_stderr "Failed to spawn a worker twice in a row. Corrupted mold process?"
+      assert_stderr "failed to spawn a worker, retrying"
+      assert_stderr "failed to spawn a worker twice in a row - corrupted mold process?"
       assert_stderr "No mold alive, shutting down"
 
       assert_exited(pid, 1, timeout: 5)
@@ -133,9 +133,9 @@ class ReforkingTest < Pitchfork::IntegrationTest
         assert_equal true, healthy?("http://#{addr}:#{port}")
       end
 
-      assert_stderr(/mold pid=\d+ gen=1 spawned/)
+      assert_stderr(/mold gen=1 pid=\d+ spawned/)
       assert_stderr("[mold crashing]")
-      assert_stderr(/mold pid=\d+ gen=1 reaped/)
+      assert_stderr(/mold gen=1 pid=\d+ reaped/)
 
       10.times do
         assert_equal true, healthy?("http://#{addr}:#{port}")
@@ -178,9 +178,9 @@ class ReforkingTest < Pitchfork::IntegrationTest
         assert_equal true, healthy?("http://#{addr}:#{port}")
       end
 
-      assert_stderr(/mold pid=\d+ gen=1 spawned/)
+      assert_stderr(/mold gen=1 pid=\d+ spawned/)
       assert_stderr("[mold locking-up]")
-      assert_stderr(/mold pid=\d+ gen=1 reaped/, timeout: 10)
+      assert_stderr(/mold gen=1 pid=\d+ reaped/, timeout: 10)
 
       10.times do
         assert_equal true, healthy?("http://#{addr}:#{port}")
@@ -209,7 +209,7 @@ class ReforkingTest < Pitchfork::IntegrationTest
         assert_equal true, healthy?("http://#{addr}:#{port}")
       end
 
-      refute_match("Refork condition met, promoting ourselves", read_stderr)
+      refute_match("refork condition met, promoting ourselves", read_stderr)
 
       assert_clean_shutdown(pid)
     end
@@ -228,7 +228,7 @@ class ReforkingTest < Pitchfork::IntegrationTest
 
       Process.kill(:USR2, pid)
 
-      assert_stderr "Terminating old mold pid="
+      assert_stderr "Terminating old mold gen=0 pid="
       assert_stderr "worker=0 gen=1 ready"
       assert_stderr "worker=1 gen=1 ready"
 
