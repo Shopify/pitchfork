@@ -3,8 +3,8 @@
 * Simplicity: Pitchfork is a traditional UNIX prefork web server.
   No threads are used at all, this makes applications easier to debug
   and fix.
-  
-* Resiliency: If something in goes catastrophically wrong and your application
+
+* Resiliency: If something goes catastrophically wrong and your application
   is dead locked or somehow stuck, once the request timeout is reached the master
   process will take care of sending `kill -9` to the affected worker and
   spawn a new one to replace it.

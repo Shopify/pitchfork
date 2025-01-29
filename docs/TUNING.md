@@ -29,7 +29,7 @@ See Pitchfork::Configurator for details on the config file format.
 
 * Bigger is better. The more `worker_processes` you run, the more you'll
   benefit from Copy-on-Write. If your application use 1GiB of memory after boot,
-  running `10` worker process, the relative memory usage per worker will only be
+  running `10` worker processes, the relative memory usage per worker will only be
   `~100MiB`, whereas if you only run `5` worker processes, there relative usage will be
   `~200MiB`.
   So if you can chose your hardware, it's preferable to use a smaller number
