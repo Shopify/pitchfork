@@ -16,7 +16,7 @@ Each worker process will serve exactly one client at a time.
 
 ### `listen`
 
-By default pitchfork listen to port 8080.
+By default Pitchfork listens to port 8080.
 
 ```ruby
 listen 2007
@@ -25,19 +25,20 @@ listen 8080, tcp_nopush: true
 ```
 
 Adds an address to the existing listener set. May be specified more
-than once. address may be an Integer port number for a TCP port, an
+than once. The address may be an Integer port number for a TCP port, an
 `IP_ADDRESS:PORT` for TCP listeners or a pathname for UNIX domain sockets.
 
 ```ruby
 listen 3000 # listen to port 3000 on all TCP interfaces
-listen "127.0.0.1:3000"  # listen to port 3000 on the loopback interface
+listen "127.0.0.1:3000" # listen to port 3000 on the loopback interface
 listen "/path/to/.pitchfork.sock" # listen on the given Unix domain socket
 listen "[::1]:3000" # listen to port 3000 on the IPv6 loopback interface
 ```
 
 When using Unix domain sockets, be sure:
 1) the path matches the one used by nginx
-2) uses the same filesystem namespace as the nginx process
+2) to use the same filesystem namespace as the nginx process
+
 For systemd users using PrivateTmp=true (for either nginx or pitchfork),
 this means Unix domain sockets must not be placed in /tmp
 
@@ -152,7 +153,7 @@ The following options may be specified (but are generally not needed):
   disproportionally more requests than workers with higher PID.
   It generally isn't a problem, especially when reforking is enabled, but for
   applications that are routinely over provisioned, it may be desirable to
-  ensure all workers at least get some incoming requests so the can warm up.
+  ensure all workers at least get some incoming requests so they can warm up.
 
   Creating more than one queue allow to restrict which worker can process
   a given incomming request, hence making the load balancing fairer.
@@ -263,7 +264,7 @@ Due the low-complexity, low-overhead implementation, timeouts of less
 than 3.0 seconds can be considered inaccurate and unsafe.
 
 For running Pitchfork behind nginx, it is recommended to set
-"fail_timeout=0" for in your nginx configuration like this
+"fail_timeout=0" in your nginx configuration like this
 to have nginx always retry backends that may have had workers
 exit or be SIGKILL-ed due to timeouts.
 
@@ -307,14 +308,14 @@ The default Logger will log its output to STDERR.
 
 ## Callbacks
 
-Because pitchfork several callbacks around the lifecycle of workers.
+Pitchfork provides several callbacks hooks around the lifecycle of workers.
 It is often necessary to use these callbacks to close inherited connection after fork.
 
-Note that when reforking is available, the `pitchfork` monitor process won't load your application
+Note that when reforking is available, the Pitchfork monitor process won't load your application
 at all. As such for hooks executed in the monitor, you may need to explicitly load the parts of your
 application that are used in hooks.
 
-`pitchfork` also don't attempt to rescue hook errors. Raising from a worker hook will crash the worker,
+Pitchfork also doesn't attempt to rescue hook errors. Raising from a worker hook will crash the worker,
 and raising from a monitor hook will bring the whole cluster down.
 
 ### `after_monitor_ready`
@@ -330,7 +331,7 @@ end
 
 ### `before_fork`
 
-Called by the mold before forking a new workers, and by workers before they spawn a new mold.
+Called by the mold before forking new workers, and by workers before they spawn a new mold.
 
 ```ruby
 before_fork do |server|
