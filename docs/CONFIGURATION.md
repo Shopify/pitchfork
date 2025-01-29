@@ -437,8 +437,18 @@ end
 
 Once the callback complete, the worker will be signaled with `SIGKILL`.
 
-This callback being called in an indication that something is preventing the
+This callback being called is an indication that something is preventing the
 soft timeout from working.
+
+### `before_worker_exit`
+
+Called in the worker process before it is shut down.
+
+```ruby
+before_worker_exit do |server, worker|
+  server.logger.info("worker=#{worker.nr} shuts down after #{worker.requests_count} requests")
+end
+```
 
 ### `after_worker_exit`
 
