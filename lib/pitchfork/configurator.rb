@@ -14,7 +14,7 @@ module Pitchfork
     include Pitchfork
 
     # :stopdoc:
-    attr_accessor :set, :config_file, :after_load
+    attr_accessor :set, :config_file
 
     # used to stash stuff for deferred processing of cli options in
     # config.ru.  Do not rely on

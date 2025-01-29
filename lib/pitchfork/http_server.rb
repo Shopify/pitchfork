@@ -896,7 +896,7 @@ module Pitchfork
 
     # gets rid of stuff the worker has no business keeping track of
     # to free some resources and drops all sig handlers.
-    # traps for USR2, and HUP may be set in the after_fork Proc
+    # traps for USR2, and HUP may be set in the after_worker_fork/after_mold_fork Procs
     # by the user.
     def init_worker_process(worker)
       proc_name role: "(gen:#{worker.generation}) worker[#{worker.nr}]", status: "init"

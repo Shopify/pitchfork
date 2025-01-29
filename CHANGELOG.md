@@ -3,6 +3,7 @@
 - Add `setpgid` configuration option. When `false`, child processes are not reassigned to their own process group.
   Necessary for initiating a debugging session in a child process (#148).
 - Assume config file is located at `config/pitchfork.rb` if `-c` argument isn't provided.
+- Remove `Pitchfork::Configurator#after_load` and `Pitchfork::Configurator#after_load=`, which have had no function since v0.1.0.
 
 # 0.16.0
 
