@@ -11,15 +11,15 @@ class InfoTest < Pitchfork::IntegrationTest
     CONFIG
 
     assert_healthy("http://#{addr}:#{port}")
-    assert_stderr "worker=3 gen=0 ready"
+    assert_stderr(/worker=3 gen=0 pid=\d+ ready/)
 
     response = http_get("http://#{addr}:#{port}/")
     assert_equal({workers_count: 4, live_workers_count: 4}.inspect, response.body)
 
     Process.kill(:TTOU, pid)
-    assert_stderr(/worker=3 pid=\d+ gen=0 reaped/)
+    assert_stderr(/worker=3 gen=0 pid=\d+ reaped/)
     Process.kill(:TTOU, pid)
-    assert_stderr(/worker=2 pid=\d+ gen=0 reaped/)
+    assert_stderr(/worker=2 gen=0 pid=\d+ reaped/)
 
     response = http_get("http://#{addr}:#{port}/")
     assert_equal({workers_count: 4, live_workers_count: 2}.inspect, response.body)

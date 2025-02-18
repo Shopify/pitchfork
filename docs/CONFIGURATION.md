@@ -325,7 +325,7 @@ spawning the original workers.
 
 ```ruby
 after_monitor_ready do |server|
-  server.logger.info("Monitor pid=#{Process.pid} ready")
+  server.logger.info("monitor pid=#{Process.pid} ready")
 end
 ```
 
