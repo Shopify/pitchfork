@@ -1,4 +1,4 @@
-= Unicorn integration test suite
+= Pitchfork integration test suite
 
 These are all integration tests that start the server on random, unused
 TCP ports or Unix domain sockets.  They're all designed to run

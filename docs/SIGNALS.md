@@ -31,8 +31,7 @@ automatically respawned.
 
 * `INT` - Quick shutdown, immediately exit.
   The monitor process will respawn a worker to replace this one.
-  Immediate shutdown is still triggered using kill(2) and not the
-  internal pipe as of unicorn 4.8
+  Immediate shutdown is triggered using kill(2).
 
 * `QUIT/TERM` - Gracefully exit after finishing the current request.
   The monitor process will respawn a worker to replace this one.

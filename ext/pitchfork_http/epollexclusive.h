@@ -1,11 +1,11 @@
 /*
- * This is only intended for use inside a unicorn worker, nowhere else.
+ * This is only intended for use inside a pitchfork worker, nowhere else.
  * EPOLLEXCLUSIVE somewhat mitigates the thundering herd problem for
  * mostly idle processes since we can't use blocking accept4.
  * This is NOT intended for use with multi-threaded servers, nor
  * single-threaded multi-client ("C10K") servers or anything advanced
  * like that.  This use of epoll is only appropriate for a primitive,
- * single-client, single-threaded servers like unicorn that need to
+ * single-client, single-threaded servers like pitchfork that need to
  * support SIGKILL timeouts and parent death detection.
  */
 #if defined(HAVE_EPOLL_CREATE1)

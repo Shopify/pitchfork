@@ -1,6 +1,6 @@
 /*
  * Generic C functions and macros go here, there are no dependencies
- * on Unicorn internal structures or the Ruby C API in here.
+ * on Pitchfork internal structures or the Ruby C API in here.
  */
 
 #ifndef UH_util_h
@@ -60,7 +60,7 @@ static int hexchar2int(int xdigit)
   if (xdigit >= 'a' && xdigit <= 'f')
     return xdigit - 'a' + 10;
 
-  /* Ragel already does runtime range checking for us in Unicorn: */
+  /* Ragel already does runtime range checking for us in Pitchfork: */
   assert(xdigit >= '0' && xdigit <= '9' && "invalid digit character");
 
   return xdigit - '0';

@@ -34,7 +34,7 @@ the right tool with the right configuration for the right job.
 
 ## Improved Performance Through Reverse Proxying
 
-By acting as a buffer to shield unicorn from slow I/O, a reverse proxy
+By acting as a buffer to shield `pitchfork` from slow I/O, a reverse proxy
 will inevitably incur overhead in the form of extra data copies.
 However, as I/O within a local network is fast (and faster still
 with local sockets), this overhead is negligible for the vast majority
@@ -45,7 +45,7 @@ A reverse proxy for `pitchfork` should meet the following requirements:
 
 1. It should fully buffer all HTTP requests (and large responses).
    Each request should be "corked" in the reverse proxy and sent
-   as fast as possible to the backend unicorn processes.  This is
+   as fast as possible to the backend `pitchfork` processes.  This is
    the most important feature to look for when choosing a
    reverse proxy for `pitchfork`.
 
