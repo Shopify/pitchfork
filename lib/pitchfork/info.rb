@@ -104,7 +104,7 @@ module Pitchfork
 
       # Returns true if the server is shutting down.
       # This can be useful to implement health check endpoints, so they
-      # can fail immediately after TERM/QUIT/INT was received by the master
+      # can fail immediately after TERM/QUIT/INT was received by the monitor
       # process.
       # Otherwise they may succeed while Pitchfork is draining requests causing
       # more requests to be sent.

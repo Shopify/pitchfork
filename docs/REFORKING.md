@@ -50,15 +50,15 @@ When you start `pitchfork` it forks a `mold` process which loads your applicatio
 
 ```
 PID   COMMAND
-100   \_ pitchfork master
+100   \_ pitchfork monitor
 101       \_ pitchfork (gen:0) mold
 ```
 
-Once the `mold` is done loading, the `master` asks it to spawn the desired number of workers:
+Once the `mold` is done loading, the `monitor` asks it to spawn the desired number of workers:
 
 ```
 PID   COMMAND
-100   \_ pitchfork master
+100   \_ pitchfork monitor
 101       \_ pitchfork (gen:0) mold
 102       \_ pitchfork (gen:0) worker[0]
 103       \_ pitchfork (gen:0) worker[1]
@@ -66,14 +66,14 @@ PID   COMMAND
 105       \_ pitchfork (gen:0) worker[3]
 ```
 
-As the diagram shows, while workers are forked from the mold, they become children of the master process.
+As the diagram shows, while workers are forked from the mold, they become children of the monitor process.
 We'll see how does that work [later](#forking-sibling-processes).
 
 When a reforking is triggered, one of the workers is selected to fork a new `mold`:
 
 ```
 PID   COMMAND
-100   \_ pitchfork master
+100   \_ pitchfork monitor
 101       \_ pitchfork (gen:0) mold
 102       \_ pitchfork (gen:0) worker[0]
 103       \_ pitchfork (gen:0) worker[1]
@@ -82,7 +82,7 @@ PID   COMMAND
 105       \_ pitchfork (gen:1) mold
 ```
 
-Again, while the mold was forked from a worker, it becomes a child of the master process.
+Again, while the mold was forked from a worker, it becomes a child of the monitor process.
 We'll see how does that work [later](#forking-sibling-processes).
 
 When that new mold is ready, `pitchfork` terminates the old mold and starts a slow rollout of older workers and replace them with fresh workers
@@ -90,7 +90,7 @@ forked from the mold:
 
 ```
 PID   COMMAND
-100   \_ pitchfork master
+100   \_ pitchfork monitor
 102       \_ pitchfork (gen:0) worker[0]
 103       \_ pitchfork (gen:0) worker[1]
 104       \_ pitchfork (gen:0) worker[2]
@@ -100,7 +100,7 @@ PID   COMMAND
 
 ```
 PID   COMMAND
-100   \_ pitchfork master
+100   \_ pitchfork monitor
 103       \_ pitchfork (gen:0) worker[1]
 104       \_ pitchfork (gen:0) worker[2]
 105       \_ pitchfork (gen:0) worker[3]
@@ -117,15 +117,15 @@ a process tree such as:
 
 ```
 PID   COMMAND
-100   \_ pitchfork master
+100   \_ pitchfork monitor
 101       \_ pitchfork mold (gen:1)
 105          \_ pitchfork (gen:1) worker[0]
 ```
 
-However the `pitchfork` master process registers itself as a "child subreaper" via [`PR_SET_CHILD_SUBREAPER`](https://man7.org/linux/man-pages/man2/prctl.2.html).
-This means that any descendant process that is orphaned will be re-parented as a child of the master process rather than a child of the init process (pid 1).
+However the `pitchfork` monitor process registers itself as a "child subreaper" via [`PR_SET_CHILD_SUBREAPER`](https://man7.org/linux/man-pages/man2/prctl.2.html).
+This means that any descendant process that is orphaned will be re-parented as a child of the monitor process rather than a child of the init process (pid 1).
 
-With this in mind, the mold forks twice to create an orphaned process that will get re-attached to the master process,
+With this in mind, the mold forks twice to create an orphaned process that will get re-attached to the monitor process,
 effectively forking a sibling rather than a child. Similarly, workers do the same when forking new molds.
 This technique eases killing previous generations of molds and workers.
 

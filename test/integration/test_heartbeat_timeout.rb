@@ -40,7 +40,7 @@ class HearbeatTimeoutTest < Pitchfork::IntegrationTest
     new_worker_pid = Net::HTTP.get(URI("http://#{addr}:#{port}/"))
     refute_equal worker_pid, new_worker_pid
 
-    # SIGSTOP, wait, then SIGCONT master, worker shouldn't be affected
+    # SIGSTOP, wait, then SIGCONT monitor, worker shouldn't be affected
     Process.kill(:STOP, pid)
     sleep(timeout + 1)
     Process.kill(:CONT, pid)

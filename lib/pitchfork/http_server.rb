@@ -11,7 +11,7 @@ require 'pitchfork/info'
 module Pitchfork
   # This is the process manager of Pitchfork. This manages worker
   # processes which in turn handle the I/O and application process.
-  # Listener sockets are started in the master process and shared with
+  # Listener sockets are started in the monitor process and shared with
   # forked worker children.
   class HttpServer
     class TimeoutHandler
@@ -116,11 +116,11 @@ module Pitchfork
 
       proc_name role: 'monitor', status: ARGV.join(' ')
 
-      # We use @control_socket differently in the master and worker processes:
+      # We use @control_socket differently in the monitor and worker processes:
       #
-      # * The master process never closes or reinitializes this once
-      # initialized.  Signal handlers in the master process will write to
-      # it to wake up the master from IO.select in exactly the same manner
+      # * The monitor process never closes or reinitializes this once
+      # initialized.  Signal handlers in the monitor process will write to
+      # it to wake up the monitor from IO.select in exactly the same manner
       # djb describes in https://cr.yp.to/docs/selfpipe.html
       #
       # * The workers immediately close the pipe they inherit.  See the
@@ -142,7 +142,7 @@ module Pitchfork
       # attempt to connect to the listener(s)
       config.commit!(self, :skip => [:listeners, :pid])
       @orig_app = app
-      # list of signals we care about and trap in master.
+      # list of signals we care about and trap in monitor.
       @queue_sigs = [
         :QUIT, :INT, :TERM, :USR2, :TTIN, :TTOU ]
 
@@ -157,16 +157,16 @@ module Pitchfork
       # This socketpair is used to wake us up from select(2) in #join when signals
       # are trapped.  See trap_deferred.
       # It's also used by newly spawned children to send their soft_signal pipe
-      # to the master when they are spawned.
+      # to the monitor when they are spawned.
       @control_socket.replace(Pitchfork.socketpair)
       Info.keep_ios(@control_socket)
-      @master_pid = $$
+      @monitor_pid = $$
 
       # setup signal handlers before writing pid file in case people get
       # trigger happy and send signals as soon as the pid file exists.
       # Note that signals don't actually get handled until the #join method
-      @queue_sigs.each { |sig| trap(sig) { @sig_queue << sig; awaken_master } }
-      trap(:CHLD) { awaken_master }
+      @queue_sigs.each { |sig| trap(sig) { @sig_queue << sig; awaken_monitor } }
+      trap(:CHLD) { awaken_monitor }
 
       if REFORKING_AVAILABLE
         spawn_initial_mold
@@ -224,7 +224,7 @@ module Pitchfork
     # to delay between retries.
     # A negative value for +:tries+ indicates the listen will be
     # retried indefinitely, this is useful when workers belonging to
-    # different masters are spawned during a transparent upgrade.
+    # different monitors are spawned during a transparent upgrade.
     def listen(address, opt = listener_opts[address] || {})
       address = config.expand_addr(address)
       return if String === address && listener_names.include?(address)
@@ -291,7 +291,7 @@ module Pitchfork
 
       proc_name role: 'monitor', status: ARGV.join(' ')
 
-      logger.info "master process ready" # test_exec.rb relies on this message
+      logger.info "monitor process ready" # test_exec.rb relies on this message
       if @ready_pipe
         begin
           @ready_pipe.syswrite($$.to_s)
@@ -306,11 +306,11 @@ module Pitchfork
             break
           end
         rescue => e
-          Pitchfork.log_error(@logger, "master loop error", e)
+          Pitchfork.log_error(@logger, "monitor loop error", e)
         end
       end
       stop # gracefully shutdown all workers on our way out
-      logger.info "master complete status=#{@exit_status}"
+      logger.info "monitor complete status=#{@exit_status}"
       @exit_status
     end
 
@@ -326,7 +326,7 @@ module Pitchfork
 
       case message = @sig_queue.shift
       when nil
-        # avoid murdering workers after our master process (or the
+        # avoid murdering workers after our monitor process (or the
         # machine) comes out of suspend/hibernation
         if (@last_check + @timeout) >= (@last_check = Pitchfork.time_now)
           sleep_time = murder_lazy_workers
@@ -339,7 +339,7 @@ module Pitchfork
           restart_outdated_workers if REFORKING_AVAILABLE
         end
 
-        master_sleep(sleep_time) if sleep
+        monitor_sleep(sleep_time) if sleep
       when :QUIT, :TERM # graceful shutdown
         SharedMemory.shutting_down!
         logger.info "#{message} received, starting graceful shutdown"
@@ -384,7 +384,7 @@ module Pitchfork
       end
     end
 
-    # Terminates all workers, but does not exit master process
+    # Terminates all workers, but does not exit monitor process
     def stop(graceful = true)
       proc_name role: 'monitor', status: 'shutting down'
       @respawn = false
@@ -468,7 +468,7 @@ module Pitchfork
     private
 
     # wait for a signal handler to wake us up and then consume the pipe
-    def master_sleep(sec)
+    def monitor_sleep(sec)
       @control_socket[0].wait(sec) or return
       case message = @control_socket[0].recvmsg_nonblock(exception: false)
       when :wait_readable, NOOP
@@ -478,9 +478,9 @@ module Pitchfork
       end
     end
 
-    def awaken_master
-      return if $$ != @master_pid
-      @control_socket[1].sendmsg_nonblock(NOOP, exception: false) # wakeup master process from select
+    def awaken_monitor
+      return if $$ != @monitor_pid
+      @control_socket[1].sendmsg_nonblock(NOOP, exception: false) # wakeup monitor process from select
     end
 
     # reaps all unreaped workers
@@ -568,7 +568,7 @@ module Pitchfork
 
     def after_fork_internal
       @promotion_lock.at_fork
-      @control_socket[0].close_write # this is master-only, now
+      @control_socket[0].close_write # this is monitor-only, now
       @ready_pipe.close if @ready_pipe
       Pitchfork::Configurator::RACKUP.clear
       @ready_pipe = @init_listeners = nil
@@ -708,7 +708,7 @@ module Pitchfork
           spawn_worker(worker, detach: false)
         end
         # We could directly register workers when we spawn from the
-        # master, like pitchfork does. However it is preferable to
+        # monitor, like pitchfork does. However it is preferable to
         # always go through the asynchronous registering process for
         # consistency.
         @children.register(worker)
@@ -720,7 +720,7 @@ module Pitchfork
 
     def wait_for_pending_workers
       while @children.pending_workers?
-        master_sleep(0.5)
+        monitor_sleep(0.5)
         if monitor_loop(false) == StopIteration
           return StopIteration
         end
@@ -897,7 +897,7 @@ module Pitchfork
     def init_worker_process(worker)
       proc_name role: "(gen:#{worker.generation}) worker[#{worker.nr}]", status: "init"
       worker.reset
-      worker.register_to_master(@control_socket[1])
+      worker.register_to_monitor(@control_socket[1])
       # we'll re-trap :QUIT and :TERM later for graceful shutdown iff we accept clients
       exit_sigs = [ :QUIT, :TERM, :INT ]
       exit_sigs.each { |sig| trap(sig) { exit!(0) } }
@@ -923,7 +923,7 @@ module Pitchfork
     def init_service_process(service)
       proc_name role: "(gen:#{service.generation}) mold", status: "init"
       LISTENERS.each(&:close) # Don't appear as listening to incoming requests
-      service.register_to_master(@control_socket[1])
+      service.register_to_monitor(@control_socket[1])
       readers = [service]
       trap(:QUIT) { nuke_listeners!(readers) }
       trap(:TERM) { nuke_listeners!(readers) }
@@ -1161,9 +1161,9 @@ module Pitchfork
       if REFORKING_AVAILABLE
         r, w = Pitchfork::Info.keep_ios(IO.pipe)
         # We double fork so that the new worker is re-attached back
-        # to the master.
+        # to the monitor.
         # This requires either PR_SET_CHILD_SUBREAPER which is exclusive to Linux 3.4
-        # or the master to be PID 1.
+        # or the monitor to be PID 1.
         if middle_pid = FORK_LOCK.synchronize { Process.fork } # parent
           w.close
           # We need to wait(2) so that the middle process doesn't end up a zombie.
