@@ -58,7 +58,7 @@ class SignalsTest < Pitchfork::Test
     sock = tcp_socket('127.0.0.1', @port)
     sock.syswrite("GET / HTTP/1.0\r\n\r\n")
     buf = rd.readpartial(1)
-    wait_master_ready("test_stderr.#{pid}.log")
+    wait_monitor_ready("test_stderr.#{pid}.log")
     Process.kill(:INT, pid)
     Process.waitpid(pid)
     assert_equal '.', buf

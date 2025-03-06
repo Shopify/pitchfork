@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 module Pitchfork
-  # This class keep tracks of the state of all the master children.
+  # This class keep tracks of the state of all the monitor children.
   class Children
     attr_reader :mold, :service
     attr_accessor :last_generation

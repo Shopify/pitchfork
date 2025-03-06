@@ -1,6 +1,6 @@
 # Tuning pitchfork
 
-unicorn performance is generally as good as a (mostly) Ruby web server
+Pitchfork performance is generally as good as a (mostly) Ruby web server
 can provide. Most often the performance bottleneck is in the web
 application running on Pitchfork rather than Pitchfork itself.
 
@@ -14,7 +14,7 @@ See Pitchfork::Configurator for details on the config file format.
 * `worker_processes` should be scaled to the number of processes your
   backend system(s) can support. DO NOT scale it to the number of
   external network clients your application expects to be serving.
-  unicorn is NOT for serving slow clients, that is the job of nginx.
+  Pitchfork is NOT for serving slow clients, that is the job of nginx.
 
 * `worker_processes` should be *at* *least* the number of CPU cores on
   a dedicated server (unless you do not have enough memory).

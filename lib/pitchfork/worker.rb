@@ -14,14 +14,14 @@ module Pitchfork
     # :stopdoc:
     EXIT_SIGNALS = [:QUIT, :TERM]
     attr_accessor :nr, :pid, :generation
-    attr_reader :master, :requests_count
+    attr_reader :monitor, :requests_count
 
     def initialize(nr, pid: nil, generation: 0)
       @nr = nr
       @pid = pid
       @generation = generation
       @mold = false
-      @to_io = @master = nil
+      @to_io = @monitor = nil
       @exiting = false
       @requests_count = 0
       init_deadline
@@ -32,7 +32,7 @@ module Pitchfork
     end
 
     def pending?
-      @master.nil?
+      @monitor.nil?
     end
 
     def outdated?
@@ -52,18 +52,18 @@ module Pitchfork
       end
     end
 
-    def register_to_master(control_socket)
+    def register_to_monitor(control_socket)
       create_socketpair!
-      message = Message::WorkerSpawned.new(@nr, @pid, generation, @master)
+      message = Message::WorkerSpawned.new(@nr, @pid, generation, @monitor)
       control_socket.sendmsg(message)
-      @master.close
+      @monitor.close
     end
 
     def start_promotion(control_socket)
       create_socketpair!
-      message = Message::MoldSpawned.new(@nr, @pid, generation, @master)
+      message = Message::MoldSpawned.new(@nr, @pid, generation, @monitor)
       control_socket.sendmsg(message)
-      @master.close
+      @monitor.close
     end
 
     def finish_promotion(control_socket)
@@ -110,8 +110,8 @@ module Pitchfork
       @to_io.to_io
     end
 
-    def master=(socket)
-      @master = MessageSocket.new(socket)
+    def monitor=(socket)
+      @monitor = MessageSocket.new(socket)
     end
 
     # call a signal handler immediately without triggering EINTR
@@ -126,7 +126,7 @@ module Pitchfork
       trap(sig, old_cb)
     end
 
-    # master sends fake signals to children
+    # monitor sends fake signals to children
     def soft_kill(sig) # :nodoc:
       signum = Signal.list[sig.to_s] or raise ArgumentError, "BUG: bad signal: #{sig.inspect}"
 
@@ -149,7 +149,7 @@ module Pitchfork
         case buf = @to_io.recvmsg_nonblock(exception: false)
         when :wait_readable # keep waiting
           return false
-        when nil # EOF master died, but we are at a safe place to exit
+        when nil # EOF monitor died, but we are at a safe place to exit
           fake_sig(:QUIT)
           return false
         when Message::SoftKill
@@ -180,7 +180,7 @@ module Pitchfork
       @deadline_drop.value = value
     end
 
-    # called in the master process
+    # called in the monitor process
     def deadline # :nodoc:
       @deadline_drop.value
     end
@@ -193,19 +193,19 @@ module Pitchfork
       @requests_count += by
     end
 
-    # called in both the master (reaping worker) and worker (SIGQUIT handler)
+    # called in both the monitor (reaping worker) and worker (SIGQUIT handler)
     def close # :nodoc:
       self.deadline = 0
-      @master.close if @master
+      @monitor.close if @monitor
       @to_io.close if @to_io
     end
 
     def create_socketpair!
-      @to_io, @master = Info.keep_ios(Pitchfork.socketpair)
+      @to_io, @monitor = Info.keep_ios(Pitchfork.socketpair)
     end
 
     def after_fork_in_child
-      @master&.close
+      @monitor&.close
     end
 
     def to_log
@@ -230,14 +230,14 @@ module Pitchfork
     def pipe=(socket)
       raise ArgumentError, "pipe can't be nil" unless socket
       Info.keep_io(socket)
-      @master = MessageSocket.new(socket)
+      @monitor = MessageSocket.new(socket)
     end
 
     def send_message_nonblock(message)
       success = false
-      return false unless @master
+      return false unless @monitor
       begin
-        case @master.sendmsg_nonblock(message, exception: false)
+        case @monitor.sendmsg_nonblock(message, exception: false)
         when :wait_writable
         else
           success = true
@@ -258,11 +258,11 @@ module Pitchfork
       true
     end
 
-    def register_to_master(control_socket)
+    def register_to_monitor(control_socket)
       create_socketpair!
-      message = Message::ServiceSpawned.new(@pid, generation, @master)
+      message = Message::ServiceSpawned.new(@pid, generation, @monitor)
       control_socket.sendmsg(message)
-      @master.close
+      @monitor.close
     end
 
     def to_log

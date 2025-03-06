@@ -181,7 +181,7 @@ module Pitchfork
     end
 
     def assert_shutdown(pid)
-      wait_master_ready("test_stderr.#{pid}.log")
+      wait_monitor_ready("test_stderr.#{pid}.log")
       Process.kill(:QUIT, pid)
       pid, status = Process.waitpid2(pid)
       assert status.success?, "exited successfully"
@@ -202,16 +202,16 @@ module Pitchfork
             "\n\t#{lines.join("\n\t")}\n"
     end
 
-    def wait_master_ready(master_log)
+    def wait_monitor_ready(monitor_log)
       tries = DEFAULT_TRIES
       while (tries -= 1) > 0
         begin
-          File.readlines(master_log).grep(/master process ready/)[0] and return
+          File.readlines(monitor_log).grep(/monitor process ready/)[0] and return
         rescue Errno::ENOENT
         end
         sleep DEFAULT_RES
       end
-      raise "master process never became ready"
+      raise "monitor process never became ready"
     end
 
     def wait_for_file(path)

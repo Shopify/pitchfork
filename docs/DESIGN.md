@@ -5,7 +5,7 @@
   and fix.
 
 * Resiliency: If something goes catastrophically wrong and your application
-  is dead locked or somehow stuck, once the request timeout is reached the master
+  is dead locked or somehow stuck, once the request timeout is reached the monitor
   process will take care of sending `kill -9` to the affected worker and
   spawn a new one to replace it.
 
@@ -32,7 +32,7 @@
   optional, separate config_file may be used to modify supported
   configuration changes.
 
-* One master process spawns and reaps worker processes.
+* One monitor process spawns and reaps worker processes.
 
 * The number of worker processes should be scaled to the number of
   CPUs or memory you have. If you have an existing
@@ -75,12 +75,12 @@
   unportable event notification solutions for watching few
   file descriptors.
 
-* If the master process dies unexpectedly for any reason,
+* If the monitor process dies unexpectedly for any reason,
   workers will notice within :timeout/2 seconds and follow
-  the master to its death.
+  the monitor to its death.
 
 * There is never any explicit real-time dependency or communication
-  between the worker processes nor to the master process.
+  between the worker processes nor to the monitor process.
   Synchronization is handled entirely by the OS kernel and shared
   resources are never accessed by the worker when it is servicing
   a client.

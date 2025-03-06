@@ -26,7 +26,7 @@ run_once = true
 
 after_mold_fork do |server, mold|
   # Occasionally, it may be necessary to run non-idempotent code in the
-  # master before forking.  Keep in mind the above disconnect! example
+  # monitor before forking.  Keep in mind the above disconnect! example
   # is idempotent and does not need a guard.
   if run_once
     # do_something_once_here ...
