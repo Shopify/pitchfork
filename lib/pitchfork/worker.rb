@@ -24,7 +24,7 @@ module Pitchfork
       @to_io = @monitor = nil
       @exiting = false
       @requests_count = 0
-      init_deadline
+      init_state
     end
 
     def exiting?
@@ -46,9 +46,9 @@ module Pitchfork
 
       case message
       when Message::MoldSpawned
-        @deadline_drop = SharedMemory.mold_promotion_deadline
+        @state_drop = SharedMemory.mold_promotion_state
       when Message::MoldReady
-        @deadline_drop = SharedMemory.mold_deadline
+        @state_drop = SharedMemory.mold_state
       end
     end
 
@@ -70,7 +70,7 @@ module Pitchfork
       message = Message::MoldReady.new(@nr, @pid, generation)
       control_socket.sendmsg(message)
       SharedMemory.current_generation = @generation
-      @deadline_drop = SharedMemory.mold_deadline
+      @state_drop = SharedMemory.mold_state
     end
 
     def promote(generation)
@@ -93,7 +93,7 @@ module Pitchfork
     def promoted!(timeout)
       @mold = true
       @nr = nil
-      @deadline_drop = SharedMemory.mold_promotion_deadline
+      @state_drop = SharedMemory.mold_promotion_state
       update_deadline(timeout) if timeout
       self
     end
@@ -171,21 +171,29 @@ module Pitchfork
       super || (!@nr.nil? && @nr == other)
     end
 
-    # This sets the deadline and enables the ready flag.
+    def ready?
+      @state_drop.ready?
+    end
+
+    def ready=(bool)
+      @state_drop.ready = bool
+    end
+
     def update_deadline(timeout)
-      @deadline_drop.value |= 1
       self.deadline = Pitchfork.time_now(true) + timeout
     end
 
     # called in the worker process
     def deadline=(value) # :nodoc:
-      # If we are (re)setting to zero drop the ready bit.
-      @deadline_drop.value = value == 0 ? 0 : (value << 1) | (@deadline_drop.value & 1)
+      # If we are (re)setting to zero mark worker as not ready.
+      self.ready = false if value == 0
+
+      @state_drop.deadline = value
     end
 
     # called in the monitor process
     def deadline # :nodoc:
-      @deadline_drop.value >> 1
+      @state_drop.deadline
     end
 
     def reset
@@ -221,9 +229,9 @@ module Pitchfork
 
     private
 
-    def init_deadline
+    def init_state
       if nr
-        @deadline_drop = SharedMemory.worker_deadline(@nr)
+        @state_drop = SharedMemory.worker_state(@nr)
         self.deadline = 0
       else
         promoted!(nil)
@@ -274,8 +282,8 @@ module Pitchfork
 
     private
 
-    def init_deadline
-      @deadline_drop = SharedMemory.service_deadline
+    def init_state
+      @state_drop = SharedMemory.service_state
       self.deadline = 0
     end
   end

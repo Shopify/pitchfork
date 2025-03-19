@@ -44,20 +44,47 @@ module Pitchfork
       end
     end
 
-    def mold_deadline
-      self[MOLD_TICK_OFFSET]
+    class WorkerState
+      def initialize(field)
+        @field = field
+      end
+
+      def ready?
+        (@field.value & 1) == 1
+      end
+
+      def ready=(bool)
+        if bool
+          @field.value |= 1
+        else
+          @field.value &= ~1
+        end
+      end
+
+      def deadline=(value)
+        # Shift the value up and preserve the current ready bit.
+        @field.value = (value << 1) | (@field.value & 1)
+      end
+
+      def deadline
+        @field.value >> 1
+      end
     end
 
-    def mold_promotion_deadline
-      self[MOLD_PROMOTION_TICK_OFFSET]
+    def mold_state
+      WorkerState.new(self[MOLD_TICK_OFFSET])
     end
 
-    def service_deadline
-      self[SERVICE_TICK_OFFSET]
+    def mold_promotion_state
+      WorkerState.new(self[MOLD_PROMOTION_TICK_OFFSET])
     end
 
-    def worker_deadline(worker_nr)
-      self[WORKER_TICK_OFFSET + worker_nr]
+    def service_state
+      WorkerState.new(self[SERVICE_TICK_OFFSET])
+    end
+
+    def worker_state(worker_nr)
+      WorkerState.new(self[WORKER_TICK_OFFSET + worker_nr])
     end
 
     def [](offset)

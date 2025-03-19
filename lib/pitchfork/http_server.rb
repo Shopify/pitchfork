@@ -584,8 +584,7 @@ module Pitchfork
       # We set the deadline before spawning the child so that if for some
       # reason it gets stuck before reaching the worker loop,
       # the monitor process will kill it.
-      # Use #deadline= so that we don't mark the worker as ready.
-      worker.deadline = (Pitchfork.time_now(true) + @spawn_timeout)
+      worker.update_deadline(@spawn_timeout)
 
       @before_fork&.call(self)
       fork_sibling("spawn_worker") do
@@ -967,6 +966,8 @@ module Pitchfork
       @after_worker_ready.call(self, worker)
 
       proc_name status: "ready"
+
+      worker.ready = true
 
       while readers[0]
         begin
