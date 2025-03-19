@@ -584,7 +584,9 @@ module Pitchfork
       # We set the deadline before spawning the child so that if for some
       # reason it gets stuck before reaching the worker loop,
       # the monitor process will kill it.
-      worker.update_deadline(@spawn_timeout)
+      # Use #deadline= so that we don't mark the worker as ready.
+      worker.deadline = (Pitchfork.time_now(true) + @spawn_timeout)
+
       @before_fork&.call(self)
       fork_sibling("spawn_worker") do
         worker.pid = Process.pid

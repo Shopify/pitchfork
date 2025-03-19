@@ -171,18 +171,21 @@ module Pitchfork
       super || (!@nr.nil? && @nr == other)
     end
 
+    # This sets the deadline and enables the ready flag.
     def update_deadline(timeout)
+      @deadline_drop.value |= 1
       self.deadline = Pitchfork.time_now(true) + timeout
     end
 
     # called in the worker process
     def deadline=(value) # :nodoc:
-      @deadline_drop.value = value
+      # If we are (re)setting to zero drop the ready bit.
+      @deadline_drop.value = value == 0 ? 0 : (value << 1) | (@deadline_drop.value & 1)
     end
 
     # called in the monitor process
     def deadline # :nodoc:
-      @deadline_drop.value
+      @deadline_drop.value >> 1
     end
 
     def reset

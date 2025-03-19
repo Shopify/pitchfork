@@ -98,7 +98,8 @@ module Pitchfork
       def live_workers_count
         now = Pitchfork.time_now(true)
         (0...workers_count).count do |nr|
-          SharedMemory.worker_deadline(nr).value > now
+          val = SharedMemory.worker_deadline(nr).value
+          ((val & 1) == 1) && (val >> 1) > now
         end
       end
 
