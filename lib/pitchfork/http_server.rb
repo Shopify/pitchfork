@@ -922,7 +922,7 @@ module Pitchfork
 
     def init_service_process(service)
       proc_name role: "(gen:#{service.generation}) mold", status: "init"
-      LISTENERS.each(&:close) # Don't appear as listening to incoming requests
+      LISTENERS.each(&:close).clear # Don't appear as listening to incoming requests
       service.register_to_monitor(@control_socket[1])
       readers = [service]
       trap(:QUIT) { nuke_listeners!(readers) }
