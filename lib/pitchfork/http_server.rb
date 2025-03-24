@@ -585,6 +585,7 @@ module Pitchfork
       # reason it gets stuck before reaching the worker loop,
       # the monitor process will kill it.
       worker.update_deadline(@spawn_timeout)
+
       @before_fork&.call(self)
       fork_sibling("spawn_worker") do
         worker.pid = Process.pid
@@ -969,6 +970,8 @@ module Pitchfork
       @after_worker_ready.call(self, worker)
 
       proc_name status: "ready"
+
+      worker.ready = true
 
       while readers[0]
         begin
