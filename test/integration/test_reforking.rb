@@ -301,5 +301,49 @@ class ReforkingTest < Pitchfork::IntegrationTest
       end.compact
       assert_equal([:term, :registered] * 5, events)
     end
+
+    def test_signal_during_refork
+      addr, port = unused_port
+
+      flag_path = "/tmp/signal-sent-#{rand}.txt"
+
+      # Ref: https://github.com/Shopify/pitchfork/issues/160
+      # Simulate a TERM being received while initializing a mold
+      pid = spawn_server(app: File.join(ROOT, "test/integration/env.ru"), config: <<~CONFIG)
+        listen "#{addr}:#{port}"
+        worker_processes 1
+        refork_after [1, nil]
+
+        Pitchfork::ReforkCondition.backoff_delay = 0.0
+
+        after_mold_fork do |server, mold|
+          if mold.generation == 1
+            if !File.exist?("#{flag_path}")
+              File.write("#{flag_path}", "1")
+              server.logger.info("SELF KILL")
+              Process.kill(:TERM, Process.pid)
+            else
+              server.logger.info("SUCCESS")
+            end
+          end
+        end
+      CONFIG
+
+      2.times do
+        assert_healthy("http://#{addr}:#{port}")
+      end
+
+      assert_stderr(/mold gen=1 pid=\d+ reaped/)
+
+      2.times do
+        assert_healthy("http://#{addr}:#{port}")
+      end
+
+      assert_stderr(/SUCCESS/)
+
+      assert_clean_shutdown(pid)
+    ensure
+      puts read_stderr
+    end
   end
 end

@@ -890,6 +890,10 @@ module Pitchfork
       tmp.each { |io| io.close rescue nil } # break out of IO.select
     end
 
+    def reset_signal_handlers
+      [:QUIT, :TERM, :INT].each { |sig| trap(sig) { exit!(0) } }
+    end
+
     # gets rid of stuff the worker has no business keeping track of
     # to free some resources and drops all sig handlers.
     # traps for USR2, and HUP may be set in the after_worker_fork/after_mold_fork Procs
@@ -1002,6 +1006,8 @@ module Pitchfork
               proc_name status: "requests: #{worker.requests_count}, spawning mold"
               if spawn_mold(worker)
                 logger.info("#{worker.to_log} refork condition met, promoting ourselves")
+              else
+                logger.info("#{worker.to_log} refork condition met, but locked")
               end
               @refork_condition.backoff!
             end
@@ -1158,6 +1164,8 @@ module Pitchfork
     FORK_TIMEOUT = 5
 
     def fork_sibling(role, &block)
+      reset_signal_handlers
+
       if REFORKING_AVAILABLE
         r, w = Pitchfork::Info.keep_ios(IO.pipe)
         # We double fork so that the new worker is re-attached back
