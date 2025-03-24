@@ -1,9 +1,14 @@
 # Unreleased
 
+# 0.17.0
+
+- Improve `Pitchfork::Info#live_workers_count` to be more accurate.
+- Refactor all server logs to be more consistent.
 - Add `setpgid` configuration option. When `false`, child processes are not reassigned to their own process group.
   Necessary for initiating a debugging session in a child process (#148).
 - Assume config file is located at `config/pitchfork.rb` if `-c` argument isn't provided.
 - Remove `Pitchfork::Configurator#after_load` and `Pitchfork::Configurator#after_load=`, which have had no function since v0.1.0.
+- Fix a race condition triggered by a shutdown happening concurrently with a new mold initialization.
 
 # 0.16.0
 
