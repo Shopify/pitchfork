@@ -1006,8 +1006,6 @@ module Pitchfork
               proc_name status: "requests: #{worker.requests_count}, spawning mold"
               if spawn_mold(worker)
                 logger.info("#{worker.to_log} refork condition met, promoting ourselves")
-              else
-                logger.info("#{worker.to_log} refork condition met, but locked")
               end
               @refork_condition.backoff!
             end
