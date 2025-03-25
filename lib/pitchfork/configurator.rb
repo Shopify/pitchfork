@@ -75,7 +75,7 @@ module Pitchfork
       :client_body_buffer_size => Pitchfork::Const::MAX_BODY,
       :before_service_worker_ready => nil,
       :before_service_worker_exit => nil,
-      :setpgid => false,
+      :setpgid => true,
     }
     #:startdoc:
 
