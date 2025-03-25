@@ -216,6 +216,10 @@ module Pitchfork
       set_int(:worker_processes, nr, 1)
     end
 
+    def refork_max_unavailable(max)
+      set_int(:refork_max_unavailable, max, 1)
+    end
+
     def early_hints(bool)
       set_bool(:early_hints, bool)
     end

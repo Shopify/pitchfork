@@ -82,7 +82,7 @@ module Pitchfork
                   :listener_opts, :children,
                   :orig_app, :config, :ready_pipe, :early_hints, :setpgid
     attr_writer   :after_worker_exit, :before_worker_exit, :after_worker_ready, :after_request_complete,
-                  :refork_condition, :after_worker_timeout, :after_worker_hard_timeout, :after_monitor_ready
+                  :refork_condition, :after_worker_timeout, :after_worker_hard_timeout, :after_monitor_ready, :refork_max_unavailable
 
     attr_reader :logger
     include Pitchfork::SocketHelper
@@ -103,6 +103,7 @@ module Pitchfork
       @exit_status = 0
       @app = app
       @respawn = false
+      @refork_max_unavailable = nil
       @last_check = Pitchfork.time_now
       @promotion_lock = Flock.new("pitchfork-promotion")
       Info.keep_io(@promotion_lock)
@@ -467,6 +468,10 @@ module Pitchfork
 
     private
 
+    def refork_max_unavailable
+      @refork_max_unavailable ||= (worker_processes * 0.1).ceil
+    end
+
     # wait for a signal handler to wake us up and then consume the pipe
     def monitor_sleep(sec)
       @control_socket[0].wait(sec) or return
@@ -750,8 +755,7 @@ module Pitchfork
       # We don't shutdown any outdated worker if any worker is already being
       # spawned or a worker is exiting. Only 10% of workers can be reforked at
       # once to minimize the impact on capacity.
-      max_pending_workers = (worker_processes * 0.1).ceil
-      workers_to_restart = max_pending_workers - @children.restarting_workers_count
+      workers_to_restart = refork_max_unavailable - @children.restarting_workers_count
 
       if service = @children.service
         if service.outdated?

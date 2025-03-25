@@ -542,6 +542,21 @@ By default automatic reforking isn't enabled.
 
 Make sure to read the [fork safety guide](FORK_SAFETY.md) before enabling reforking.
 
+### `refork_max_unavailable`
+
+```ruby
+refork_max_unavailable 5
+```
+
+Sets the number of workers than can be restarted at a given time.
+
+When a new generation is created, workers from the old generation are rolled out progressively
+and replaced by fresh workers from the new generation.
+
+For instance `refork_max_unavailable 5` means 5 workers may be unavailable during the rollout phase.
+
+The default is `(workers_processes * 0.1).ceil`, or `10%` rounded up.
+
 ## Rack Features
 
 ### `early_hints`
