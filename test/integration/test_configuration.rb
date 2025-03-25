@@ -189,6 +189,25 @@ class ConfigurationTest < Pitchfork::IntegrationTest
     assert_clean_shutdown(pid)
   end
 
+  def test_setpgid_default
+    addr, port = unused_port
+
+    pid = spawn_server(app: File.join(ROOT, "test/integration/pid.ru"), config: <<~CONFIG)
+      listen "#{addr}:#{port}"
+      worker_processes 1
+    CONFIG
+
+    assert_healthy("http://#{addr}:#{port}")
+
+    worker_pid = Net::HTTP.get(URI("http://#{addr}:#{port}")).strip.to_i
+
+    pgid_pid = Process.getpgid(pid)
+    pgid_worker = Process.getpgid(worker_pid)
+
+    refute_equal(pgid_pid, pgid_worker)
+    assert_clean_shutdown(pid)
+  end
+
   def test_setpgid_true
     addr, port = unused_port
 
