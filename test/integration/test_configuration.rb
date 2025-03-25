@@ -41,6 +41,7 @@ class ConfigurationTest < Pitchfork::IntegrationTest
     assert_stderr("[before_fork]")
     assert_clean_shutdown(pid)
   end
+
   def test_before_worker_exit
     addr, port = unused_port
 

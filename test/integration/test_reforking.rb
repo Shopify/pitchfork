@@ -10,6 +10,7 @@ class ReforkingTest < Pitchfork::IntegrationTest
         listen "#{addr}:#{port}"
         worker_processes 2
         refork_after [5, 5]
+        refork_max_unavailable 1
       CONFIG
 
       assert_healthy("http://#{addr}:#{port}")
