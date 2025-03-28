@@ -1,5 +1,7 @@
 # Unreleased
 
+- Implemented the `max_consecutive_spawn_errors` configuration. Purely opt-in for now.
+
 # 0.17.0
 
 - Improve `Pitchfork::Info#live_workers_count` to be more accurate.

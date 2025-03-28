@@ -111,6 +111,40 @@ class TestBoot < Pitchfork::IntegrationTest
     assert_clean_shutdown(pid)
   end
 
+  def test_max_consecutive_spawn_timeout
+    addr, port = unused_port
+
+    pid = spawn_server(app: APP, config: <<~RUBY)
+      listen "#{addr}:#{port}"
+      worker_processes 3
+      max_consecutive_spawn_errors 4
+      spawn_timeout 1
+      after_worker_fork do |_server, worker|
+        sleep 20 # simulate a stuck worker
+      end
+    RUBY
+
+    assert_stderr(/consecutive failures to spawn children, aborting/, timeout: 4)
+    assert_exited(pid, 1)
+  end
+
+  def test_max_consecutive_spawn_errors
+    addr, port = unused_port
+
+    pid = spawn_server(app: APP, config: <<~RUBY)
+      listen "#{addr}:#{port}"
+      worker_processes 3
+      max_consecutive_spawn_errors 4
+      spawn_timeout 1
+      after_worker_fork do |_server, worker|
+        raise "Ooops"
+      end
+    RUBY
+
+    assert_stderr(/consecutive failures to spawn children, aborting/, timeout: 4)
+    assert_exited(pid, 1)
+  end
+
   test "workers and mold exit on monitor crash", isolated: true do
     skip("Missing CHILD_SUBREAPER") unless Pitchfork::CHILD_SUBREAPER_AVAILABLE
 

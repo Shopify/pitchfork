@@ -220,6 +220,10 @@ module Pitchfork
       set_int(:refork_max_unavailable, max, 1)
     end
 
+    def max_consecutive_spawn_errors(max)
+      set_int(:max_consecutive_spawn_errors, max, 1)
+    end
+
     def early_hints(bool)
       set_bool(:early_hints, bool)
     end

@@ -124,6 +124,7 @@ module Pitchfork
   class Message
     SpawnWorker = new(:nr)
     WorkerSpawned = new(:nr, :pid, :generation, :pipe)
+    WorkerReady = new(:nr, :pid, :generation)
     PromoteWorker = new(:generation)
 
     MoldSpawned = new(:nr, :pid, :generation, :pipe)
@@ -131,6 +132,7 @@ module Pitchfork
 
     SpawnService = new(:_) # Struct.new requires at least 1 member on Ruby < 3.3
     ServiceSpawned = new(:pid, :generation, :pipe)
+    ServiceReady = new(:pid, :generation)
 
     SoftKill = new(:signum)
   end
