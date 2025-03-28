@@ -343,8 +343,6 @@ class ReforkingTest < Pitchfork::IntegrationTest
       assert_stderr(/SUCCESS/)
 
       assert_clean_shutdown(pid)
-    ensure
-      puts read_stderr
     end
   end
 end

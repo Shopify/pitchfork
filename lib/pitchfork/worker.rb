@@ -67,10 +67,23 @@ module Pitchfork
     end
 
     def finish_promotion(control_socket)
+      SharedMemory.current_generation = @generation
       message = Message::MoldReady.new(@nr, @pid, generation)
       control_socket.sendmsg(message)
-      SharedMemory.current_generation = @generation
       @state_drop = SharedMemory.mold_state
+    end
+
+    def notify_ready(control_socket)
+      self.ready = true
+      message = if worker?
+        Message::WorkerReady.new(@nr, @pid, @generation)
+      elsif service?
+        Message::ServiceReady.new(@pid, @generation)
+      else
+        raise "Unexpected child type"
+      end
+
+      control_socket.sendmsg(message)
     end
 
     def promote(generation)
@@ -104,6 +117,10 @@ module Pitchfork
 
     def service?
       false
+    end
+
+    def worker?
+      !mold? && !service?
     end
 
     def to_io # IO.select-compatible
