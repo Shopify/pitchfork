@@ -557,6 +557,22 @@ For instance `refork_max_unavailable 5` means 5 workers may be unavailable durin
 
 The default is `(workers_processes * 0.1).ceil`, or `10%` rounded up.
 
+### `max_consecutive_spawn_errors`
+
+```ruby
+max_consecutive_spawn_errors 5
+```
+
+Sets the number of consecutive failures of spawning new workers that trigger a shutdown.
+
+Whenever a newly spawned worker fail to acheive readiness, either because it crashes or because
+it times out before becoming ready, a counter is incremented. Whenever a worker successfully
+reach readiness, the counter is reset.
+
+This can be useful to better handle issues with slow or broken `after_worker_fork` callbacks.
+
+The default is `nil`, which means the behavior is disabled.
+
 ## Rack Features
 
 ### `early_hints`

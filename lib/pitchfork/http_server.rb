@@ -82,7 +82,8 @@ module Pitchfork
                   :listener_opts, :children,
                   :orig_app, :config, :ready_pipe, :early_hints, :setpgid
     attr_writer   :after_worker_exit, :before_worker_exit, :after_worker_ready, :after_request_complete,
-                  :refork_condition, :after_worker_timeout, :after_worker_hard_timeout, :after_monitor_ready, :refork_max_unavailable
+                  :refork_condition, :after_worker_timeout, :after_worker_hard_timeout, :after_monitor_ready, :refork_max_unavailable,
+                  :max_consecutive_spawn_errors
 
     attr_reader :logger
     include Pitchfork::SocketHelper
@@ -104,6 +105,8 @@ module Pitchfork
       @app = app
       @respawn = false
       @refork_max_unavailable = nil
+      @consecutive_spawn_errors = 0
+      @max_consecutive_spawn_errors = nil
       @last_check = Pitchfork.time_now
       @promotion_lock = Flock.new("pitchfork-promotion")
       Info.keep_io(@promotion_lock)
@@ -331,6 +334,13 @@ module Pitchfork
         # machine) comes out of suspend/hibernation
         if (@last_check + @timeout) >= (@last_check = Pitchfork.time_now)
           sleep_time = murder_lazy_workers
+          if @max_consecutive_spawn_errors && @consecutive_spawn_errors > @max_consecutive_spawn_errors && !SharedMemory.shutting_down?
+            logger.fatal("#{@consecutive_spawn_errors} consecutive failures to spawn children, aborting - broken after_worker_fork callback?")
+            @exit_status = 1
+            SharedMemory.shutting_down!
+            stop(false)
+            return StopIteration
+          end
         else
           sleep_time = @timeout/2.0 + 1
           @logger.debug("waiting #{sleep_time}s after suspend/hibernation")
@@ -372,6 +382,7 @@ module Pitchfork
         new_service = @children.update(message)
         logger.info("#{new_service.to_log} spawned")
       when Message::MoldReady
+        @consecutive_spawn_errors = 0
         old_molds = @children.molds
         new_mold = @children.update(message)
         logger.info("#{new_mold.to_log} ready")
@@ -379,6 +390,8 @@ module Pitchfork
           logger.info("Terminating old #{old_mold.to_log}")
           old_mold.soft_kill(:TERM)
         end
+      when Message::WorkerReady, Message::ServiceReady
+        @consecutive_spawn_errors = 0
       else
         logger.error("Unexpected message in sig_queue #{message.inspect}")
         logger.error(@sig_queue.inspect)
@@ -495,6 +508,9 @@ module Pitchfork
         wpid or return
         worker = @children.reap(wpid) and worker.close rescue nil
         if worker
+          unless worker.ready?
+            @consecutive_spawn_errors += 1
+          end
           @after_worker_exit.call(self, worker, status)
         else
           logger.info("reaped unknown subprocess #{status.inspect}")
@@ -554,6 +570,7 @@ module Pitchfork
       end
 
       logger.error "#{child.to_log} timed out, killing"
+      @consecutive_spawn_errors += 1 unless child.ready?
       @children.hard_kill(@timeout_signal.call(child.pid), child) # take no prisoners for hard timeout violations
     end
 
@@ -618,6 +635,7 @@ module Pitchfork
         end
       end
 
+      service.notify_ready(@control_socket[1])
       proc_name status: "ready"
 
       while readers[0]
@@ -930,14 +948,13 @@ module Pitchfork
     end
 
     def init_service_process(service)
-      proc_name role: "(gen:#{service.generation}) mold", status: "init"
+      proc_name role: "(gen:#{service.generation}) service", status: "init"
       LISTENERS.each(&:close).clear # Don't appear as listening to incoming requests
       service.register_to_monitor(@control_socket[1])
       readers = [service]
       trap(:QUIT) { nuke_listeners!(readers) }
       trap(:TERM) { nuke_listeners!(readers) }
       trap(:INT) { nuke_listeners!(readers); exit!(0) }
-      proc_name role: "(gen:#{service.generation}) service", status: "ready"
       readers
     end
 
@@ -948,7 +965,6 @@ module Pitchfork
       trap(:QUIT) { nuke_listeners!(readers) }
       trap(:TERM) { nuke_listeners!(readers) }
       trap(:INT) { nuke_listeners!(readers); exit!(0) }
-      proc_name role: "(gen:#{mold.generation}) mold", status: "ready"
       readers
     end
 
@@ -973,9 +989,8 @@ module Pitchfork
       ready = readers.dup
       @after_worker_ready.call(self, worker)
 
+      worker.notify_ready(@control_socket[1])
       proc_name status: "ready"
-
-      worker.ready = true
 
       while readers[0]
         begin
@@ -1058,6 +1073,8 @@ module Pitchfork
       ready = readers.dup
 
       mold.finish_promotion(@control_socket[1])
+      mold.ready = true
+      proc_name status: "ready"
 
       while readers[0]
         begin
