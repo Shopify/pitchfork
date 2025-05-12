@@ -1186,8 +1186,6 @@ module Pitchfork
     FORK_TIMEOUT = 5
 
     def fork_sibling(role, &block)
-      reset_signal_handlers
-
       if REFORKING_AVAILABLE
         r, w = Pitchfork::Info.keep_ios(IO.pipe)
         # We double fork so that the new worker is re-attached back
@@ -1211,6 +1209,8 @@ module Pitchfork
             raise ForkFailure, "fork_sibling didn't succeed in #{FORK_TIMEOUT} seconds"
           end
         else # first child
+          reset_signal_handlers
+
           r.close
           Process.setproctitle("<pitchfork fork_sibling(#{role})>")
           pid = Pitchfork.clean_fork(setpgid: setpgid) do
