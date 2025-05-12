@@ -11,6 +11,10 @@ class ReforkingTest < Pitchfork::IntegrationTest
         worker_processes 2
         refork_after [5, 5]
         refork_max_unavailable 1
+
+        before_worker_exit do |server, worker|
+          server.logger.info("clean_exit worker=\#{worker.nr}")
+        end
       CONFIG
 
       assert_healthy("http://#{addr}:#{port}")
@@ -23,6 +27,7 @@ class ReforkingTest < Pitchfork::IntegrationTest
 
       assert_stderr "refork condition met, promoting ourselves", timeout: 3
       assert_stderr "Terminating old mold gen=0 pid="
+      assert_stderr(/clean_exit worker=0/)
       assert_stderr(/worker=0 gen=1 pid=\d+ ready/)
       assert_stderr(/worker=1 gen=1 pid=\d+ ready/)
 
