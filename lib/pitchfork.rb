@@ -87,7 +87,12 @@ module Pitchfork
         when /\.ru$/
           raw = File.read(ru)
           raw.sub!(/^__END__\n.*/, '')
-          eval("Rack::Builder.new {(\n#{raw}\n)}.to_app", TOPLEVEL_BINDING, ru)
+          lines = raw.lines
+          trailing_comments_index = lines.index { |line| !line.start_with?('#') }
+          prelude = lines[0...trailing_comments_index].join
+          raw = lines[trailing_comments_index..-1].join
+
+          eval("#{prelude}\nRack::Builder.new do\n#{raw}\nend.to_app\n", TOPLEVEL_BINDING, ru)
         else
           require ru
           Object.const_get(File.basename(ru, '.rb').capitalize)
