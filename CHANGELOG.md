@@ -3,6 +3,7 @@
 - Fix a regression introduced in `0.17.0` causing `before_worker_exit` to often not be called.
 - Implemented the `max_consecutive_spawn_errors` configuration. Purely opt-in for now.
 - Properly handle magic comments in `config.ru`.
+- Execute `rack.response_finished` callbacks in reverse order of registration
 
 # 0.17.0
 

@@ -893,7 +893,7 @@ module Pitchfork
       env
     ensure
       if env
-        env["rack.response_finished"].each do |callback|
+        env["rack.response_finished"].reverse_each do |callback|
           if callback.arity == 0
             callback.call
           else
