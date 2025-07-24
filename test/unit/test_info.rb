@@ -40,4 +40,37 @@ class TestInfo < Pitchfork::Test
       ], info)
     end
   end
+
+  def test_close_all_ios_catches_bad_file_descriptor_errors
+    fake_socket_reopen_badf = Class.new(File) do
+      def initialize
+        super(File::NULL)
+      end
+
+      def is_a?(mod)
+        super || mod == TCPSocket
+      end
+
+      def reopen(...)
+        raise Errno::EBADF
+      end
+    end
+
+    fake_file_close_ebadf = Class.new(File) do
+      def initialize
+        super(File::NULL)
+      end
+
+      def close
+        raise Errno::EBADF
+      end
+    end
+
+    @socket = fake_socket_reopen_badf.new
+    @file = fake_file_close_ebadf.new
+
+    Pitchfork::Info.close_all_ios!
+
+    assert true
+  end
 end

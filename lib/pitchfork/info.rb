@@ -67,9 +67,12 @@ module Pitchfork
           ObjectSpace.each_object(IO) do |io|
             if io_open?(io) && io_autoclosed?(io) && !ignored_ios.include?(io)
               if io.is_a?(TCPSocket)
-                # If we inherited a TCP Socket, calling #close directly could send FIN or RST.
-                # So we first reopen /dev/null to avoid that.
-                io.reopen(File::NULL)
+                begin
+                  # If we inherited a TCP Socket, calling #close directly could send FIN or RST.
+                  # So we first reopen /dev/null to avoid that.
+                  io.reopen(File::NULL)
+                rescue Errno::EBADF
+                end
               end
               begin
                 io.close
