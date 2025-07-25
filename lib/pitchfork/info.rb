@@ -69,7 +69,10 @@ module Pitchfork
               if io.is_a?(TCPSocket)
                 # If we inherited a TCP Socket, calling #close directly could send FIN or RST.
                 # So we first reopen /dev/null to avoid that.
-                io.reopen(File::NULL)
+                begin
+                  io.reopen(File::NULL)
+                rescue Errno::EBADF
+                end
               end
               begin
                 io.close
