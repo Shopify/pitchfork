@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.18.1
+
 - Handle potential Errno::EBADF raised by `IO#reopen` in `Pitchfork::Info.close_all_ios!`.
 
 # 0.18.0
