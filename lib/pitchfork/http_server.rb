@@ -1014,9 +1014,10 @@ module Pitchfork
             when Message
               worker.update(client)
             else
-              request_env = process_client(client, worker, prepare_timeout(worker))
-              worker.increment_requests_count
-              @after_request_complete&.call(self, worker, request_env)
+              if (request_env = process_client(client, worker, prepare_timeout(worker)))
+                worker.increment_requests_count
+                @after_request_complete&.call(self, worker, request_env)
+              end
             end
 
             worker.update_deadline(@timeout)

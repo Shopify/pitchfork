@@ -121,4 +121,34 @@ class ParserErrorTest < Pitchfork::IntegrationTest
 
     assert_clean_shutdown(pid)
   end
+
+  def test_after_request_complete_receives_partial_env_on_error
+    addr, port = unused_port
+
+    pid = spawn_server(app: File.join(ROOT, "test/integration/env.ru"), config: <<~CONFIG)
+      listen "#{addr}:#{port}"
+
+      after_request_complete do |server, worker, env|
+        $stderr.puts "\#{env["REQUEST_METHOD"]}"
+      rescue
+        $stderr.puts "after_request_complete error"
+      end
+    CONFIG
+
+    assert_healthy("http://#{addr}:#{port}")
+
+    Socket.tcp(addr, port) do |sock|
+      sock.print("BAD")
+      sock.close_write
+    end
+
+    # run another request so we don't need to wait for a timeout
+    assert_equal "200", http_get("http://#{addr}:#{port}/").code
+
+    print_stderr_on_error do
+      refute_match("after_request_complete error", read_stderr)
+    end
+
+    assert_clean_shutdown(pid)
+  end
 end
