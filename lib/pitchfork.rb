@@ -16,6 +16,7 @@ require 'rack'
 # applications, so applications should be written against the Rack SPEC
 # and not pitchfork internals.
 module Pitchfork
+  PATH_INFO_REQUIRES_LEADING_SLASH = Gem::Version.new(Rack.release) < Gem::Version.new('3.2.0')
 
   # Raised inside TeeInput when a client closes the socket inside the
   # application dispatch.  This is always raised with an empty backtrace
