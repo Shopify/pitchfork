@@ -121,4 +121,28 @@ class ParserErrorTest < Pitchfork::IntegrationTest
 
     assert_clean_shutdown(pid)
   end
+
+  def test_after_request_complete_receives_partial_env_on_error
+    addr, port = unused_port
+
+    pid = spawn_server(app: File.join(ROOT, "test/integration/env.ru"), config: <<~CONFIG)
+      listen "#{addr}:#{port}"
+
+      after_request_complete do |server, worker, env|
+        $stderr.puts "[after_request_complete] \#{"BAD" unless env['REQUEST_METHOD'] == "GET"}"
+      end
+    CONFIG
+
+    assert_healthy("http://#{addr}:#{port}")
+
+    # Trigger parse error
+    Socket.tcp(addr, port) do |sock|
+      sock.print("BAD")
+      sock.close_write
+    end
+
+    assert_stderr("[after_request_complete] BAD")
+
+    assert_clean_shutdown(pid)
+  end
 end
