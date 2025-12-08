@@ -3,12 +3,7 @@
 require 'etc'
 require 'stringio'
 require 'io/wait'
-
-begin
-  require 'rack'
-rescue LoadError
-  warn 'rack not available, functionality reduced'
-end
+require 'rack'
 
 # :stopdoc:
 # Pitchfork module containing all of the classes (include C extensions) for
