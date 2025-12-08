@@ -63,6 +63,13 @@ module BaseWebServerTests
     end
   end
 
+  class TestRaiseAfterResponseWritten
+    def call(env)
+      body = Rack::BodyProxy.new(['hello!\n']) { raise "response already written" }
+      [200, { 'content-type' => 'text/plain' }, body]
+    end
+  end
+
   def setup
     @valid_request = "GET / HTTP/1.1\r\nHost: www.zedshaw.com\r\nContent-Type: text/plain\r\n\r\n"
     @port = unused_port
@@ -180,6 +187,21 @@ class WebServerStartTest < Pitchfork::Test
     sock.syswrite("GET / HTTP/1.0\r\n\r\n")
     assert_match %r{\AHTTP/1.[01] 500\b}, sock.sysread(4096)
     assert_nil sock.close
+  end
+
+  def test_raise_after_response_written
+    redirect_test_io do
+      @server = Pitchfork::HttpServer.new(TestRaiseAfterResponseWritten.new, :listeners => [ "127.0.0.1:#@port"])
+      @server.start
+    end
+
+    sock = tcp_socket('127.0.0.1', @port)
+    sock.syswrite("GET / HTTP/1.0\r\n\r\n")
+
+    responses = sock.read(4096)
+
+    assert_match %r{^HTTP/1.[01] 200\b}, responses
+    refute_match %r{HTTP/1.[01] 500\b}, responses
   end
 end
 

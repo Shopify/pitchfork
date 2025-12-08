@@ -803,7 +803,7 @@ module Pitchfork
     # assuming we haven't closed the socket, but don't get hung up
     # if the socket is already closed or broken.  We'll always ensure
     # the socket is closed at the end of this function
-    def handle_error(client, e)
+    def handle_error(client, e, response_written)
       code = case e
       when EOFError,Errno::ECONNRESET,Errno::EPIPE,Errno::ENOTCONN
         # client disconnected on us and there's nothing we can do
@@ -817,7 +817,7 @@ module Pitchfork
         Pitchfork.log_error(@logger, "app error", e)
         500
       end
-      if code
+      if code && !response_written
         client.write_nonblock(err_response(code, @request.response_start_sent), exception: false)
       end
       client.close
@@ -842,6 +842,7 @@ module Pitchfork
     # once a client is accepted, it is processed in its entirety here
     # in 3 easy steps: read request, call app, write app response
     def process_client(client, worker, timeout_handler)
+      response_written = false
       env = nil
       @request = Pitchfork::HttpParser.new
       env = @request.read(client)
@@ -876,6 +877,7 @@ module Pitchfork
         end
         @request.headers? or headers = nil
         http_response_write(client, status, headers, body, @request)
+        response_written = true
       ensure
         body.respond_to?(:close) and body.close
       end
@@ -889,7 +891,7 @@ module Pitchfork
       end
       env
     rescue => application_error
-      handle_error(client, application_error)
+      handle_error(client, application_error, response_written)
       env
     ensure
       if env
