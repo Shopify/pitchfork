@@ -92,6 +92,10 @@ module Pitchfork
       e['pitchfork.socket'] = socket
       e['rack.hijack'] = self
 
+      if PATH_INFO_REQUIRES_LEADING_SLASH && e['PATH_INFO'] == '*'
+        e.delete('PATH_INFO')
+      end
+
       e.merge!(DEFAULTS)
     end
 

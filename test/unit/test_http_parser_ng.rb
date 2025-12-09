@@ -539,7 +539,7 @@ module Pitchfork
 
       assert_equal uri, req["REQUEST_URI"], "REQUEST_URI mismatch"
       assert_equal "", req["QUERY_STRING"], "QUERY_STRING mismatch"
-      assert_nil req["PATH_INFO"], "PATH_INFO mismatch"
+      assert_equal "*", req["PATH_INFO"], "PATH_INFO mismatch"
     end
 
     def test_path_info_semicolon_absolute

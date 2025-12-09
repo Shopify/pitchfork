@@ -29,7 +29,12 @@ module Pitchfork
                                "Host: foo\r\n\r\n")
       env = @request.read(client)
       assert_nil env['REQUEST_PATH']
-      assert_nil env['PATH_INFO']
+
+      if Pitchfork::PATH_INFO_REQUIRES_LEADING_SLASH
+        assert_nil env['PATH_INFO']
+      else
+        assert_equal '*', env['PATH_INFO']
+      end
       assert_equal '*', env['REQUEST_URI']
       assert_kind_of Array, @lint.call(env)
     end

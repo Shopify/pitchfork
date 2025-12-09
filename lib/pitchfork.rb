@@ -3,12 +3,7 @@
 require 'etc'
 require 'stringio'
 require 'io/wait'
-
-begin
-  require 'rack'
-rescue LoadError
-  warn 'rack not available, functionality reduced'
-end
+require 'rack'
 
 # :stopdoc:
 # Pitchfork module containing all of the classes (include C extensions) for
@@ -21,6 +16,7 @@ end
 # applications, so applications should be written against the Rack SPEC
 # and not pitchfork internals.
 module Pitchfork
+  PATH_INFO_REQUIRES_LEADING_SLASH = Gem::Version.new(Rack.release) < Gem::Version.new('3.2.0')
 
   # Raised inside TeeInput when a client closes the socket inside the
   # application dispatch.  This is always raised with an empty backtrace

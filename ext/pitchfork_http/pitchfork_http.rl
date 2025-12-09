@@ -340,17 +340,18 @@ static void write_value(VALUE self, struct http_parser *hp,
   }
   action host { rb_hash_aset(hp->env, g_http_host, STR_NEW(mark, fpc)); }
   action request_uri {
+    VALUE str;
+
     VALIDATE_MAX_URI_LENGTH(LEN(mark, fpc), REQUEST_URI);
-    rb_hash_aset(hp->env, g_request_uri, STR_NEW(mark, fpc));
+    str = rb_hash_aset(hp->env, g_request_uri, STR_NEW(mark, fpc));
+
+    if (STR_CSTR_EQ(str, "*")) {
+      rb_hash_aset(hp->env, g_path_info, str);
+    }
   }
   action fragment {
     VALIDATE_MAX_URI_LENGTH(LEN(mark, fpc), FRAGMENT);
-    VALUE str = rb_hash_aset(hp->env, g_fragment, STR_NEW(mark, fpc));
-    if (STR_CSTR_EQ(str, "*")) {
-      VALUE str = rb_str_new("*", 1);
-      rb_hash_aset(hp->env, g_path_info, str);
-      rb_hash_aset(hp->env, g_request_path, str);
-    }
+    rb_hash_aset(hp->env, g_fragment, STR_NEW(mark, fpc));
   }
   action start_query {MARK(start.query, fpc); }
   action query_string {
@@ -364,9 +365,7 @@ static void write_value(VALUE self, struct http_parser *hp,
     VALIDATE_MAX_URI_LENGTH(LEN(mark, fpc), REQUEST_PATH);
     val = rb_hash_aset(hp->env, g_request_path, STR_NEW(mark, fpc));
 
-    /* rack says PATH_INFO must start with "/" or be empty */
-    if (!STR_CSTR_EQ(val, "*"))
-      rb_hash_aset(hp->env, g_path_info, val);
+    rb_hash_aset(hp->env, g_path_info, val);
   }
   action add_to_chunk_size {
     hp->len.chunk = step_incr(hp->len.chunk, fc, 16);
