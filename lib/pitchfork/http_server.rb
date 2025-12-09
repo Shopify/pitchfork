@@ -893,6 +893,7 @@ module Pitchfork
     rescue => application_error
       handle_error(client, application_error, response_written)
       env
+      env || @request&.env
     ensure
       if env
         env["rack.response_finished"].reverse_each do |callback|
@@ -1016,7 +1017,7 @@ module Pitchfork
             else
               request_env = process_client(client, worker, prepare_timeout(worker))
               worker.increment_requests_count
-              @after_request_complete&.call(self, worker, request_env)
+              @after_request_complete&.call(self, worker, request_env || {})
             end
 
             worker.update_deadline(@timeout)
