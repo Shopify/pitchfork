@@ -1,7 +1,13 @@
 # -*- encoding: binary -*-
 # frozen_string_literal: true
 
-require 'pitchfork/pitchfork_http'
+begin
+  # Load the precompiled version of the library
+  ruby_version = /(\d+\.\d+)/.match(RUBY_VERSION)
+  require "pitchfork/#{ruby_version}/pitchfork_http"
+rescue LoadError
+  require 'pitchfork/pitchfork_http'
+end
 require 'pitchfork/listeners'
 require 'pitchfork/flock'
 require 'pitchfork/soft_timeout'

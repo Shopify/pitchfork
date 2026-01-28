@@ -186,7 +186,13 @@ module Pitchfork
 end
 # :enddoc:
 
-require 'pitchfork/pitchfork_http'
+begin
+  # Load the precompiled version of the library
+  ruby_version = /(\d+\.\d+)/.match(RUBY_VERSION)
+  require "pitchfork/#{ruby_version}/pitchfork_http"
+rescue LoadError
+  require 'pitchfork/pitchfork_http'
+end
 
 Pitchfork::REFORKING_AVAILABLE = Pitchfork::CHILD_SUBREAPER_AVAILABLE || Process.pid == 1
 
