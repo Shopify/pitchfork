@@ -1,5 +1,11 @@
 # Unreleased
 
+# 0.18.2
+
+- Fix after_request_complete getting nil env on parsing exceptions.
+- Fix Rack 3.2 compatibility (`PATH_INFO` will now be `"*"` for `OPTIONS *`).
+- Avoid double response on post-response exception.
+
 # 0.18.1
 
 - Handle potential Errno::EBADF raised by `IO#reopen` in `Pitchfork::Info.close_all_ios!`.
