@@ -1,0 +1,87 @@
+name: "Package and release gems with precompiled binaries"
+on:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: "If the whole build passes on all platforms, release the gems on RubyGems.org"
+        required: false
+        type: boolean
+        default: false
+jobs:
+  compile:
+    timeout-minutes: 20
+    name: "Cross compile the gem on different ruby versions"
+    strategy:
+      matrix:
+        os: ["macos-latest", "ubuntu-22.04"]
+    runs-on: "${{ matrix.os }}"
+    steps:
+      - name: "Checkout code"
+        uses: "actions/checkout@v5"
+      - name: "Setup Ruby"
+        uses: "ruby/setup-ruby@v1"
+        with:
+          ruby-version: "3.1.7"
+          bundler-cache: true
+      - name: "Run cibuildgem"
+        uses: "shopify/cibuildgem/.github/actions/cibuildgem@main"
+        with:
+          step: "compile"
+  test:
+    timeout-minutes: 20
+    name: "Run the test suite"
+    needs: compile
+    strategy:
+      matrix:
+        os: ["macos-latest", "ubuntu-22.04"]
+        rubies: ["3.1", "3.2", "3.3", "3.4", "4.0"]
+        type: ["cross", "native"]
+    runs-on: "${{ matrix.os }}"
+    steps:
+      - name: "Checkout code"
+        uses: "actions/checkout@v5"
+      - name: "Setup Ruby"
+        uses: "ruby/setup-ruby@v1"
+        with:
+          ruby-version: "${{ matrix.rubies }}"
+          bundler-cache: true
+      - name: "Run cibuildgem"
+        uses: "shopify/cibuildgem/.github/actions/cibuildgem@main"
+        with:
+          step: "test_${{ matrix.type }}"
+  install:
+    timeout-minutes: 5
+    name: "Verify the gem can be installed"
+    needs: test
+    strategy:
+      matrix:
+        os: ["macos-latest", "ubuntu-22.04"]
+    runs-on: "${{ matrix.os }}"
+    steps:
+      - name: "Setup Ruby"
+        uses: "ruby/setup-ruby@v1"
+        with:
+          ruby-version: "4.0.0"
+      - name: "Run cibuildgem"
+        uses: "shopify/cibuildgem/.github/actions/cibuildgem@main"
+        with:
+          step: "install"
+  release:
+    environment: release
+    permissions:
+      id-token: write
+      contents: read
+    timeout-minutes: 5
+    if: ${{ inputs.release }}
+    name: "Release all gems with RubyGems"
+    needs: install
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: "Setup Ruby"
+        uses: "ruby/setup-ruby@v1"
+        with:
+          ruby-version: "4.0.0"
+      - name: "Run cibuildgem"
+        uses: "shopify/cibuildgem/.github/actions/cibuildgem@main"
+        with:
+          step: "release"
