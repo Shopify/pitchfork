@@ -97,7 +97,18 @@ module Pitchfork
         Rack::Builder.new do
           use(Rack::ContentLength)
           use(Pitchfork::Chunked)
-          use(Rack::Lint) if ENV["RACK_ENV"] == "development"
+          # Rack 3 dropped `rewind` from the strict `rack.input` surface, so
+          # `Rack::Lint::Wrapper::InputWrapper` no longer exposes it. Rails
+          # middleware (cookies, body parsers) and third-party Rack middleware
+          # still call `request.body.rewind` (or read the body twice), so
+          # inserting `Rack::Lint` here in development silently breaks every
+          # body-bearing request the moment a config switches a dev `web:`
+          # process to Pitchfork. The dev-affordance value of Lint is no longer
+          # worth the trap on Rack 3+, so only auto-insert under Rack 2.
+          # See https://github.com/Shopify/pitchfork/issues/177.
+          if ENV["RACK_ENV"] == "development" && (!defined?(Rack::RELEASE) || Rack::RELEASE < "3")
+            use(Rack::Lint)
+          end
           use(Rack::TempfileReaper)
           run inner_app
         end.to_app
