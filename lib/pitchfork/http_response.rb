@@ -30,11 +30,18 @@ module Pitchfork
           next if ILLEGAL_HEADER_VALUE.match?(v)
           buf << "#{key}: #{v}\r\n"
         end
-      when /\n/ # Rack 2
-        # avoiding blank, key-only cookies with /\n+/
-        value.split(/\n+/).each do |v|
-          next if ILLEGAL_HEADER_VALUE.match?(v)
-          buf << "#{key}: #{v}\r\n"
+      when String
+        if value.include?("\n") # Rack 2
+          # avoiding blank, key-only cookies with /\n+/
+          value.split(/\n+/).each do |v|
+            next if ILLEGAL_HEADER_VALUE.match?(v)
+            buf << key << ": " << v << "\r\n"
+          end
+        else
+          # Common case: a single-line string value, the vast majority of
+          # headers. Appending directly avoids the intermediate string
+          # allocation that string interpolation would create.
+          buf << key << ": " << value << "\r\n"
         end
       else
         buf << "#{key}: #{value}\r\n"
@@ -54,10 +61,12 @@ module Pitchfork
               "Date: #{httpdate}\r\n" \
               "Connection: close\r\n".b
         headers.each do |key, value|
-          case key
-          when %r{\A(?:Date|Connection)\z}i
-            next
-          when "rack.hijack"
+          # Fast path: skip the case-insensitive Date/Connection check without
+          # a regexp for every other header (the vast majority).
+          next if (key.length == 4 && key.casecmp?("date")) ||
+                  (key.length == 10 && key.casecmp?("connection"))
+
+          if key == "rack.hijack"
             # This should only be hit under Rack >= 1.5, as this was an illegal
             # key in Rack < 1.5
             hijack = value
