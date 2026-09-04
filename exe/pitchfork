@@ -4,7 +4,7 @@
 require 'pitchfork/launcher'
 require 'optparse'
 
-ENV["RACK_ENV"] ||= "development"
+ENV["RACK_ENV"] ||= "production"
 rackup_opts = Pitchfork::Configurator::RACKUP
 options = rackup_opts[:options]
 
@@ -55,7 +55,7 @@ op = OptionParser.new("", 24, '  ') do |opts|
   end
 
   opts.on("-E", "--env RACK_ENV",
-          "use RACK_ENV for defaults (default: development)") do |e|
+          "use RACK_ENV for defaults (default: production)") do |e|
     ENV["RACK_ENV"] = e
   end
 

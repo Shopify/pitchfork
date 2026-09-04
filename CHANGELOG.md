@@ -1,5 +1,7 @@
 # Unreleased
 
+- `RACK_ENV` now default to `"production"` instead of `"development"`.
+
 # 0.18.2
 
 - Fix after_request_complete getting nil env on parsing exceptions.
