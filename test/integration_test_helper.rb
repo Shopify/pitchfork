@@ -181,7 +181,7 @@ module Pitchfork
 
     def spawn_server(*args, app:, config:, lint: true)
       File.write("pitchfork.conf.rb", config)
-      env = lint ? {} : { "RACK_ENV" => "production" }
+      env = { "RACK_ENV" => lint ? "development" : "production" }
       spawn(env, BIN, app, "-c", "pitchfork.conf.rb", *args)
     end
 
