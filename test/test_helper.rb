@@ -39,6 +39,7 @@ end
 module Pitchfork
   class Test < Megatest::Test
     def before_setup
+      SharedMemory::PAGES.each(&:close)
       SharedMemory::PAGES.clear
       SharedMemory.preallocate_pages(4)
     end
