@@ -11,7 +11,11 @@ module Pitchfork
     SERVICE_TICK_OFFSET = 4
     WORKER_TICK_OFFSET = 5
 
-    PAGES = [MemoryPage.new(MemoryPage::SLOTS)]
+    PAGES = []
+
+    def close_on_exec=(close_on_exec)
+      PAGES.each { |p| p.close_on_exec = close_on_exec }
+    end
 
     def current_generation
       PAGES[0][CURRENT_GENERATION_OFFSET]
