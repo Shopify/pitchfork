@@ -97,7 +97,7 @@ module Pitchfork
     # However this doesn't account for TTIN signals that increase the
     # number of workers, but we should probably remove that feature too.
     def preallocate_pages(workers_count)
-      0.upto(((WORKER_TICK_OFFSET + workers_count) / MemoryPage::SLOTS.to_f).ceil) do |i|
+      ((WORKER_TICK_OFFSET + workers_count) / MemoryPage::SLOTS.to_f).ceil.times do |i|
         PAGES[i] ||= MemoryPage.new(MemoryPage::SLOTS)
       end
     end
