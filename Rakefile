@@ -60,6 +60,18 @@ task :ragel do
     puts "* compiling pitchfork_http.rl"
     cmd = ["ragel", "-G2", "pitchfork_http.rl", "-o", "pitchfork_http.c"]
     system(*cmd) or raise "== #{cmd.join(' ')} failed =="
+
+    # Ragel 6.10 counts the lines it emits by overriding std::filebuf#xsputn,
+    # but libstdc++ 12+ writes single characters with sputc, so the `#line`
+    # directives pointing back into the generated file drift depending on
+    # which toolchain ragel was built with.
+    lines = File.readlines("pitchfork_http.c")
+    lines.each_with_index do |line, index|
+      if line.start_with?("#line ") && line.end_with?(%("pitchfork_http.c"\n))
+        lines[index] = %(#line #{index + 2} "pitchfork_http.c"\n)
+      end
+    end
+    File.write("pitchfork_http.c", lines.join)
   end
 end
 
