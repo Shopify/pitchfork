@@ -80,7 +80,6 @@ module Pitchfork
 
           sock = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
           sock.bind(Socket.pack_sockaddr_in(port, addr))
-          sock.listen(5)
         rescue Errno::EADDRINUSE, Errno::EACCES
           sock.close rescue nil
           retry if (retries -= 1) >= 0
