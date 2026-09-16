@@ -69,17 +69,17 @@ module Pitchfork
       retries = 100
       base = 5000
       port = sock = lock_path = nil
+      random = Random.new
 
       begin
         begin
-          port = base + rand(32768 - base)
+          port = base + random.rand(32768 - base)
           while port == default_port
-            port = base + rand(32768 - base)
+            port = base + random.rand(32768 - base)
           end
 
           sock = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
           sock.bind(Socket.pack_sockaddr_in(port, addr))
-          sock.listen(5)
         rescue Errno::EADDRINUSE, Errno::EACCES
           sock.close rescue nil
           retry if (retries -= 1) >= 0
