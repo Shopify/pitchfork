@@ -7,6 +7,7 @@ require 'optparse'
 ENV["RACK_ENV"] ||= "production"
 rackup_opts = Pitchfork::Configurator::RACKUP
 options = rackup_opts[:options]
+options[:restart_command] = [$0, *ARGV]
 
 op = OptionParser.new("", 24, '  ') do |opts|
   cmd = File.basename($0)

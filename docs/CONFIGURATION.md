@@ -446,7 +446,7 @@ Called in the worker process before it is shut down.
 
 ```ruby
 before_worker_exit do |server, worker|
-  server.logger.info("worker=#{worker.nr} shuts down after #{worker.requests_count} requests")
+  server.logger.info("#{worker.to_log} shuts down after #{worker.requests_count} requests")
 end
 ```
 
