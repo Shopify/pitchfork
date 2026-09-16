@@ -120,6 +120,13 @@ module Pitchfork
       exc.backtrace.each { |line| logger.error(line) }
     end
 
+    def socketpair_for_fds(fds)
+      # TODO: check if we need close_write/close_read
+      pair = fds.map { |fd| MessageSocket.for_fd(Integer(fd)) }
+      pair.each { |s| s.close_on_exec = true }
+      pair
+    end
+
     def socketpair
       pair = UNIXSocket.socketpair(@socket_type).map { |s| MessageSocket.new(s) }
       pair[0].close_write
