@@ -113,10 +113,11 @@ module Pitchfork
     # creates a new server, socket. address may be a HOST:PORT or
     # an absolute path to a UNIX socket.  address can even be a Socket
     # object in which case it is immediately returned
-    def bind_listen(address = '0.0.0.0:8080', opt = {})
+    def bind_listen(address = '0.0.0.0:8080', opt = {}, inherited_listeners = nil)
       return address unless String === address
 
-      sock = if address.start_with?('/')
+      sock = inherited_listeners&.delete(address)
+      sock ||= if address.start_with?('/')
         if File.exist?(address)
           if File.socket?(address)
             begin

@@ -39,6 +39,7 @@ end
 module Pitchfork
   class Test < Megatest::Test
     def before_setup
+      Pitchfork::SharedMemory::PAGES.each(&:close)
       Pitchfork::SharedMemory::PAGES.clear
       Pitchfork::SharedMemory.preallocate_pages(4)
     end
@@ -206,7 +207,7 @@ module Pitchfork
       tries = DEFAULT_TRIES
       while (tries -= 1) > 0
         begin
-          File.readlines(monitor_log).grep(/monitor process ready/)[0] and return
+          File.readlines(monitor_log).grep(/monitor pid=\d+ ready/)[0] and return
         rescue Errno::ENOENT
         end
         sleep DEFAULT_RES

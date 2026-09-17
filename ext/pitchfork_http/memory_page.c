@@ -2,7 +2,10 @@
 
 #include <ruby.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <errno.h>
 #include <stddef.h>
 #include <string.h>
@@ -65,18 +68,42 @@ struct slot {
 struct memory_page {
     size_t size;
     size_t capa;
+    int fd;
     struct slot *slots;
 };
+
+static int memory_page_close_fd(struct memory_page *page)
+{
+    int ret = 0;
+    if (page->fd != -1) {
+        ret = close(page->fd);
+        page->fd = -1;
+    }
+    return ret;
+}
+
+static int memory_page_unmap(struct memory_page *page)
+{
+    int ret = 0;
+    if (page->slots != MAP_FAILED) {
+        ret = munmap(page->slots, slot_size * page->capa);
+        if (ret == 0) {
+            page->slots = MAP_FAILED;
+        }
+    }
+    return ret;
+}
 
 static void memory_page_free(void *ptr)
 {
     struct memory_page *page = (struct memory_page *)ptr;
 
-    if (page->slots != MAP_FAILED) {
-        int rv = munmap(page->slots, slot_size * page->capa);
-        if (rv != 0) {
-            rb_bug("Pitchfork::MemoryPage munmap failed in gc: %s", strerror(errno));
-        }
+    if (memory_page_unmap(page)) {
+        rb_bug("Pitchfork::MemoryPage munmap failed in gc: %s", strerror(errno));
+    }
+
+    if (memory_page_close_fd(page)) {
+        rb_warn("Pitchfork::MemoryPage close failed in GC, was it closed twice?");
     }
 
     xfree(ptr);
@@ -108,20 +135,61 @@ static VALUE memory_page_alloc(VALUE klass)
     VALUE obj = TypedData_Make_Struct(klass, struct memory_page, &memory_page_type, page);
 
     page->slots = MAP_FAILED;
+    page->fd = -1;
     return obj;
+}
+
+static struct memory_page *memory_page_get_raw(VALUE self)
+{
+    struct memory_page *page;
+    TypedData_Get_Struct(self, struct memory_page, &memory_page_type, page);
+    return page;
 }
 
 static struct memory_page *memory_page_get(VALUE self)
 {
-    struct memory_page *page;
-
-    TypedData_Get_Struct(self, struct memory_page, &memory_page_type, page);
-
+    struct memory_page *page = memory_page_get_raw(self);
     if (page->slots == MAP_FAILED) {
         rb_raise(rb_eStandardError, "invalid or freed Pitchfork::MemoryPage");
     }
-
     return page;
+}
+
+static void memory_page_map(struct memory_page *page, size_t map_size)
+{
+    int tries = 1;
+
+retry_mmap:
+    page->slots = mmap(NULL, map_size, PROT_READ|PROT_WRITE, MAP_SHARED, page->fd, 0);
+
+    if (page->slots == MAP_FAILED) {
+        int err = errno;
+
+        if ((err == EAGAIN || err == ENOMEM) && tries-- > 0) {
+            rb_gc();
+            goto retry_mmap;
+        }
+
+        memory_page_close_fd(page);
+        rb_sys_fail("mmap");
+    }
+}
+
+static VALUE memory_page_for_fd(VALUE klass, VALUE fd_val)
+{
+    VALUE self = memory_page_alloc(klass);
+    struct memory_page *page = memory_page_get_raw(self);
+
+    int fd = NUM2INT(fd_val);
+    struct stat shm_stat;
+    if (fstat(fd, &shm_stat)) {
+        rb_sys_fail("fstat");
+    }
+    page->fd = fd;
+    page->size = page->capa = shm_stat.st_size / slot_size;
+
+    memory_page_map(page, shm_stat.st_size);
+    return self;
 }
 
 static unsigned long *memory_page_address(VALUE self, VALUE index)
@@ -149,12 +217,68 @@ static VALUE memory_page_aset(VALUE self, VALUE index, VALUE value)
     return value;
 }
 
+static VALUE memory_page_fileno(VALUE self)
+{
+    struct memory_page *page = memory_page_get(self);
+    return INT2NUM(page->fd);
+}
+
+static VALUE memory_page_close(VALUE self)
+{
+    struct memory_page *page = memory_page_get_raw(self);
+
+    if (memory_page_unmap(page)) {
+        rb_sys_fail("munmap");
+    }
+
+    if (memory_page_close_fd(page)) {
+        rb_sys_fail("close");
+    }
+
+    return Qnil;
+}
+
+static VALUE memory_page_closed_p(VALUE self)
+{
+    struct memory_page *page = memory_page_get_raw(self);
+    return (page->fd == -1 || page->slots == MAP_FAILED) ? Qtrue : Qfalse;
+}
+
+static VALUE memory_page_close_on_exec_p(VALUE self)
+{
+    struct memory_page *page = memory_page_get(self);
+    int ret = fcntl(page->fd, F_GETFD);
+    if (ret == -1) {
+        rb_sys_fail("fcntl F_GETFD");
+    }
+
+    return (ret & FD_CLOEXEC) ? Qtrue : Qfalse;
+}
+
+static VALUE memory_page_close_on_exec_set(VALUE self, VALUE close_on_exec)
+{
+    struct memory_page *page = memory_page_get(self);
+    int ret = fcntl(page->fd, F_GETFD);
+    if (ret == -1) {
+        rb_sys_fail("fcntl F_GETFD");
+    }
+
+    int flag = RTEST(close_on_exec) ? FD_CLOEXEC : 0;
+    flag = (ret & ~FD_CLOEXEC) | flag;
+
+    if (fcntl(page->fd, F_SETFD, flag) == -1) {
+        rb_sys_fail("fcntl F_SETFD");
+    }
+
+    return close_on_exec;
+}
+
+#define SHM_NAME_BUF_SIZE 50
+
 static VALUE memory_page_initialize(VALUE self, VALUE size)
 {
     struct memory_page *page;
     TypedData_Get_Struct(self, struct memory_page, &memory_page_type, page);
-
-    int tries = 1;
 
     if (page->slots != MAP_FAILED) {
         rb_raise(rb_eRuntimeError, "already initialized");
@@ -165,24 +289,38 @@ static VALUE memory_page_initialize(VALUE self, VALUE size)
         rb_raise(rb_eArgError, "size must be >= 1");
     }
 
-    size_t tmp = PAGE_ALIGN(slot_size * page->size);
-    page->capa = tmp / slot_size;
-    assert(PAGE_ALIGN(slot_size * page->capa) == tmp && "not aligned");
+    size_t map_size = PAGE_ALIGN(slot_size * page->size);
+    page->capa = map_size / slot_size;
+    assert(PAGE_ALIGN(slot_size * page->capa) == map_size && "not aligned");
 
-retry:
-    page->slots = mmap(NULL, tmp, PROT_READ|PROT_WRITE, MAP_ANON|MAP_SHARED, -1, 0);
+    char name[SHM_NAME_BUF_SIZE];
 
-    if (page->slots == MAP_FAILED) {
-        int err = errno;
-
-        if ((err == EAGAIN || err == ENOMEM) && tries-- > 0) {
-            rb_gc();
-            goto retry;
-        }
-        rb_sys_fail("mmap");
+retry_shm_open:
+    if (snprintf(name, SHM_NAME_BUF_SIZE, "/pitchfork-%d", rand()) < 0) {
+        rb_sys_fail("snprintf");
     }
 
-    memset(page->slots, 0, tmp);
+    page->fd = shm_open(name, O_CREAT | O_EXCL | O_RDWR | O_CLOEXEC, 0600);
+    if (page->fd == -1) {
+        if (errno == EEXIST) {
+            goto retry_shm_open;
+        }
+        rb_sys_fail("shm_open");
+    }
+
+    if (shm_unlink(name) == -1) {
+        memory_page_close_fd(page);
+        rb_sys_fail("shm_unlink");
+    }
+
+    if (ftruncate(page->fd, map_size)) {
+        memory_page_close_fd(page);
+        rb_sys_fail("ftruncate");
+    }
+
+    memory_page_map(page, map_size);
+
+    memset(page->slots, 0, map_size);
 
     return self;
 }
@@ -217,7 +355,15 @@ void init_pitchfork_memory_page(VALUE mPitchfork)
     rb_define_const(rb_cMemoryPage, "SLOT_MAX", ULONG2NUM((unsigned long)-1));
 
     rb_define_alloc_func(rb_cMemoryPage, memory_page_alloc);
+
+    rb_define_singleton_method(rb_cMemoryPage, "for_fd", memory_page_for_fd, 1);
+
     rb_define_private_method(rb_cMemoryPage, "initialize", memory_page_initialize, 1);
     rb_define_method(rb_cMemoryPage, "[]", memory_page_aref, 1);
     rb_define_method(rb_cMemoryPage, "[]=", memory_page_aset, 2);
+    rb_define_method(rb_cMemoryPage, "fileno", memory_page_fileno, 0);
+    rb_define_method(rb_cMemoryPage, "close", memory_page_close, 0);
+    rb_define_method(rb_cMemoryPage, "closed?", memory_page_closed_p, 0);
+    rb_define_method(rb_cMemoryPage, "close_on_exec?", memory_page_close_on_exec_p, 0);
+    rb_define_method(rb_cMemoryPage, "close_on_exec=", memory_page_close_on_exec_set, 1);
 }
