@@ -105,7 +105,7 @@ class TestBoot < Pitchfork::IntegrationTest
     assert_healthy("http://#{addr}:#{port}")
 
     assert_stderr(/worker=0 gen=0 pid=\d+ ready/)
-    assert_stderr(/worker=1 gen=0 pid=\d+ registered/)
+    assert_stderr(/worker=1 gen=0 pid=\d+ spawned/)
     assert_stderr(/worker=1 gen=0 pid=\d+ timed out, killing/, timeout: 4)
 
     assert_clean_shutdown(pid)
