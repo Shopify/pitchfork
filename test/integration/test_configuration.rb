@@ -76,10 +76,10 @@ class ConfigurationTest < Pitchfork::IntegrationTest
       end
     CONFIG
 
-    assert_healthy("http://#{addr}:#{port}/")
+    assert_healthy("http://#{addr}:#{port}/", timeout: 3)
 
     assert_equal false, healthy?("http://#{addr}:#{port}/?10")
-    assert_stderr("timed out, exiting")
+    assert_stderr("timed out, exiting", timeout: 5)
     assert_stderr("[after_worker_timeout]")
     assert_stderr("[before_worker_exit]")
 
@@ -102,7 +102,7 @@ class ConfigurationTest < Pitchfork::IntegrationTest
     assert_healthy("http://#{addr}:#{port}/")
 
     assert_equal false, healthy?("http://#{addr}:#{port}/?10")
-    assert_stderr("timed out, exiting")
+    assert_stderr("timed out, exiting", timeout: 5)
     assert_stderr("[after_worker_timeout] Ooops")
 
     assert_clean_shutdown(pid)
@@ -128,10 +128,10 @@ class ConfigurationTest < Pitchfork::IntegrationTest
 
     assert_healthy("http://#{addr}:#{port}")
 
-    assert_equal false, healthy?("http://#{addr}:#{port}/?10")
-    assert_stderr("timed out, exiting")
+    assert_equal false, healthy?("http://#{addr}:#{port}/?10", timeout: 1)
+    assert_stderr("timed out, exiting", timeout: 5)
     assert_stderr("[after_worker_timeout]")
-    assert_stderr("timed out, killing")
+    assert_stderr("timed out, killing", timeout: 5)
     assert_stderr("[after_worker_hard_timeout]")
 
     assert_clean_shutdown(pid)
