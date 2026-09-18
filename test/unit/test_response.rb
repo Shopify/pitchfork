@@ -11,8 +11,8 @@
 require 'test_helper'
 
 module Pitchfork
-  class ResponseTest < Pitchfork::Test
-    include Pitchfork::HttpResponse
+  class ResponseTest < Test
+    include HttpResponse
 
     def test_httpdate
       before = Time.now.to_i - 1

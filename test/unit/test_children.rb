@@ -3,7 +3,7 @@
 require 'test_helper'
 
 module Pitchfork
-  class TestChildren < Pitchfork::Test
+  class TestChildren < Test
     def setup
       @children = Children.new
     end

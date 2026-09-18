@@ -2,7 +2,7 @@
 require 'test_helper'
 
 module Pitchfork
-  class TestSoftTimeout < Pitchfork::Test
+  class TestSoftTimeout < Test
     def test_soft_timeout
       called = []
       timeout = SoftTimeout.request(0.5, -> (thread) { called << thread })

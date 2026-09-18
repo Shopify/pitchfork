@@ -8,7 +8,7 @@
 require 'test_helper'
 
 module Pitchfork
-  class RequestTest < Pitchfork::Test
+  class RequestTest < Test
 
     class MockRequest < StringIO
       def remote_address
@@ -30,7 +30,7 @@ module Pitchfork
       env = @request.read(client)
       assert_nil env['REQUEST_PATH']
 
-      if Pitchfork::PATH_INFO_REQUIRES_LEADING_SLASH
+      if PATH_INFO_REQUIRES_LEADING_SLASH
         assert_nil env['PATH_INFO']
       else
         assert_equal '*', env['PATH_INFO']
@@ -133,7 +133,7 @@ module Pitchfork
                                "Content-Length: 1\r\n" \
                                "Host: foo\r\n\r\n")
       env = @request.read(client)
-      assert_equal Pitchfork::TeeInput, env['rack.input'].class
+      assert_equal TeeInput, env['rack.input'].class
     end
 
     def test_rack_lint_put
