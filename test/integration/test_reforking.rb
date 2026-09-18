@@ -301,7 +301,7 @@ class ReforkingTest < Pitchfork::IntegrationTest
         case line
         when /Sent SIGTERM to worker/
           :term
-        when /registered/
+        when /spawned/
           :registered
         end
       end.compact
