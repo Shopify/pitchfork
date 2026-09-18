@@ -148,29 +148,37 @@ module Pitchfork
       end
     end
 
-    def assert_healthy(host, timeout = 2)
+    def assert_healthy(host, timeout: 2)
       assert wait_healthy?(host, timeout), "Expected server to be healthy but it wasn't"
     end
 
     def wait_healthy?(host, timeout)
-      (timeout * 10).times do
-        return true if healthy?(host)
-        sleep 0.1
+      resolution = 0.25
+      (timeout / resolution).ceil.times do
+        before = Time.now.to_f
+        return true if healthy?(host, timeout: resolution)
+        duration = Time.now.to_f - before
+        if duration < resolution
+          sleep resolution - duration
+        end
       end
       false
     end
 
-    def healthy?(url)
-      http_get(url)
+    def healthy?(url, timeout: 1)
+      http_get(url, timeout: 1)
       true
-    rescue Errno::ECONNREFUSED, Errno::EADDRNOTAVAIL, EOFError
+    rescue Errno::ECONNREFUSED, Errno::EADDRNOTAVAIL, EOFError, Timeout::Error
       false
     end
 
-    def http_get(url)
+    def http_get(url, timeout: 1)
       uri = URI(url)
       http = Net::HTTP.start(uri.host, uri.port)
       http.max_retries = 0
+      http.open_timeout = timeout
+      http.write_timeout = timeout
+      http.read_timeout = timeout
 
       path_info = uri.path.empty? ? "/" : uri.path
       if uri.query
