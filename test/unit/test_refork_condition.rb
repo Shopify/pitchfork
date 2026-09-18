@@ -2,7 +2,7 @@
 require 'test_helper'
 
 module Pitchfork
-  class TestReforkCondition < Pitchfork::Test
+  class TestReforkCondition < Test
     def setup
       @logger = Logger.new(nil)
       @worker = Worker.new(0, pid: 42)

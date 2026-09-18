@@ -4,7 +4,7 @@
 require 'test_helper'
 
 module Pitchfork
-  class HttpParserNgTest < Pitchfork::Test
+  class HttpParserNgTest < Test
 
     def setup
       @parser = HttpParser.new
