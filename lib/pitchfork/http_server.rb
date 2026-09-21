@@ -500,15 +500,6 @@ module Pitchfork
       end
     end
 
-    def listener_sockets
-      listener_fds = {}
-      LISTENERS.each do |sock|
-        sock.close_on_exec = false
-        listener_fds[sock.fileno] = sock
-      end
-      listener_fds
-    end
-
     # forcibly terminate all workers that haven't checked in in timeout seconds.  The timeout is implemented using an unlinked File
     def murder_lazy_workers
       now = Pitchfork.time_now(true)
