@@ -113,7 +113,6 @@ module Pitchfork
 
       options = options.dup
       @ready_pipe = options.delete(:ready_pipe)
-      @init_listeners = options[:listeners].dup || []
       options[:use_defaults] = true
       self.config = Pitchfork::Configurator.new(options)
       self.listener_opts = {}
@@ -593,7 +592,7 @@ module Pitchfork
       @control_socket[0].close_write # this is monitor-only, now
       @ready_pipe.close if @ready_pipe
       Pitchfork::Configurator::RACKUP.clear
-      @ready_pipe = @init_listeners = nil
+      @ready_pipe = nil
 
       # The OpenSSL PRNG is seeded with only the pid, and apps with frequently
       # dying workers can recycle pids
@@ -1174,7 +1173,6 @@ module Pitchfork
       listeners = config[:listeners].dup
       if listeners.empty?
         listeners << Pitchfork::Const::DEFAULT_LISTEN
-        @init_listeners << Pitchfork::Const::DEFAULT_LISTEN
       end
       listeners.each { |addr| listen(addr) }
       raise ArgumentError, "no listeners" if LISTENERS.empty?
