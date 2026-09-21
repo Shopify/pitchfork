@@ -13,18 +13,78 @@ module Pitchfork
   class Worker
     # :stopdoc:
     EXIT_SIGNALS = [:QUIT, :TERM]
-    attr_accessor :nr, :pid, :generation
+    attr_accessor :nr, :pid, :generation, :version
     attr_reader :monitor, :requests_count
 
-    def initialize(nr, pid: nil, generation: 0)
+    class << self
+      def load(data)
+        allocate.init_with(data)
+      end
+    end
+
+    def initialize(nr, pid: nil, generation: 0, version: 0, service: false)
       @nr = nr
       @pid = pid
       @generation = generation
+      @version = version
       @mold = false
-      @to_io = @monitor = nil
+      @mold_ready = false
+      @service = service
+      @to_io = nil
+      @monitor = nil
       @exiting = false
       @requests_count = 0
       init_state
+    end
+
+    def init_with(data)
+      @nr = data.fetch(:nr)
+      @pid = data.fetch(:pid)
+      @generation = data.fetch(:generation)
+      @version = data.fetch(:version)
+      @mold = data.fetch(:mold)
+      @mold_ready = data.fetch(:mold_ready)
+      @service = data.fetch(:service)
+      @to_io = nil
+      fd = data.fetch(:monitor_fd)
+      @monitor = fd ? MessageSocket.for_fd(fd) : nil
+      @exiting = data.fetch(:exiting)
+      @requests_count = data.fetch(:requests_count)
+
+      @state_drop = if @nr
+        SharedMemory.worker_state(@nr)
+      elsif mold?
+        if data.fetch(:mold_ready)
+          SharedMemory.mold_state
+        else
+          SharedMemory.mold_promotion_state
+        end
+      elsif service?
+        SharedMemory.service_state
+      end
+
+      self
+    end
+
+    def dump
+      {
+        nr: nr,
+        pid: pid,
+        generation: generation,
+        version: version,
+        mold: mold?,
+        mold_ready: @mold_ready,
+        service: service?,
+        monitor_fd: @monitor&.fileno,
+        exiting: exiting?,
+        requests_count: requests_count,
+      }
+    end
+
+    def close_on_exec=(close_on_exec)
+      if @monitor
+        @monitor.close_on_exec = close_on_exec
+      end
     end
 
     def exiting?
@@ -36,7 +96,7 @@ module Pitchfork
     end
 
     def outdated?
-      SharedMemory.current_generation > @generation
+      SharedMemory.current_generation != @generation || SharedMemory.current_version != @version
     end
 
     def update(message)
@@ -48,27 +108,33 @@ module Pitchfork
       when Message::MoldSpawned
         @state_drop = SharedMemory.mold_promotion_state
       when Message::MoldReady
+        @mold_ready = true
         @state_drop = SharedMemory.mold_state
       end
     end
 
     def register_to_monitor(control_socket)
       create_socketpair!
-      message = Message::WorkerSpawned.new(@nr, @pid, generation, @monitor)
+
+      message = if service?
+        Message::ServiceSpawned.new(@pid, generation, version, @monitor)
+      else
+        Message::WorkerSpawned.new(@nr, @pid, generation, version, @monitor)
+      end
+
       control_socket.sendmsg(message)
       @monitor.close
     end
 
     def start_promotion(control_socket)
       create_socketpair!
-      message = Message::MoldSpawned.new(@nr, @pid, generation, @monitor)
+      message = Message::MoldSpawned.new(@nr, @pid, generation, version, @monitor)
       control_socket.sendmsg(message)
       @monitor.close
     end
 
     def finish_promotion(control_socket)
-      SharedMemory.current_generation = @generation
-      message = Message::MoldReady.new(@nr, @pid, generation)
+      message = Message::MoldReady.new(@pid)
       control_socket.sendmsg(message)
       @state_drop = SharedMemory.mold_state
     end
@@ -76,9 +142,9 @@ module Pitchfork
     def notify_ready(control_socket)
       self.ready = true
       message = if worker?
-        Message::WorkerReady.new(@nr, @pid, @generation)
+        Message::WorkerReady.new(@nr, @pid)
       elsif service?
-        Message::ServiceReady.new(@pid, @generation)
+        Message::ServiceReady.new(@pid)
       else
         raise "Unexpected child type"
       end
@@ -116,7 +182,7 @@ module Pitchfork
     end
 
     def service?
-      false
+      @service
     end
 
     def worker?
@@ -237,11 +303,17 @@ module Pitchfork
     end
 
     def to_log
-      if mold?
-        pid ? "mold gen=#{generation} pid=#{pid}" : "mold gen=#{generation}"
+      type = if mold?
+        "mold"
+      elsif service?
+        "service"
       else
-        pid ? "worker=#{nr} gen=#{generation} pid=#{pid}" : "worker=#{nr} gen=#{generation}"
+        "worker=#{nr}"
       end
+
+      pid_log = " pid=#{pid}" if pid
+
+      "#{type} gen=#{version}.#{generation}#{pid_log}"
     end
 
     private
@@ -249,6 +321,9 @@ module Pitchfork
     def init_state
       if nr
         @state_drop = SharedMemory.worker_state(@nr)
+        self.deadline = 0
+      elsif service?
+        @state_drop = SharedMemory.service_state
         self.deadline = 0
       else
         promoted!(nil)
@@ -274,34 +349,6 @@ module Pitchfork
         # worker will be reaped soon
       end
       success
-    end
-  end
-
-  class Service < Worker
-    def initialize(pid: nil, generation: 0)
-      super(nil, pid: pid, generation: generation)
-    end
-
-    def service?
-      true
-    end
-
-    def register_to_monitor(control_socket)
-      create_socketpair!
-      message = Message::ServiceSpawned.new(@pid, generation, @monitor)
-      control_socket.sendmsg(message)
-      @monitor.close
-    end
-
-    def to_log
-      pid ? "service gen=#{generation} pid=#{pid}" : "service gen=#{generation}"
-    end
-
-    private
-
-    def init_state
-      @state_drop = SharedMemory.service_state
-      self.deadline = 0
     end
   end
 end

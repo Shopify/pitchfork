@@ -45,7 +45,7 @@ class ReapLoggingTest < Pitchfork::IntegrationTest
       sleep 0.5
     end
 
-    File.truncate(AFTER_FORK_FILE, 0)
+    File.truncate(AFTER_FORK_FILE, 0) if File.exist?(AFTER_FORK_FILE)
     assert new_worker_forked, "A worker did not write to after_worker_fork within #{timeout} seconds."
   end
 end

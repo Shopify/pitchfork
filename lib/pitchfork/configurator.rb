@@ -76,6 +76,7 @@ module Pitchfork
       :before_service_worker_ready => nil,
       :before_service_worker_exit => nil,
       :setpgid => true,
+      :working_directory => ENV["PWD"] || Dir.pwd
     }
     #:startdoc:
 
@@ -308,6 +309,18 @@ module Pitchfork
       else
         address
       end
+    end
+
+    def working_directory(directory)
+      set[:working_directory] = directory
+    end
+
+    def restart_command(command)
+      set[:restart_command] = command
+    end
+
+    def restart_command_prefix(command_prefix)
+      set[:restart_command_prefix] = command_prefix
     end
 
   private

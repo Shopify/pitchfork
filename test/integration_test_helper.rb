@@ -108,6 +108,12 @@ module Pitchfork
       end
     end
 
+    def refute_stderr(pattern)
+      print_stderr_on_error do
+        refute_match(pattern, read_stderr)
+      end
+    end
+
     def read_stderr
       # We have to strip because file truncation is not always atomic.
       File.read("stderr.log").strip
@@ -187,16 +193,32 @@ module Pitchfork
       http.get(path_info)
     end
 
-    def spawn_server(*args, app:, config:, lint: true)
-      File.write("pitchfork.conf.rb", config)
-      env = { "RACK_ENV" => lint ? "development" : "production" }
-      spawn(env, BIN, app, "-c", "pitchfork.conf.rb", *args)
+    def spawn_server(*args, app:, config:, lint: true, bundler: false)
+      write_config(config)
+      env = { "RACK_ENV" => lint ? "development" : "production", "PWD" => @pwd }
+      cmd = [env]
+      cmd << "bundle" << "exec" if bundler
+      cmd << BIN
+      cmd << app << "-c" << "pitchfork.conf.rb"
+      cmd.concat(args)
+      if bundler
+        Bundler.with_unbundled_env do
+          assert system("bundle", "install", out: File::NULL, err: File::NULL)
+          spawn(*cmd)
+        end
+      else
+        spawn(*cmd)
+      end
     end
 
     def spawn(*args)
       pid = Process.spawn(*args, out: "stdout.log", err: "stderr.log")
       @_pids << pid
       pid
+    end
+
+    def write_config(config)
+      File.write("pitchfork.conf.rb", config)
     end
 
     def print_stderr_on_error

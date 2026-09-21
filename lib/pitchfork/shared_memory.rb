@@ -5,13 +5,34 @@ module Pitchfork
     extend self
 
     CURRENT_GENERATION_OFFSET = 0
-    SHUTDOWN_OFFSET = 1
-    MOLD_TICK_OFFSET = 2
-    MOLD_PROMOTION_TICK_OFFSET = 3
-    SERVICE_TICK_OFFSET = 4
-    WORKER_TICK_OFFSET = 5
+    CURRENT_VERSION_OFFSET = 1
+    SHUTDOWN_OFFSET = 2
+    MOLD_TICK_OFFSET = 3
+    MOLD_PROMOTION_TICK_OFFSET = 4
+    SERVICE_TICK_OFFSET = 5
+    WORKER_TICK_OFFSET = 6
 
-    PAGES = [MemoryPage.new(MemoryPage::SLOTS)]
+    PAGES = []
+
+    def fds
+      PAGES.map(&:fileno)
+    end
+
+    def reopen(fds)
+      fds.each do |fd|
+        page = MemoryPage.for_fd(fd)
+        page.close_on_exec = true
+        PAGES << page
+      end
+    end
+
+    def close_on_exec=(close_on_exec)
+      PAGES.each { |p| p.close_on_exec = close_on_exec }
+    end
+
+    def close_on_exec=(close_on_exec)
+      PAGES.each { |p| p.close_on_exec = close_on_exec }
+    end
 
     def current_generation
       PAGES[0][CURRENT_GENERATION_OFFSET]
@@ -19,6 +40,14 @@ module Pitchfork
 
     def current_generation=(value)
       PAGES[0][CURRENT_GENERATION_OFFSET] = value
+    end
+
+    def current_version
+      PAGES[0][CURRENT_VERSION_OFFSET]
+    end
+
+    def current_version=(value)
+      PAGES[0][CURRENT_VERSION_OFFSET] = value
     end
 
     def shutting_down!
