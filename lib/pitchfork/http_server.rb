@@ -196,25 +196,6 @@ module Pitchfork
       self
     end
 
-    # replaces current listener set with +listeners+.  This will
-    # close the socket if it will not exist in the new listener set
-    def listeners=(listeners)
-      unless LISTENERS.empty?
-        raise "Listeners can only be initialized once"
-      end
-
-      cur_names, dead_names = [], []
-      listener_names.each do |name|
-        if name.start_with?('/')
-          # mark unlinked sockets as dead so we can rebind them
-          (File.socket?(name) ? cur_names : dead_names) << name
-        else
-          cur_names << name
-        end
-      end
-      listener_names(listeners).each { |addr| listen(addr) }
-    end
-
     def logger=(obj)
       Pitchfork::HttpParser::DEFAULTS["rack.logger"] = @logger = obj
     end
