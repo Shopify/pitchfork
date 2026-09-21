@@ -113,7 +113,6 @@ module Pitchfork
 
       options = options.dup
       @ready_pipe = options.delete(:ready_pipe)
-      @init_listeners = options[:listeners].dup || []
       options[:use_defaults] = true
       self.config = Pitchfork::Configurator.new(options)
       self.listener_opts = {}
@@ -195,25 +194,6 @@ module Pitchfork
       @after_monitor_ready&.call(self)
 
       self
-    end
-
-    # replaces current listener set with +listeners+.  This will
-    # close the socket if it will not exist in the new listener set
-    def listeners=(listeners)
-      unless LISTENERS.empty?
-        raise "Listeners can only be initialized once"
-      end
-
-      cur_names, dead_names = [], []
-      listener_names.each do |name|
-        if name.start_with?('/')
-          # mark unlinked sockets as dead so we can rebind them
-          (File.socket?(name) ? cur_names : dead_names) << name
-        else
-          cur_names << name
-        end
-      end
-      listener_names(listeners).each { |addr| listen(addr) }
     end
 
     def logger=(obj)
@@ -520,15 +500,6 @@ module Pitchfork
       end
     end
 
-    def listener_sockets
-      listener_fds = {}
-      LISTENERS.each do |sock|
-        sock.close_on_exec = false
-        listener_fds[sock.fileno] = sock
-      end
-      listener_fds
-    end
-
     # forcibly terminate all workers that haven't checked in in timeout seconds.  The timeout is implemented using an unlinked File
     def murder_lazy_workers
       now = Pitchfork.time_now(true)
@@ -593,7 +564,7 @@ module Pitchfork
       @control_socket[0].close_write # this is monitor-only, now
       @ready_pipe.close if @ready_pipe
       Pitchfork::Configurator::RACKUP.clear
-      @ready_pipe = @init_listeners = nil
+      @ready_pipe = nil
 
       # The OpenSSL PRNG is seeded with only the pid, and apps with frequently
       # dying workers can recycle pids
@@ -1174,7 +1145,6 @@ module Pitchfork
       listeners = config[:listeners].dup
       if listeners.empty?
         listeners << Pitchfork::Const::DEFAULT_LISTEN
-        @init_listeners << Pitchfork::Const::DEFAULT_LISTEN
       end
       listeners.each { |addr| listen(addr) }
       raise ArgumentError, "no listeners" if LISTENERS.empty?
