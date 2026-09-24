@@ -275,7 +275,6 @@ module Pitchfork
 
       proc_name role: 'monitor', status: ARGV.join(' ')
 
-      logger.info "monitor process ready" # test_exec.rb relies on this message
       if @ready_pipe
         begin
           @ready_pipe.syswrite($$.to_s)
@@ -351,16 +350,9 @@ module Pitchfork
         self.worker_processes += 1
       when :TTOU
         self.worker_processes -= 1 if self.worker_processes > 0
-      when Message::WorkerSpawned
+      when Message::WorkerSpawned, Message::MoldSpawned, Message::ServiceSpawned
         worker = @children.update(message)
-        # TODO: should we send a message to the worker to acknowledge?
-        logger.info "#{worker.to_log} registered"
-      when Message::MoldSpawned
-        new_mold = @children.update(message)
-        logger.info("#{new_mold.to_log} spawned")
-      when Message::ServiceSpawned
-        new_service = @children.update(message)
-        logger.info("#{new_service.to_log} spawned")
+        logger.info("#{worker.to_log} spawned")
       when Message::MoldReady
         @consecutive_spawn_errors = 0
         old_molds = @children.molds
@@ -374,7 +366,6 @@ module Pitchfork
         @consecutive_spawn_errors = 0
       else
         logger.error("Unexpected message in sig_queue #{message.inspect}")
-        logger.error(@sig_queue.inspect)
       end
     end
 
@@ -527,7 +518,7 @@ module Pitchfork
 
     def hard_timeout(child)
       if child.pid.nil? # Not yet registered, likely never spawned
-        logger.error "worker=#{child.nr} timed out during spawn, abandoning"
+        logger.error "#{child.to_log} timed out during spawn, abandoning"
         @children.abandon(worker)
         return
       end
