@@ -180,7 +180,7 @@ module Pitchfork
       else
         build_app!
         bind_listeners!
-        after_mold_fork.call(self, Worker.new(nil, pid: $$).promoted!(@spawn_timeout))
+        after_mold_fork&.call(self, Worker.new(nil, pid: $$).promoted!(@spawn_timeout))
       end
 
       if sync
@@ -401,13 +401,7 @@ module Pitchfork
       logger.info "#{worker.to_log} exiting"
       proc_name status: "exiting"
 
-      if @before_worker_exit
-        begin
-          @before_worker_exit.call(self, worker)
-        rescue => error
-          Pitchfork.log_error(logger, "before_worker_exit error", error)
-        end
-      end
+      safe_run_callback(@before_worker_exit, "before_worker_exit", self, worker)
       Process.exit
     end
 
@@ -415,13 +409,7 @@ module Pitchfork
       logger.info "#{service.to_log} exiting"
       proc_name status: "exiting"
 
-      if @before_service_worker_exit
-        begin
-          @before_service_worker_exit.call(self, service)
-        rescue => error
-          Pitchfork.log_error(logger, "before_service_worker_exit error", error)
-        end
-      end
+      safe_run_callback(@before_service_worker_exit, "before_service_worker_exit", self, service)
       Process.exit
     end
 
@@ -482,7 +470,7 @@ module Pitchfork
           unless worker.ready?
             @consecutive_spawn_errors += 1
           end
-          @after_worker_exit.call(self, worker, status)
+          @after_worker_exit&.call(self, worker, status)
         else
           logger.info("reaped unknown subprocess #{status.inspect}")
         end
@@ -523,12 +511,8 @@ module Pitchfork
         return
       end
 
-      if @after_worker_hard_timeout && !child.mold?
-        begin
-          @after_worker_hard_timeout.call(self, child)
-        rescue => error
-          Pitchfork.log_error(@logger, "after_worker_hard_timeout callback", error)
-        end
+      unless child.mold?
+        safe_run_callback(@after_worker_hard_timeout, "after_worker_hard_timeout", self, child)
       end
 
       logger.error "#{child.to_log} timed out, killing"
@@ -588,14 +572,7 @@ module Pitchfork
 
       ready = readers.dup
 
-      if @before_service_worker_ready
-        begin
-          @before_service_worker_ready.call(self, service)
-        rescue => error
-          Pitchfork.log_error(logger, "before_service_worker_ready", error)
-          Process.exit(1)
-        end
-      end
+      run_callback!(@before_service_worker_ready, "before_service_worker_ready", self, service)
 
       service.notify_ready(@control_socket[1])
       proc_name status: "ready"
@@ -655,6 +632,7 @@ module Pitchfork
         mold.after_fork_in_child
         build_app!
         bind_listeners!
+        mold.start_promotion(@control_socket[1])
         mold_loop(mold)
       end
       @promotion_lock.at_fork
@@ -898,7 +876,7 @@ module Pitchfork
       @sig_queue.clear
       @children = nil
 
-      after_worker_fork.call(self, worker) # can drop perms and create listeners
+      run_callback!(after_worker_fork, "after_worker_fork", self, worker) # can drop perms and create listeners
       LISTENERS.each { |sock| sock.close_on_exec = true }
 
       @config = nil
@@ -924,7 +902,7 @@ module Pitchfork
 
     def init_mold_process(mold)
       proc_name role: "(gen:#{mold.generation}) mold", status: "init"
-      after_mold_fork.call(self, mold)
+      run_callback!(after_mold_fork, "after_mold_fork", self, mold)
       readers = [mold]
       trap(:QUIT) { nuke_listeners!(readers) }
       trap(:TERM) { nuke_listeners!(readers) }
@@ -951,7 +929,7 @@ module Pitchfork
       waiter = prep_readers(readers)
 
       ready = readers.dup
-      @after_worker_ready.call(self, worker)
+      run_callback!(@after_worker_ready, "after_worker_ready", self, worker)
 
       worker.notify_ready(@control_socket[1])
       proc_name status: "ready"
@@ -1103,6 +1081,20 @@ module Pitchfork
       Process.kill(signal, wpid)
     rescue Errno::ESRCH
       worker = @children.reap(wpid) and worker.close rescue nil
+    end
+
+    def safe_run_callback(callback, name, *args)
+      callback&.call(*args)
+      true
+    rescue => error
+      Pitchfork.log_error(logger, "#{name} error", error)
+      false
+    end
+
+    def run_callback!(callback, name, *args)
+      unless safe_run_callback(callback, name, *args)
+        Process.exit(1)
+      end
     end
 
     # returns an array of string names for the given listener array

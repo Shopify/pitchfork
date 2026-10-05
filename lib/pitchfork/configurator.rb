@@ -40,12 +40,8 @@ module Pitchfork
       :logger => default_logger,
       :worker_processes => 1,
       :before_fork => nil,
-      :after_worker_fork => lambda { |server, worker|
-        server.logger.info("#{worker.to_log} spawned")
-      },
-      :after_mold_fork => lambda { |server, worker|
-        server.logger.info("#{worker.to_log} spawned")
-      },
+      :after_worker_fork => nil,
+      :after_mold_fork => nil,
       :before_worker_exit => nil,
       :after_worker_exit => lambda { |server, worker, status|
         m = if worker.nil?

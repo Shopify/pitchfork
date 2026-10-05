@@ -17,7 +17,7 @@ ENV['NO_PROXY'] ||= ENV['UNICORN_TEST_ADDR'] || '127.0.0.1'
 # Can't rely on inotify on non-Linux and logging to a pipe makes things
 # more complicated
 DEFAULT_TRIES = 100
-DEFAULT_RES = 0.2
+DEFAULT_RES = 0.5
 
 require 'net/http'
 require 'digest/sha1'
