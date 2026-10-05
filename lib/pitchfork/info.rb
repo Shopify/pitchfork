@@ -106,6 +106,14 @@ module Pitchfork
         end
       end
 
+      def idle_workers_count
+        now = Pitchfork.time_now(true)
+        (0...workers_count).count do |nr|
+          state = SharedMemory.worker_state(nr)
+          !state.busy? && state.ready? && state.deadline > now
+        end
+      end
+
       # Returns true if the server is shutting down.
       # This can be useful to implement health check endpoints, so they
       # can fail immediately after TERM/QUIT/INT was received by the monitor

@@ -196,15 +196,20 @@ module Pitchfork
       @state_drop.ready = bool
     end
 
+    def busy?
+      @state_drop.busy?
+    end
+
+    def busy=(bool)
+      @state_drop.busy = bool
+    end
+
     def update_deadline(timeout)
       self.deadline = Pitchfork.time_now(true) + timeout
     end
 
     # called in the worker process
     def deadline=(value) # :nodoc:
-      # If we are (re)setting to zero mark worker as not ready.
-      self.ready = false if value == 0
-
       @state_drop.deadline = value
     end
 
@@ -223,7 +228,7 @@ module Pitchfork
 
     # called in both the monitor (reaping worker) and worker (SIGQUIT handler)
     def close # :nodoc:
-      self.deadline = 0
+      @state_drop.reset!
       @monitor.close if @monitor
       @to_io.close if @to_io
     end
@@ -249,7 +254,7 @@ module Pitchfork
     def init_state
       if nr
         @state_drop = SharedMemory.worker_state(@nr)
-        self.deadline = 0
+        @state_drop.reset!
       else
         promoted!(nil)
       end
@@ -301,7 +306,7 @@ module Pitchfork
 
     def init_state
       @state_drop = SharedMemory.service_state
-      self.deadline = 0
+      @state_drop.reset!
     end
   end
 end
