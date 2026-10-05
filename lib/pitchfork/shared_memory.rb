@@ -13,6 +13,12 @@ module Pitchfork
 
     PAGES = [MemoryPage.new(MemoryPage::SLOTS)]
 
+    READY_FLAG = 1 << 0
+    BUSY_FLAG = 1 << 1
+    DEADLINE_SHIFT = 2
+
+    FLAGS_MASK = 0x3
+
     def current_generation
       PAGES[0][CURRENT_GENERATION_OFFSET]
     end
@@ -50,24 +56,40 @@ module Pitchfork
       end
 
       def ready?
-        (@field.value & 1) == 1
+        (@field.value & READY_FLAG) == READY_FLAG
       end
 
       def ready=(bool)
         if bool
-          @field.value |= 1
+          @field.value |= READY_FLAG
         else
-          @field.value &= ~1
+          @field.value &= ~READY_FLAG
         end
       end
 
-      def deadline=(value)
+      def busy?
+        (@field.value & BUSY_FLAG) == BUSY_FLAG
+      end
+
+      def busy=(bool)
+        if bool
+          @field.value |= BUSY_FLAG
+        else
+          @field.value &= ~BUSY_FLAG
+        end
+      end
+
+      def deadline=(deadline)
         # Shift the value up and preserve the current ready bit.
-        @field.value = (value << 1) | (@field.value & 1)
+        @field.value = (deadline << DEADLINE_SHIFT) | (@field.value & FLAGS_MASK)
       end
 
       def deadline
-        @field.value >> 1
+        @field.value >> DEADLINE_SHIFT
+      end
+
+      def reset!
+        @field.value = 0
       end
     end
 

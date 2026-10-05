@@ -954,12 +954,14 @@ module Pitchfork
             when Message
               worker.update(client)
             else
+              worker.busy = true
               if (request_env = process_client(client, worker, prepare_timeout(worker)))
                 worker.increment_requests_count
-                @after_request_complete&.call(self, worker, request_env)
+                safe_run_callback(@after_request_complete, "after_request_complete", self, worker, request_env)
               end
             end
 
+            worker.busy = false
             worker.update_deadline(@timeout)
           end
 

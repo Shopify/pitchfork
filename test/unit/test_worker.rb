@@ -34,13 +34,16 @@ module Pitchfork
       now = Time.now.to_i
       worker.deadline = now
       worker.ready = true
+      worker.busy = true
 
       assert_equal now, worker.deadline
       assert worker.ready?
+      assert worker.busy?
 
       worker.ready = false
       assert_equal now, worker.deadline
       refute worker.ready?
+      assert worker.busy?
 
       worker.ready = true
       now = now + 1
@@ -49,7 +52,12 @@ module Pitchfork
       assert_equal now, worker.deadline
       assert worker.ready?, "ready state was not preserved"
 
-      worker.deadline = 0
+      worker.busy = false
+      assert_equal now, worker.deadline
+      assert worker.ready?
+      refute worker.busy?
+
+      worker.close
       assert_equal 0, worker.deadline
       refute worker.ready?, "ready state failed to reset"
     end

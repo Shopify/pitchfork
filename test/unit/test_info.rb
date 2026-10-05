@@ -41,5 +41,31 @@ module Pitchfork
         ], info)
       end
     end
+
+    def test_idle_workers_count
+      Info.workers_count = 10
+      now = Pitchfork.time_now(true)
+      Info.workers_count.times do |i|
+        state = SharedMemory.worker_state(i)
+        state.ready = true
+        state.busy = false
+        state.deadline = now + 1_000
+      end
+
+      assert_equal 10, Info.workers_count
+      assert_equal 10, Info.idle_workers_count
+
+      SharedMemory.worker_state(2).busy = true
+      assert_equal 9, Info.idle_workers_count
+
+      SharedMemory.worker_state(3).ready = false
+      assert_equal 8, Info.idle_workers_count
+
+      SharedMemory.worker_state(3).busy = true
+      assert_equal 8, Info.idle_workers_count
+
+      SharedMemory.worker_state(4).deadline = now - 5
+      assert_equal 7, Info.idle_workers_count
+    end
   end
 end
