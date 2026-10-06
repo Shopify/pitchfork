@@ -39,6 +39,23 @@ class ServiceWorkerTest < Pitchfork::IntegrationTest
     assert_stderr("[service] exit")
   end
 
+  def test_listener_names
+    addr, port = unused_port
+
+    pid = spawn_server(app: File.join(ROOT, "test/integration/env.ru"), config: <<~CONFIG)
+      listen "#{addr}:#{port}"
+      worker_processes 1
+
+      before_service_worker_ready do |server, service|
+        server.logger.info("[service] listener_names=\#{Pitchfork.listener_names}")
+      end
+    CONFIG
+    assert_healthy("http://#{addr}:#{port}")
+
+    assert_stderr("[service] listener_names=#{["#{addr}:#{port}"]}")
+    assert_clean_shutdown(pid)
+  end
+
   def test_start_only
     addr, port = unused_port
 
