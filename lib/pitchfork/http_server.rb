@@ -972,7 +972,7 @@ module Pitchfork
     # traps for USR2, and HUP may be set in the after_worker_fork/after_mold_fork Procs
     # by the user.
     def init_worker_process(worker)
-      proc_name role: "(gen:#{worker.generation}) worker[#{worker.nr}]", status: "init"
+      proc_name role: "(#{worker.version}.#{worker.generation}) worker[#{worker.nr}]", status: "init"
       worker.reset
       worker.register_to_monitor(@control_socket[1])
       # we'll re-trap :QUIT and :TERM later for graceful shutdown iff we accept clients
@@ -998,7 +998,7 @@ module Pitchfork
     end
 
     def init_service_process(service)
-      proc_name role: "(gen:#{service.generation}) service", status: "init"
+      proc_name role: "(#{service.version}.#{service.generation}) service", status: "init"
       Pitchfork.close_listeners # Don't appear as listening to incoming requests
       service.register_to_monitor(@control_socket[1])
       readers = [service]
@@ -1009,7 +1009,7 @@ module Pitchfork
     end
 
     def init_mold_process(mold)
-      proc_name role: "(gen:#{mold.generation}) mold", status: "init"
+      proc_name role: "(#{mold.version}.#{mold.generation}) mold", status: "init"
       run_callback!(after_mold_fork, "after_mold_fork", self, mold)
       readers = [mold]
       trap(:QUIT) { nuke_listeners!(readers) }
