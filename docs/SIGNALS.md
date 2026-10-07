@@ -11,6 +11,12 @@ processes are documented here as well.
 * `QUIT/TERM` - graceful shutdown, waits for workers to finish their
   current request before finishing.
 
+* `USR1` - trigger a host restart. The monitor self-reexec,
+  then a new mold is booted and replace the existing one,
+  and finally all workers are cycled out and replaced.
+  If the config is invalid or for some other reasons the
+  monitor fails to boot the process will crash.
+
 * `USR2` - trigger a manual refork. A worker is promoted as
   a new mold, and existing workers progressively replaced
   by fresh ones.
