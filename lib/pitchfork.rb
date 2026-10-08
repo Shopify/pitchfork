@@ -108,9 +108,14 @@ module Pitchfork
     # and Unix domain socket paths.  This is useful for use with
     # Raindrops::Middleware under Linux: https://yhbt.net/raindrops/
     def listener_names
-      Pitchfork::HttpServer::LISTENERS.map do |io|
+      @listener_names || Pitchfork::HttpServer::LISTENERS.map do |io|
         Pitchfork::SocketHelper.sock_name(io)
       end
+    end
+
+    def close_listeners
+      @listener_names = listener_names
+      Pitchfork::HttpServer::LISTENERS.each(&:close).clear
     end
 
     def log_error(logger, prefix, exc)

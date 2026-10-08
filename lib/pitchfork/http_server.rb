@@ -375,7 +375,7 @@ module Pitchfork
       @respawn = false
       SharedMemory.shutting_down!
       wait_for_pending_workers
-      LISTENERS.each(&:close).clear
+      Pitchfork.close_listeners
 
       limit = Pitchfork.time_now + timeout
       until @children.empty? || Pitchfork.time_now > limit
@@ -891,7 +891,7 @@ module Pitchfork
 
     def init_service_process(service)
       proc_name role: "(gen:#{service.generation}) service", status: "init"
-      LISTENERS.each(&:close).clear # Don't appear as listening to incoming requests
+      Pitchfork.close_listeners # Don't appear as listening to incoming requests
       service.register_to_monitor(@control_socket[1])
       readers = [service]
       trap(:QUIT) { nuke_listeners!(readers) }
