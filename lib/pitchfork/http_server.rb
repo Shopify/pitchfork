@@ -723,6 +723,7 @@ module Pitchfork
       mold = Worker.new(nil, version: @version)
       mold.create_socketpair!
       mold.pid = Pitchfork.clean_fork(setpgid: setpgid) do
+        proc_name role: "(#{mold.version}.#{mold.generation}) mold", status: "init"
         mold.pid = Process.pid
         @promotion_lock.try_lock
         mold.after_fork_in_child
