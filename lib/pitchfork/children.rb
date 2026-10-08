@@ -110,7 +110,9 @@ module Pitchfork
     end
 
     def restarting_workers_count
-      @pending_workers.size + @workers.count { |_, w| w.exiting? }
+      @workers.count do |nr, worker|
+        @pending_workers.key?(nr) || worker.exiting? || !worker.ready?
+      end
     end
 
     def pending_promotion?
