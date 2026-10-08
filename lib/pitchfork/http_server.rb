@@ -370,6 +370,13 @@ module Pitchfork
         end
 
         monitor_sleep(sleep_time) if sleep
+      else
+        monitor_handle_message(message)
+      end
+    end
+
+    def monitor_handle_message(message)
+      case message
       when :QUIT, :TERM # graceful shutdown
         SharedMemory.shutting_down!
         logger.info "#{message} received, starting graceful shutdown"
@@ -588,6 +595,19 @@ module Pitchfork
     end
 
     def trigger_restart
+      # We must handle all the Message instances in the sig queue, as they could contain sockets or
+      # other FD we can't marshal down to the next process.
+      # It is OK to handle them out of order as they don't have any dependency with regular signals.
+      # Signals will be handled by the new monitor.
+      @sig_queue.reject! do |message|
+        if message.is_a?(Message)
+          monitor_handle_message(message)
+          true
+        else
+          false
+        end
+      end
+
       with_unbundled_env do
         SharedMemory.close_on_exec = false
         @control_socket.map {|s| s.close_on_exec = false }
