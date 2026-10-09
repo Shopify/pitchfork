@@ -80,12 +80,12 @@ module Pitchfork
     attr_accessor :app, :timeout, :timeout_signal, :soft_timeout, :cleanup_timeout, :spawn_timeout, :worker_processes,
                   :before_fork, :after_worker_fork, :after_mold_fork, :before_service_worker_ready, :before_service_worker_exit,
                   :listener_opts, :children,
-                  :orig_app, :config, :ready_pipe, :early_hints, :setpgid
+                  :orig_app, :config, :ready_pipe, :early_hints, :setpgid, :restart_command, :restart_command_argv, :working_directory
     attr_writer   :after_worker_exit, :before_worker_exit, :after_worker_ready, :after_request_complete,
                   :refork_condition, :after_worker_timeout, :after_worker_hard_timeout, :after_monitor_ready, :refork_max_unavailable,
                   :max_consecutive_spawn_errors
 
-    attr_reader :logger
+    attr_reader :logger, :version
     include Pitchfork::SocketHelper
     include Pitchfork::HttpResponse
 
@@ -101,6 +101,7 @@ module Pitchfork
     # HttpServer.run.join to join the thread that's processing
     # incoming requests on the socket.
     def initialize(app, options = {})
+      @version = 0
       @exit_status = 0
       @app = app
       @respawn = false
@@ -146,30 +147,70 @@ module Pitchfork
       config.commit!(self, :skip => [:listeners, :pid])
       @orig_app = app
       # list of signals we care about and trap in monitor.
-      @queue_sigs = [
-        :QUIT, :INT, :TERM, :USR2, :TTIN, :TTOU ]
-
-      Info.workers_count = worker_processes
-      SharedMemory.preallocate_pages(worker_processes)
+      @queue_sigs = [ :QUIT, :INT, :TERM, :USR1, :USR2, :TTIN, :TTOU ]
     end
 
     # Runs the thing.  Returns self so you can run join on it
     def start(sync = true)
       Pitchfork.enable_child_subreaper # noop if not supported
 
+      restart_state = ENV.delete("PITCHFORK_RESTART_STATE")
+      if restart_state
+        restart_state = Marshal.load(restart_state.unpack1("m0"))
+        logger.info "monitor v=#{restart_state[:version]} initializing with inherited state"
+      else
+        restart_state = {}
+      end
+
+      if restart_state[:version]
+        @version = restart_state[:version]
+      end
+
+      if working_directory
+        logger.info("monitor v=#{@version} chdir #{File.realpath(working_directory)}")
+        Dir.chdir(File.realpath(working_directory))
+      end
+
+      if restart_state[:sig_queue]
+        @sig_queue = [*restart_state[:sig_queue], *@sig_queue]
+      end
+
+      if restart_state[:shared_memory_fds]
+        SharedMemory.reopen(restart_state[:shared_memory_fds])
+      end
+      SharedMemory.preallocate_pages(worker_processes)
+      Info.workers_count = worker_processes
+
       # This socketpair is used to wake us up from select(2) in #join when signals
       # are trapped.  See trap_deferred.
       # It's also used by newly spawned children to send their soft_signal pipe
       # to the monitor when they are spawned.
-      @control_socket.replace(Pitchfork.socketpair)
+      if fds = restart_state[:control_socket_fds]
+        @control_socket.replace(Pitchfork.socketpair_for_fds(fds))
+      else
+        @control_socket.replace(Pitchfork.socketpair)
+      end
       Info.keep_ios(@control_socket)
       @monitor_pid = $$
+
+      if restart_state[:children]
+        @children = Children.load(restart_state[:children])
+        @children.close_on_exec = true
+      end
 
       # setup signal handlers before writing pid file in case people get
       # trigger happy and send signals as soon as the pid file exists.
       # Note that signals don't actually get handled until the #join method
       @queue_sigs.each { |sig| trap(sig) { @sig_queue << sig; awaken_monitor } }
       trap(:CHLD) { awaken_monitor }
+
+      if restart_state[:listeners]
+        @inherited_listeners = Hash.new { |h, k| h[k] = [] }
+        Listeners.load(restart_state[:listeners]).each do |socket|
+          @inherited_listeners[sock_name(socket)] << socket
+        end
+      end
+      bind_listeners!
 
       if REFORKING_AVAILABLE
         spawn_initial_mold
@@ -179,7 +220,7 @@ module Pitchfork
         end
       else
         build_app!
-        bind_listeners!
+        SharedMemory.current_version = @version
         after_mold_fork&.call(self, Worker.new(nil, pid: $$).promoted!(@spawn_timeout))
       end
 
@@ -220,7 +261,7 @@ module Pitchfork
       opt[:reuseport] = true if queues > 1
 
       begin
-        io = bind_listen(address, opt)
+        io = bind_listen(address, opt, @inherited_listeners)
         unless TCPServer === io || UNIXServer === io
           io.autoclose = false
           io = server_cast(io)
@@ -246,7 +287,7 @@ module Pitchfork
         ios = [io]
 
         (queues - 1).times do
-          io = bind_listen(address, opt)
+          io = bind_listen(address, opt, @inherited_listeners)
           unless TCPServer === io || UNIXServer === io
             io.autoclose = false
             io = server_cast(io)
@@ -326,10 +367,17 @@ module Pitchfork
         end
         if @respawn
           maintain_worker_count
-          restart_outdated_workers if REFORKING_AVAILABLE
+          restart_outdated_workers
         end
 
         monitor_sleep(sleep_time) if sleep
+      else
+        monitor_handle_message(message)
+      end
+    end
+
+    def monitor_handle_message(message)
+      case message
       when :QUIT, :TERM # graceful shutdown
         SharedMemory.shutting_down!
         logger.info "#{message} received, starting graceful shutdown"
@@ -339,6 +387,8 @@ module Pitchfork
         logger.info "#{message} received, starting immediate shutdown"
         stop(false)
         return StopIteration
+      when :USR1 # trigger a hot restart
+        trigger_restart
       when :USR2 # trigger a promotion
         if @respawn
           trigger_refork
@@ -350,6 +400,10 @@ module Pitchfork
         self.worker_processes += 1
       when :TTOU
         self.worker_processes -= 1 if self.worker_processes > 0
+      when Message::ProcessReaped
+        unless try_reaping_worker(message.status)
+          logger.info("reaped unknown subprocess #{message.status.inspect}")
+        end
       when Message::WorkerSpawned, Message::MoldSpawned, Message::ServiceSpawned
         worker = @children.update(message)
         logger.info("#{worker.to_log} spawned")
@@ -357,6 +411,8 @@ module Pitchfork
         @consecutive_spawn_errors = 0
         old_molds = @children.molds
         new_mold = @children.update(message)
+        SharedMemory.current_generation = new_mold.generation
+        SharedMemory.current_version = new_mold.version
         logger.info("#{new_mold.to_log} ready")
         old_molds.each do |old_mold|
           logger.info("Terminating old #{old_mold.to_log}")
@@ -465,17 +521,36 @@ module Pitchfork
       loop do
         wpid, status = Process.waitpid2(-1, Process::WNOHANG)
         wpid or return
-        worker = @children.reap(wpid) and worker.close rescue nil
-        if worker
-          unless worker.ready?
-            @consecutive_spawn_errors += 1
+
+        unless try_reaping_worker(status)
+          # We may not have yet processed the WorkerSpawned message, so let's queue that event.
+          message = Message::ProcessReaped.new(status)
+          case @control_socket[1].sendmsg_nonblock(message, exception: false)
+          when :wait_writable
+            @sig_queue << message # fallback
           end
-          @after_worker_exit&.call(self, worker, status)
-        else
-          logger.info("reaped unknown subprocess #{status.inspect}")
         end
       rescue Errno::ECHILD
         break
+      end
+    end
+
+    def try_reaping_worker(status)
+      worker = @children.reap(status.pid) and worker.close rescue nil
+      if worker
+        reap_worker(worker, status)
+        true
+      end
+    end
+
+    def reap_worker(worker, status)
+      unless worker.ready?
+        @consecutive_spawn_errors += 1
+      end
+      run_callback!(@after_worker_exit, "after_worker_exit", self, worker, status)
+
+      if worker.mold? && @children.mold != worker && worker.version > (@children.mold&.version || 0)
+        logger.error("#{worker.to_log} crashed before being ready, restart cancelled")
       end
     end
 
@@ -518,6 +593,49 @@ module Pitchfork
       logger.error "#{child.to_log} timed out, killing"
       @consecutive_spawn_errors += 1 unless child.ready?
       @children.hard_kill(@timeout_signal.call(child.pid), child) # take no prisoners for hard timeout violations
+    end
+
+    def trigger_restart
+      # We must handle all the Message instances in the sig queue, as they could contain sockets or
+      # other FD we can't marshal down to the next process.
+      # It is OK to handle them out of order as they don't have any dependency with regular signals.
+      # Signals will be handled by the new monitor.
+      @sig_queue.reject! do |message|
+        if message.is_a?(Message)
+          monitor_handle_message(message)
+          true
+        else
+          false
+        end
+      end
+
+      with_unbundled_env do
+        SharedMemory.close_on_exec = false
+        @control_socket.map {|s| s.close_on_exec = false }
+        @children.close_on_exec = false
+        LISTENERS.close_on_exec = false
+
+        state = {
+          shared_memory_fds: SharedMemory.fds,
+          control_socket_fds: @control_socket.map(&:fileno),
+          children: @children.dump,
+          listeners: LISTENERS.dump,
+          version: @version + 1,
+          sig_queue: @sig_queue,
+        }
+        env = { "PITCHFORK_RESTART_STATE" => [Marshal.dump(state)].pack("m0") }
+        chdir = File.realpath(working_directory)
+        logger.info "monitor v=#{@version} reexecuting in #{chdir}"
+        Process.exec(env, *restart_command, *restart_command_argv, chdir: chdir)
+      end
+    end
+
+    def with_unbundled_env(&block)
+      if defined?(Bundler)
+        Bundler.with_unbundled_env(&block)
+      else
+        yield
+      end
     end
 
     def trigger_refork
@@ -624,14 +742,14 @@ module Pitchfork
     end
 
     def spawn_initial_mold
-      mold = Worker.new(nil)
+      mold = Worker.new(nil, version: @version)
       mold.create_socketpair!
       mold.pid = Pitchfork.clean_fork(setpgid: setpgid) do
+        proc_name role: "(#{mold.version}.#{mold.generation}) mold", status: "init"
         mold.pid = Process.pid
         @promotion_lock.try_lock
         mold.after_fork_in_child
         build_app!
-        bind_listeners!
         mold.start_promotion(@control_socket[1])
         mold_loop(mold)
       end
@@ -641,14 +759,16 @@ module Pitchfork
 
     def spawn_missing_workers
       if @before_service_worker_ready && !@children.service
-        service = Pitchfork::Service.new
+        service = Worker.new(nil, service: true)
         if REFORKING_AVAILABLE
+          service.version = @children.mold&.version || 0
           service.generation = @children.mold&.generation || 0
 
           unless @children.mold&.spawn_service(service)
             @logger.error("Failed to send a spawn_service command")
           end
         else
+          service.version = @version
           spawn_service(service, detach: false)
         end
 
@@ -660,19 +780,21 @@ module Pitchfork
         if @children.nr_alive?(worker_nr)
           next
         end
-        worker = Pitchfork::Worker.new(worker_nr)
+        worker = Worker.new(worker_nr)
 
         if REFORKING_AVAILABLE
+          worker.version = @children.mold&.version || 0
           worker.generation = @children.mold&.generation || 0
 
           unless @children.mold&.spawn_worker(worker)
             @logger.error("Failed to send a spawn_worker command")
           end
         else
+          worker.version = @version
           spawn_worker(worker, detach: false)
         end
         # We could directly register workers when we spawn from the
-        # monitor, like pitchfork does. However it is preferable to
+        # monitor, like unicorn does. However it is preferable to
         # always go through the asynchronous registering process for
         # consistency.
         @children.register(worker)
@@ -693,14 +815,23 @@ module Pitchfork
 
     def maintain_worker_count
       off = @children.workers_count - worker_processes
-      off -= 1 if @before_service_worker_ready && !@children.service
 
       if off < 0
         spawn_missing_workers
-      elsif off > 0
-        @children.each_worker do |worker|
-          if worker.nr >= worker_processes
-            worker.soft_kill(:TERM)
+      else
+        if @before_service_worker_ready && !@children.service
+          spawn_missing_workers
+        end
+
+        if off > 0
+          @children.each_worker do |worker|
+            if worker.nr >= worker_processes
+              if worker.soft_kill(:TERM)
+                logger.info("Sent SIGTERM to #{worker.to_log}")
+              else
+                logger.info("Failed to send SIGTERM to #{worker.to_log}")
+              end
+            end
           end
         end
       end
@@ -708,7 +839,7 @@ module Pitchfork
 
     def restart_outdated_workers
       # If we're already in the middle of forking a new generation, we just continue
-      return unless @children.mold
+      return if REFORKING_AVAILABLE && !@children.mold
 
       # We don't shutdown any outdated worker if any worker is already being
       # spawned or a worker is exiting. Only 10% of workers can be reforked at
@@ -726,7 +857,7 @@ module Pitchfork
       end
 
       if workers_to_restart > 0
-        outdated_workers = @children.workers.select { |w| !w.exiting? && w.generation < @children.mold.generation }
+        outdated_workers = @children.workers.select { |w| !w.exiting? && w.outdated? }
         outdated_workers.each do |worker|
           if worker.soft_kill(:TERM)
             logger.info("Sent SIGTERM to #{worker.to_log}")
@@ -864,7 +995,7 @@ module Pitchfork
     # traps for USR2, and HUP may be set in the after_worker_fork/after_mold_fork Procs
     # by the user.
     def init_worker_process(worker)
-      proc_name role: "(gen:#{worker.generation}) worker[#{worker.nr}]", status: "init"
+      proc_name role: "(#{worker.version}.#{worker.generation}) worker[#{worker.nr}]", status: "init"
       worker.reset
       worker.register_to_monitor(@control_socket[1])
       # we'll re-trap :QUIT and :TERM later for graceful shutdown iff we accept clients
@@ -890,7 +1021,7 @@ module Pitchfork
     end
 
     def init_service_process(service)
-      proc_name role: "(gen:#{service.generation}) service", status: "init"
+      proc_name role: "(#{service.version}.#{service.generation}) service", status: "init"
       Pitchfork.close_listeners # Don't appear as listening to incoming requests
       service.register_to_monitor(@control_socket[1])
       readers = [service]
@@ -901,7 +1032,7 @@ module Pitchfork
     end
 
     def init_mold_process(mold)
-      proc_name role: "(gen:#{mold.generation}) mold", status: "init"
+      proc_name role: "(#{mold.version}.#{mold.generation}) mold", status: "init"
       run_callback!(after_mold_fork, "after_mold_fork", self, mold)
       readers = [mold]
       trap(:QUIT) { nuke_listeners!(readers) }
@@ -995,7 +1126,7 @@ module Pitchfork
 
       begin
         fork_sibling("spawn_mold") do
-          mold = Worker.new(nil, pid: Process.pid, generation: worker.generation)
+          mold = Worker.new(nil, pid: Process.pid, generation: worker.generation, version: worker.version)
           mold.promote!(@spawn_timeout)
           mold.start_promotion(@control_socket[1])
           mold_loop(mold)
@@ -1034,7 +1165,7 @@ module Pitchfork
             when Message::SpawnWorker
               retries = 1
               begin
-                spawn_worker(Worker.new(message.nr, generation: mold.generation), detach: true)
+                spawn_worker(Worker.new(message.nr, generation: mold.generation, version: mold.version), detach: true)
               rescue ForkFailure
                 if retries > 0
                   @logger.fatal("#{mold.to_log} failed to spawn a worker, retrying")
@@ -1050,7 +1181,7 @@ module Pitchfork
             when Message::SpawnService
               retries = 1
               begin
-                spawn_service(Service.new(generation: mold.generation), detach: true)
+                spawn_service(Pitchfork::Worker.new(nil, generation: mold.generation, version: mold.version, service: true), detach: true)
               rescue ForkFailure
                 if retries > 0
                   @logger.fatal("#{mold.to_log} failed to spawn a service, retrying")
@@ -1132,6 +1263,13 @@ module Pitchfork
         listeners << Pitchfork::Const::DEFAULT_LISTEN
       end
       listeners.each { |addr| listen(addr) }
+
+      if @inherited_listeners
+        @inherited_listeners.each_value { |sockets| sockets.each(&:close) }
+        @inherited_listeners.clear
+        @inherited_listeners = nil
+      end
+
       raise ArgumentError, "no listeners" if LISTENERS.empty?
     end
 
