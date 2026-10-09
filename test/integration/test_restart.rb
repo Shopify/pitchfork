@@ -294,7 +294,9 @@ class RestartTest < Pitchfork::IntegrationTest
           gem "pitchfork", path: #{ROOT.inspect}
         RUBY
 
-        assert system("bundle", "install", out: File::NULL, err: File::NULL)
+        Bundler.with_unbundled_env do
+          assert system("bundle", "install", out: File::NULL, err: File::NULL)
+        end
 
         write_config(<<~RUBY)
           listen "#{addr}:#{port}"
