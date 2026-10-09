@@ -30,3 +30,20 @@ The `constant_caches.ru` application is specifically crafted to demonstrate how 
 get invalidated as applications execute more and more code.
 
 It is an extreme example for benchmark purposes.
+
+## Request processing throughput
+
+`request_benchmark.rb` benchmarks the per-request Ruby-level hot path (HTTP parsing and
+response writing) over a socket pair, without the noise of a real TCP stack or listener loop:
+
+```bash
+$ bundle exec benchmark/request_benchmark.rb
+process request (parse+respond)    125.745k (± 2.9%) i/s    (7.95 μs/i)
+```
+
+Pass `profile` (and optionally an iteration count) to capture a StackProf wall-clock profile instead:
+
+```bash
+$ bundle exec benchmark/request_benchmark.rb profile
+$ bundle exec stackprof benchmark/stackprof-request_benchmark.dump --text
+```

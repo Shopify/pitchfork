@@ -30,11 +30,18 @@ module Pitchfork
           next if ILLEGAL_HEADER_VALUE.match?(v)
           buf << "#{key}: #{v}\r\n"
         end
-      when /\n/ # Rack 2
-        # avoiding blank, key-only cookies with /\n+/
-        value.split(/\n+/).each do |v|
-          next if ILLEGAL_HEADER_VALUE.match?(v)
-          buf << "#{key}: #{v}\r\n"
+      when String
+        if value.include?("\n") # Rack 2
+          # avoiding blank, key-only cookies with /\n+/
+          value.split(/\n+/).each do |v|
+            next if ILLEGAL_HEADER_VALUE.match?(v)
+            buf << key << ": " << v << "\r\n"
+          end
+        else
+          # Common case: a single-line string value, the vast majority of
+          # headers. Appending directly avoids the intermediate string
+          # allocation that string interpolation would create.
+          buf << key << ": " << value << "\r\n"
         end
       else
         buf << "#{key}: #{value}\r\n"
@@ -54,10 +61,12 @@ module Pitchfork
               "Date: #{httpdate}\r\n" \
               "Connection: close\r\n".b
         headers.each do |key, value|
-          case key
-          when %r{\A(?:Date|Connection)\z}i
-            next
-          when "rack.hijack"
+          # Fast path: skip the case-insensitive Date/Connection check without
+          # a regexp for every other header (the vast majority).
+          next if (key.length == 4 && key.casecmp?("date")) ||
+                  (key.length == 10 && key.casecmp?("connection"))
+
+          if key == "rack.hijack"
             # This should only be hit under Rack >= 1.5, as this was an illegal
             # key in Rack < 1.5
             hijack = value
@@ -65,15 +74,37 @@ module Pitchfork
             append_header(buf, key, value)
           end
         end
-        socket.write(buf << "\r\n")
+        buf << "\r\n"
       end
 
       if hijack
+        socket.write(buf) if buf
         req.hijacked!
         hijack.call(socket)
       elsif body.respond_to?(:each)
-        body.each { |chunk| socket.write(chunk) }
+        # Combine the header block with the first body chunk into a single
+        # write (backed by writev(2) when supported) to save a syscall on
+        # the common case of a response with a single body chunk.
+        #
+        # `buf` itself (rather than a separate flag) is the "already sent"
+        # sentinel: some bodies (e.g. ones that defer emitting via #close)
+        # capture the block passed to #each and invoke it again later, so
+        # the sentinel must be a value the closure observes being mutated,
+        # not a value captured at closure-creation time.
+        body.each do |chunk|
+          if buf
+            socket.write(buf, chunk)
+            buf = nil
+          else
+            socket.write(chunk)
+          end
+        end
+        if buf
+          socket.write(buf)
+          buf = nil
+        end
       else
+        socket.write(buf) if buf
         body.call(socket)
       end
     end
