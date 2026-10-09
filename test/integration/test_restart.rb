@@ -273,4 +273,62 @@ class RestartTest < Pitchfork::IntegrationTest
     assert_stderr(/monitor v=1 initializing with inherited state/)
     assert_stderr(/service gen=1.0 pid=\d+ v=1 ping=2/)
   end
+
+  def test_restart_capistrano_link_releases
+    addr, port = unused_port
+
+    current_release = File.expand_path("current")
+    Dir.mkdir("releases")
+
+    %w(a b).each do |release|
+      root = File.join("releases", release)
+      Dir.mkdir(root)
+      Dir.chdir(root) do
+        File.write("config.ru", <<~RUBY)
+          run lambda { |env| [ 200, {}, [ Dir.pwd ] ] }
+        RUBY
+
+        File.write("Gemfile", <<~RUBY)
+          source "https://rubygems.org"
+
+          gem "pitchfork", path: #{ROOT.inspect}
+        RUBY
+
+        assert system("bundle", "install", out: File::NULL, err: File::NULL)
+
+        write_config(<<~RUBY)
+          listen "#{addr}:#{port}"
+          worker_processes 2
+
+          working_directory '#{current_release}'
+          restart_command_prefix ["bundle", "exec"]
+        RUBY
+      end
+    end
+
+    File.symlink(File.expand_path("releases/a"), "current")
+    pid = Dir.chdir(File.realpath(current_release)) do
+      Bundler.with_unbundled_env do
+        Process.spawn("bundle", "exec", "pitchfork", "-c", "pitchfork.conf.rb", out: File.join(@pwd, "stdout.log"), err: File.join(@pwd, "stderr.log"))
+      end
+    end
+
+    assert_stderr(/worker=1 gen=0.0 pid=\d+ ready/, timeout: 5)
+
+    assert_healthy("http://#{addr}:#{port}")
+    assert_equal File.expand_path("releases/a"), http_get("http://#{addr}:#{port}").body
+
+    File.symlink(File.expand_path("releases/b"), "current.tmp")
+    File.rename("current.tmp", "current")
+    Process.kill(:SIGUSR1, pid)
+    assert_equal File.expand_path("releases/b"), File.realpath("current")
+
+    assert_stderr(/worker=1 gen=1.0 pid=\d+ ready/, timeout: 5)
+
+    assert_healthy("http://#{addr}:#{port}")
+
+    assert_equal File.expand_path("releases/b"), http_get("http://#{addr}:#{port}").body
+
+    assert_clean_shutdown(pid)
+  end
 end

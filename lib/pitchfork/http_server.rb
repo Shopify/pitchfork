@@ -152,10 +152,6 @@ module Pitchfork
 
     # Runs the thing.  Returns self so you can run join on it
     def start(sync = true)
-      if working_directory
-        Dir.chdir(File.realpath(working_directory))
-      end
-
       Pitchfork.enable_child_subreaper # noop if not supported
 
       restart_state = ENV.delete("PITCHFORK_RESTART_STATE")
@@ -166,12 +162,17 @@ module Pitchfork
         restart_state = {}
       end
 
-      if restart_state[:sig_queue]
-        @sig_queue = [*restart_state[:sig_queue], *@sig_queue]
-      end
-
       if restart_state[:version]
         @version = restart_state[:version]
+      end
+
+      if working_directory
+        logger.info("monitor v=#{@version} chdir #{File.realpath(working_directory)}")
+        Dir.chdir(File.realpath(working_directory))
+      end
+
+      if restart_state[:sig_queue]
+        @sig_queue = [*restart_state[:sig_queue], *@sig_queue]
       end
 
       if restart_state[:shared_memory_fds]
@@ -623,8 +624,9 @@ module Pitchfork
           sig_queue: @sig_queue,
         }
         env = { "PITCHFORK_RESTART_STATE" => [Marshal.dump(state)].pack("m0") }
-        logger.info "monitor v=#{@version} reexecuting"
-        Process.exec(env, *restart_command_prefix, *restart_command, chdir: working_directory)
+        chdir = File.realpath(working_directory)
+        logger.info "monitor v=#{@version} reexecuting in #{chdir}"
+        Process.exec(env, *restart_command_prefix, *restart_command, chdir: chdir)
       end
     end
 
