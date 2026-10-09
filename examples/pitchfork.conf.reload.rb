@@ -5,7 +5,7 @@
 # more will usually help for _short_ waits on databases/caches.
 worker_processes 2
 
-restart_command_prefix ["bundle", "exec"]
+restart_command ["bundle", "exec", "pitchfork"]
 
 # listen on both a Unix domain socket and a TCP port,
 # we use a shorter backlog for quicker failover when busy

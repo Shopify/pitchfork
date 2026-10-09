@@ -80,7 +80,7 @@ module Pitchfork
     attr_accessor :app, :timeout, :timeout_signal, :soft_timeout, :cleanup_timeout, :spawn_timeout, :worker_processes,
                   :before_fork, :after_worker_fork, :after_mold_fork, :before_service_worker_ready, :before_service_worker_exit,
                   :listener_opts, :children,
-                  :orig_app, :config, :ready_pipe, :early_hints, :setpgid, :restart_command, :restart_command_prefix, :working_directory
+                  :orig_app, :config, :ready_pipe, :early_hints, :setpgid, :restart_command, :restart_command_argv, :working_directory
     attr_writer   :after_worker_exit, :before_worker_exit, :after_worker_ready, :after_request_complete,
                   :refork_condition, :after_worker_timeout, :after_worker_hard_timeout, :after_monitor_ready, :refork_max_unavailable,
                   :max_consecutive_spawn_errors
@@ -626,7 +626,7 @@ module Pitchfork
         env = { "PITCHFORK_RESTART_STATE" => [Marshal.dump(state)].pack("m0") }
         chdir = File.realpath(working_directory)
         logger.info "monitor v=#{@version} reexecuting in #{chdir}"
-        Process.exec(env, *restart_command_prefix, *restart_command, chdir: chdir)
+        Process.exec(env, *restart_command, *restart_command_argv, chdir: chdir)
       end
     end
 

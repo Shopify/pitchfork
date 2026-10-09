@@ -315,8 +315,8 @@ module Pitchfork
       set[:restart_command] = command
     end
 
-    def restart_command_prefix(command_prefix)
-      set[:restart_command_prefix] = command_prefix
+    def restart_command_argv(restart_command_argv) # :nodoc:
+      set[:restart_command_argv] = restart_command_argv
     end
 
   private

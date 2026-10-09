@@ -14,7 +14,7 @@ class RestartTest < Pitchfork::IntegrationTest
       listen "#{addr}:#{port}"
       worker_processes 2
 
-      restart_command_prefix ["bundle", "exec"]
+      restart_command ["bundle", "exec", "pitchfork"]
     RUBY
 
     assert_healthy("http://#{addr}:#{port}")
@@ -29,7 +29,7 @@ class RestartTest < Pitchfork::IntegrationTest
       listen "#{addr}:#{port}"
       worker_processes 4
 
-      restart_command_prefix ["bundle", "exec"]
+      restart_command ["bundle", "exec", "pitchfork"]
     RUBY
 
     File.truncate("stderr.log", 0)
@@ -66,7 +66,7 @@ class RestartTest < Pitchfork::IntegrationTest
       listen "#{addr}:#{port}", queues: 2
       worker_processes 4
 
-      restart_command_prefix ["bundle", "exec"]
+      restart_command ["bundle", "exec", "pitchfork"]
     RUBY
 
     assert_healthy("http://#{addr}:#{port}")
@@ -114,7 +114,7 @@ class RestartTest < Pitchfork::IntegrationTest
         listen "#{addr}:#{port}"
         worker_processes 2
 
-        restart_command_prefix ["bundle", "exec"]
+        restart_command ["bundle", "exec", "pitchfork"]
       RUBY
 
       assert_healthy("http://#{addr}:#{port}")
@@ -125,7 +125,7 @@ class RestartTest < Pitchfork::IntegrationTest
         listen "#{addr}:#{port}"
         worker_processes 2
 
-        restart_command_prefix ["bundle", "exec"]
+        restart_command ["bundle", "exec", "pitchfork"]
       RUBY
 
       File.write("env.ru", <<~RUBY)
@@ -170,7 +170,7 @@ class RestartTest < Pitchfork::IntegrationTest
       listen "#{addr}:#{port}"
       worker_processes 2
 
-      restart_command_prefix ["bundle", "exec"]
+      restart_command ["bundle", "exec", "pitchfork"]
     RUBY
 
     assert_healthy("http://#{addr}:#{port}")
@@ -181,7 +181,7 @@ class RestartTest < Pitchfork::IntegrationTest
       listen "#{addr}:#{port}"
       worker_processes 2
 
-      restart_command_prefix ["bundle", "exec"]
+      restart_command ["bundle", "exec", "pitchfork"]
 
       after_worker_fork do |server, worker|
         exit 41
@@ -206,7 +206,7 @@ class RestartTest < Pitchfork::IntegrationTest
       listen "#{addr}:#{port}"
       worker_processes 2
 
-      restart_command_prefix ["bundle", "exec"]
+      restart_command ["bundle", "exec", "pitchfork"]
     RUBY
 
     Process.kill(:USR1, pid)
@@ -240,7 +240,7 @@ class RestartTest < Pitchfork::IntegrationTest
       listen "#{addr}:#{port}"
       worker_processes 2
 
-      restart_command_prefix ["bundle", "exec"]
+      restart_command ["bundle", "exec", "pitchfork"]
 
       before_service_worker_ready do |server, worker|
         5.times do |i|
@@ -257,7 +257,7 @@ class RestartTest < Pitchfork::IntegrationTest
       listen "#{addr}:#{port}"
       worker_processes 2
 
-      restart_command_prefix ["bundle", "exec"]
+      restart_command ["bundle", "exec", "pitchfork"]
       before_service_worker_ready do |server, worker|
         5.times do |i|
           server.logger.info("\#{worker.to_log} v=1 ping=\#{i}")
@@ -303,7 +303,7 @@ class RestartTest < Pitchfork::IntegrationTest
           worker_processes 2
 
           working_directory '#{current_release}'
-          restart_command_prefix ["bundle", "exec"]
+          restart_command ["bundle", "exec", "pitchfork"]
         RUBY
       end
     end

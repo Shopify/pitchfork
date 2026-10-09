@@ -40,7 +40,7 @@ module Pitchfork
         @children.register(worker)
         assert_equal 1, @children.restarting_workers_count
 
-        @children.update(Message::WorkerSpawned.new(0, 42, 0, writer))
+        @children.update(Message::WorkerSpawned.new(0, 42, 0, 0, writer))
         refute_predicate @children, :pending_workers?
         assert_equal 1, @children.restarting_workers_count
 
@@ -75,7 +75,7 @@ module Pitchfork
       end
       sockets.each_with_index do |(_, writer), index|
         nr = index + 1
-        @children.update(Message::WorkerSpawned.new(nr, 42 + nr, 0, writer))
+        @children.update(Message::WorkerSpawned.new(nr, 42 + nr, 0, 0, writer))
       end
 
       workers[2].ready = workers[3].ready = true

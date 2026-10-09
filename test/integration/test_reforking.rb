@@ -300,22 +300,22 @@ class ReforkingTest < Pitchfork::IntegrationTest
         CONFIG
 
         3.times do |nr|
-          assert_stderr(/worker=#{nr} gen=0 pid=\d+ ready/, timeout: 5)
+          assert_stderr(/worker=#{nr} gen=0.0 pid=\d+ ready/, timeout: 5)
         end
         assert_stderr("Readiness rollout observer installed")
         Process.kill(:USR2, pid)
 
         assert_stderr("Replacement waiting for readiness gate", timeout: 5)
         assert_stderr("Checked rollout with unready replacement", timeout: 5)
-        terminations = read_stderr.scan(/Sent SIGTERM to worker=(\d+) gen=0/).flatten
+        terminations = read_stderr.scan(/Sent SIGTERM to worker=(\d+) gen=0.0/).flatten
         assert_equal ["0"], terminations
-        refute_match(/worker=0 gen=1 pid=\d+ ready/, read_stderr)
+        refute_match(/worker=0 gen=0.1 pid=\d+ ready/, read_stderr)
         assert_healthy("http://#{addr}:#{port}")
 
         gate.flock(File::LOCK_UN)
 
         3.times do |nr|
-          assert_stderr(/worker=#{nr} gen=1 pid=\d+ ready/, timeout: 5)
+          assert_stderr(/worker=#{nr} gen=0.1 pid=\d+ ready/, timeout: 5)
         end
         assert_healthy("http://#{addr}:#{port}")
         assert_clean_shutdown(pid)
