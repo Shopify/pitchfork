@@ -267,6 +267,61 @@ class ReforkingTest < Pitchfork::IntegrationTest
       assert_clean_shutdown(pid)
     end
 
+    def test_rollout_waits_for_replacement_readiness
+      addr, port = unused_port
+
+      File.open("worker-ready.lock", "w") do |gate|
+        gate.flock(File::LOCK_EX)
+
+        pid = spawn_server(app: File.join(ROOT, "test/integration/env.ru"), config: <<~CONFIG)
+          listen "#{addr}:#{port}"
+          worker_processes 3
+          refork_max_unavailable 1
+          spawn_timeout 30
+
+          after_worker_fork do |server, worker|
+            if worker.generation == 1 && worker.nr == 0
+              server.logger.info("Replacement waiting for readiness gate")
+              File.open("worker-ready.lock") do |gate|
+                gate.flock(File::LOCK_EX)
+              end
+            end
+          end
+
+          after_monitor_ready do |server|
+            def server.restart_outdated_workers
+              super
+              if children.workers.any? { |w| w.generation == 1 && !w.pending? && !w.ready? }
+                logger.info("Checked rollout with unready replacement")
+              end
+            end
+            server.logger.info("Readiness rollout observer installed")
+          end
+        CONFIG
+
+        3.times do |nr|
+          assert_stderr(/worker=#{nr} gen=0 pid=\d+ ready/, timeout: 5)
+        end
+        assert_stderr("Readiness rollout observer installed")
+        Process.kill(:USR2, pid)
+
+        assert_stderr("Replacement waiting for readiness gate", timeout: 5)
+        assert_stderr("Checked rollout with unready replacement", timeout: 5)
+        terminations = read_stderr.scan(/Sent SIGTERM to worker=(\d+) gen=0/).flatten
+        assert_equal ["0"], terminations
+        refute_match(/worker=0 gen=1 pid=\d+ ready/, read_stderr)
+        assert_healthy("http://#{addr}:#{port}")
+
+        gate.flock(File::LOCK_UN)
+
+        3.times do |nr|
+          assert_stderr(/worker=#{nr} gen=1 pid=\d+ ready/, timeout: 5)
+        end
+        assert_healthy("http://#{addr}:#{port}")
+        assert_clean_shutdown(pid)
+      end
+    end
+
     def test_slow_worker_rollout
       addr, port = unused_port
 

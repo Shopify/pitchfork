@@ -32,6 +32,71 @@ module Pitchfork
       assert_equal [worker], @children.workers
     end
 
+    def test_restarting_workers_count_tracks_worker_lifecycle
+      assert_equal 0, @children.restarting_workers_count
+
+      UNIXSocket.pair do |_reader, writer|
+        worker = Worker.new(0)
+        @children.register(worker)
+        assert_equal 1, @children.restarting_workers_count
+
+        @children.update(Message::WorkerSpawned.new(0, 42, 0, writer))
+        refute_predicate @children, :pending_workers?
+        assert_equal 1, @children.restarting_workers_count
+
+        worker.ready = true
+        assert_equal 0, @children.restarting_workers_count
+
+        assert worker.soft_kill(:TERM)
+        assert_equal 1, @children.restarting_workers_count
+
+        worker.ready = false
+        assert_equal 1, @children.restarting_workers_count
+
+        @children.reap(worker.pid)
+        assert_equal 0, @children.restarting_workers_count
+      end
+    end
+
+    def test_restarting_workers_count_includes_ready_workers_pending_registration
+      worker = Worker.new(0)
+      @children.register(worker)
+
+      worker.ready = true
+      assert_equal 1, @children.restarting_workers_count
+    end
+
+    def test_restarting_workers_count_counts_each_unavailable_worker_once
+      sockets = Array.new(3) { UNIXSocket.pair }
+      workers = Array.new(4) do |nr|
+        worker = Worker.new(nr)
+        @children.register(worker)
+        worker
+      end
+      sockets.each_with_index do |(_, writer), index|
+        nr = index + 1
+        @children.update(Message::WorkerSpawned.new(nr, 42 + nr, 0, writer))
+      end
+
+      workers[2].ready = workers[3].ready = true
+      assert workers[2].soft_kill(:TERM)
+      assert_equal 3, @children.restarting_workers_count
+
+      workers[1].ready = true
+      assert_equal 2, @children.restarting_workers_count
+
+      workers[2].ready = false
+      assert_equal 2, @children.restarting_workers_count
+
+      @children.abandon(workers[0])
+      assert_equal 1, @children.restarting_workers_count
+
+      @children.reap(workers[2].pid)
+      assert_equal 0, @children.restarting_workers_count
+    ensure
+      sockets&.flatten&.each(&:close)
+    end
+
     def test_message_mold_spawned
       pipe = IO.pipe.last
       assert_nil @children.mold
