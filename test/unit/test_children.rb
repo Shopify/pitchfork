@@ -122,6 +122,27 @@ module Pitchfork
       assert_equal 0, @children.workers_count
     end
 
+    def test_message_mold_ready_race
+      pipe = IO.pipe.last
+      assert_nil @children.mold
+      @children.update(Message::MoldSpawned.new(nil, 42, 0, 0, pipe))
+      mold = @children.update(Message::MoldReady.new(42))
+
+      assert_equal mold, @children.mold
+      assert_equal "0.0", [@children.mold.version, @children.mold.generation].join('.')
+
+      new_generation = Message::MoldSpawned.new(nil, 43, 1, 0, pipe)
+      new_version = Message::MoldSpawned.new(nil, 44, 0, 1, pipe)
+      @children.update(new_generation)
+      @children.update(new_version)
+
+      @children.update(Message::MoldReady.new(new_version.pid))
+      assert_equal "1.0", [@children.mold.version, @children.mold.generation].join('.')
+
+      @children.update(Message::MoldReady.new(new_generation.pid))
+      assert_equal "1.0", [@children.mold.version, @children.mold.generation].join('.')
+    end
+
     def test_reap_worker
       pipe = IO.pipe.last
       worker = Worker.new(0)

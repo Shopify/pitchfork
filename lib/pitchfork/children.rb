@@ -37,12 +37,15 @@ module Pitchfork
       workers_with_pid, pending_workers = workers.partition(&:pid)
       @children = workers_with_pid.to_h { |w| [w.pid, w] }
       @workers = workers.select(&:worker?).to_h { |w| [w.nr, w] }
-      @molds = workers_with_pid.select(&:mold?).to_h { |w| [w.pid, w] }
-      @mold = @molds.values.select(&:ready_mold?).max_by(&:generation)
-      @service = workers_with_pid.select(&:service?).first
-
       @pending_workers = pending_workers.select(&:worker?).to_h { |w| [w.nr, w] }
-      @pending_molds = pending_workers.select(&:mold?).to_h { |w| [w.nr, w] }
+
+      molds = workers_with_pid.select(&:mold?)
+      ready_molds, pending_molds = molds.partition(&:ready_mold?)
+      @molds = ready_molds.to_h { |m| [m.pid, m] }
+      @pending_molds = pending_molds.to_h { |m| [m.pid, m] }
+      @mold = ready_molds.max
+
+      @service = workers_with_pid.select(&:service?).first
 
       self
     end
@@ -100,7 +103,8 @@ module Pitchfork
       if child.mold?
         @pending_molds.delete(child.pid)
         @molds[child.pid] = child
-        @mold = child
+        # Don't assume that new mold is the most up to date one.
+        @mold = @molds.values.max_by { |m| [m.version, m.generation] }
       end
 
       if child.pid

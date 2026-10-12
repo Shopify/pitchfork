@@ -408,15 +408,25 @@ module Pitchfork
         worker = @children.update(message)
         logger.info("#{worker.to_log} spawned")
       when Message::MoldReady
-        @consecutive_spawn_errors = 0
-        old_molds = @children.molds
         new_mold = @children.update(message)
-        SharedMemory.current_generation = new_mold.generation
-        SharedMemory.current_version = new_mold.version
-        logger.info("#{new_mold.to_log} ready")
-        old_molds.each do |old_mold|
-          logger.info("Terminating old #{old_mold.to_log}")
-          old_mold.soft_kill(:TERM)
+
+        # current_mold may not be new_mold if there was a race
+        # between refork and restart.
+        if new_mold != @children.mold
+          logger.info("#{new_mold.to_log} ready but outdated, terminating it")
+          new_mold.soft_kill(:TERM)
+        else
+          @consecutive_spawn_errors = 0
+          logger.info("#{new_mold.to_log} ready")
+          SharedMemory.current_generation = new_mold.generation
+          SharedMemory.current_version = new_mold.version
+
+          @children.molds.each do |mold|
+            if mold != new_mold
+              logger.info("Terminating old #{mold.to_log}")
+              mold.soft_kill(:TERM)
+            end
+          end
         end
       when Message::WorkerReady, Message::ServiceReady
         @consecutive_spawn_errors = 0
@@ -786,8 +796,12 @@ module Pitchfork
           worker.version = @children.mold&.version || 0
           worker.generation = @children.mold&.generation || 0
 
-          unless @children.mold&.spawn_worker(worker)
-            @logger.error("Failed to send a spawn_worker command")
+          if mold = @children.mold
+            unless mold.spawn_worker(worker)
+              @logger.error("Failed to send a spawn_worker command to #{mold.to_log}")
+            end
+          else
+            @logger.error("Failed to send a spawn_worker command: no active mold")
           end
         else
           worker.version = @version
