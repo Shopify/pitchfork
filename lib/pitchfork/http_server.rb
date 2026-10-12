@@ -167,8 +167,13 @@ module Pitchfork
       end
 
       if working_directory
-        logger.info("monitor v=#{@version} chdir #{File.realpath(working_directory)}")
-        Dir.chdir(File.realpath(working_directory))
+        real_pwd = File.realpath(Dir.pwd)
+        real_working_directory = File.realpath(working_directory)
+
+        if real_pwd != real_working_directory
+          logger.info("monitor v=#{@version} chdir #{File.realpath(working_directory)}")
+          Dir.chdir(real_working_directory)
+        end
       end
 
       if restart_state[:sig_queue]
@@ -635,8 +640,9 @@ module Pitchfork
         }
         env = { "PITCHFORK_RESTART_STATE" => [Marshal.dump(state)].pack("m0") }
         chdir = File.realpath(working_directory)
-        logger.info "monitor v=#{@version} reexecuting in #{chdir}"
-        Process.exec(env, *restart_command, *restart_command_argv, chdir: chdir)
+        cmd = [*restart_command, *restart_command_argv]
+        logger.info "monitor v=#{@version} reexecuting pwd=#{chdir} cmd=#{cmd.inspect}"
+        Process.exec(env, *cmd, chdir: chdir)
       end
     end
 
