@@ -191,6 +191,24 @@ module Pitchfork
       assert_nil @children.reap(mold.pid)
     end
 
+    def test_dump_load_pending_service
+      @children.register_service(Worker.new(nil, service: true, version: 2, generation: 3))
+      @children = assert_roundtrip(@children)
+      service = @children.service
+
+      refute_nil service
+      assert_nil service.pid
+      assert_predicate service, :pending?
+
+      UNIXSocket.pair do |_reader, writer|
+        message = Message::ServiceSpawned.new(42, 3, 2, writer)
+        assert_same service, @children.update(message)
+        assert_same service, @children.fetch(42)
+        assert_equal 42, service.pid
+        assert_equal [service], @children.each.to_a
+      end
+    end
+
     def test_dump_load
       pipe = Pitchfork.socketpair.last
       worker = Worker.new(0)
