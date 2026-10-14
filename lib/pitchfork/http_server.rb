@@ -933,6 +933,7 @@ module Pitchfork
     # once a client is accepted, it is processed in its entirety here
     # in 3 easy steps: read request, call app, write app response
     def process_client(client, worker, timeout_handler)
+      accepted_at = Process.clock_gettime(Process::CLOCK_REALTIME)
       response_written = false
       env = nil
       @request = Pitchfork::HttpParser.new
@@ -945,6 +946,7 @@ module Pitchfork
       proc_name status: status
 
       env["pitchfork.worker"] = worker
+      env["pitchfork.accepted_at"] = accepted_at
       timeout_handler.rack_env = env
       env["pitchfork.timeout"] = timeout_handler
 
