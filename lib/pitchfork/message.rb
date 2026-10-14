@@ -4,6 +4,12 @@
 # :stopdoc:
 module Pitchfork
   class MessageSocket
+    class << self
+      def for_fd(fd)
+        new(UNIXSocket.for_fd(fd))
+      end
+    end
+
     unless respond_to?(:ruby2_keywords, true)
       class << self
         def ruby2_keywords(*args)
@@ -27,6 +33,18 @@ module Pitchfork
       @socket.wait(*args)
     end
     ruby2_keywords :wait
+
+    def fileno
+      @socket.fileno
+    end
+
+    def close_on_exec?
+      @socket.close_on_exec?
+    end
+
+    def close_on_exec=(close_on_exec)
+      @socket.close_on_exec = close_on_exec
+    end
 
     def close_read
       @socket.close_read
@@ -122,18 +140,36 @@ module Pitchfork
 
   Message = Class.new(Struct)
   class Message
+    class << self
+      def new(*members)
+        if members.empty?
+          super(:_) # Struct.new requires at least 1 member on Ruby < 3.3
+        else
+          klass = super
+          location = caller_locations(1, 1).first
+          klass.class_eval(<<~RUBY, location.path, location.lineno)
+            def initialize(#{members.join(", ")})
+              super
+            end
+          RUBY
+          klass
+        end
+      end
+    end
+
     SpawnWorker = new(:nr)
-    WorkerSpawned = new(:nr, :pid, :generation, :pipe)
-    WorkerReady = new(:nr, :pid, :generation)
+    WorkerSpawned = new(:nr, :pid, :generation, :version, :pipe)
+    WorkerReady = new(:nr, :pid)
     PromoteWorker = new(:generation)
 
-    MoldSpawned = new(:nr, :pid, :generation, :pipe)
-    MoldReady = new(:nr, :pid, :generation)
+    MoldSpawned = new(:nr, :pid, :generation, :version, :pipe)
+    MoldReady = new(:pid)
 
-    SpawnService = new(:_) # Struct.new requires at least 1 member on Ruby < 3.3
-    ServiceSpawned = new(:pid, :generation, :pipe)
-    ServiceReady = new(:pid, :generation)
+    SpawnService = new
+    ServiceSpawned = new(:pid, :generation, :version, :pipe)
+    ServiceReady = new(:pid)
 
     SoftKill = new(:signum)
+    ProcessReaped = new(:status)
   end
 end

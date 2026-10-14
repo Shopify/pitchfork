@@ -4,18 +4,61 @@
 module Pitchfork
   # This class keep tracks of the state of all the monitor children.
   class Children
+    class << self
+      def load(data)
+        allocate.init_with(data)
+      end
+    end
+
     attr_reader :mold, :service
     attr_accessor :last_generation
 
     def initialize
       @last_generation = 0
-      @children = {} # All children, including molds and services, indexed by PID.
+      @children = {} # All registered children, including molds and services, indexed by PID.
       @workers = {} # Workers indexed by their `nr`.
       @molds = {} # Molds, index by PID.
       @mold = nil # The latest mold, if any.
       @service = nil
       @pending_workers = {} # Pending workers indexed by their `nr`.
       @pending_molds = {} # Worker promoted to mold, not yet acknowledged
+    end
+
+    def close_on_exec=(close_on_exec)
+      @children.each_value do |child|
+        child.close_on_exec = close_on_exec
+      end
+    end
+
+    def init_with(data)
+      @last_generation = 0
+
+      workers = data.map { |d| Worker.load(d) }
+      workers_with_pid, pending_workers = workers.partition(&:pid)
+      @children = workers_with_pid.to_h { |w| [w.pid, w] }
+      @workers = workers.select(&:worker?).to_h { |w| [w.nr, w] }
+      @pending_workers = pending_workers.select(&:worker?).to_h { |w| [w.nr, w] }
+
+      molds = workers_with_pid.select(&:mold?)
+      ready_molds, pending_molds = molds.partition(&:ready_mold?)
+      @molds = ready_molds.to_h { |m| [m.pid, m] }
+      @pending_molds = pending_molds.to_h { |m| [m.pid, m] }
+      @mold = ready_molds.max_by { |m| [m.version, m.generation] }
+
+      @service = workers_with_pid.select(&:service?).first
+
+      self
+    end
+
+    def dump
+      [
+        *@children.values,
+        *@workers.values,
+        *@molds.values,
+        @service,
+        *@pending_workers.values,
+        *@pending_molds.values
+      ].compact.uniq.map(&:dump)
     end
 
     def register(child)
@@ -60,7 +103,8 @@ module Pitchfork
       if child.mold?
         @pending_molds.delete(child.pid)
         @molds[child.pid] = child
-        @mold = child
+        # Don't assume that new mold is the most up to date one.
+        @mold = @molds.values.max_by { |m| [m.version, m.generation] }
       end
 
       if child.pid
@@ -160,7 +204,7 @@ module Pitchfork
 
     def fresh_workers
       if @mold
-        workers.select { |w| w.generation >= @mold.generation }
+        workers.reject(&:outdated?)
       else
         workers
       end
