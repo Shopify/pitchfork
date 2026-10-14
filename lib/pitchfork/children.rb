@@ -45,7 +45,7 @@ module Pitchfork
       @pending_molds = pending_molds.to_h { |m| [m.pid, m] }
       @mold = ready_molds.max_by { |m| [m.version, m.generation] }
 
-      @service = workers_with_pid.select(&:service?).first
+      @service = workers.find(&:service?)
 
       self
     end
