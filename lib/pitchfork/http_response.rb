@@ -28,16 +28,16 @@ module Pitchfork
       when Array # Rack 3
         value.each do |v|
           next if ILLEGAL_HEADER_VALUE.match?(v)
-          buf << "#{key}: #{v}\r\n"
+          buf << key.to_s << ": " << v.to_s << "\r\n"
         end
       when /\n/ # Rack 2
         # avoiding blank, key-only cookies with /\n+/
         value.split(/\n+/).each do |v|
           next if ILLEGAL_HEADER_VALUE.match?(v)
-          buf << "#{key}: #{v}\r\n"
+          buf << key.to_s << ": " << v.to_s << "\r\n"
         end
       else
-        buf << "#{key}: #{value}\r\n"
+        buf << key.to_s << ": " << value.to_s << "\r\n"
       end
     end
 
@@ -54,10 +54,10 @@ module Pitchfork
               "Date: #{httpdate}\r\n" \
               "Connection: close\r\n".b
         headers.each do |key, value|
-          case key
-          when %r{\A(?:Date|Connection)\z}i
-            next
-          when "rack.hijack"
+          next if (key.bytesize == 4 && key.casecmp?("date")) ||
+                  (key.bytesize == 10 && key.casecmp?("connection"))
+
+          if key == "rack.hijack"
             # This should only be hit under Rack >= 1.5, as this was an illegal
             # key in Rack < 1.5
             hijack = value

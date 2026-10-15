@@ -44,7 +44,23 @@ class RequestBench
   def initialize
     @client, @server = Socket.pair(:UNIX, :STREAM, 0)
     @body = ("Hello World!\n" * 1000).freeze
-    @headers = { "content-type" => "text/plain", "content-length" => @body.bytesize.to_s }.freeze
+    # Headers somewhat representative of a vanilla Rails app
+    @headers = {
+      "content-type" => "text/plain",
+      "content-length" => @body.bytesize.to_s,
+      "x-frame-options" => "SAMEORIGIN",
+      "X-Xss-Protection" => "0",
+      "X-Content-Type-Options" => "nosniff",
+      "X-Permitted-Cross-Domain-Policies" => "none",
+      "Referrer-Policy" => "strict-origin-when-cross-origin",
+      "Link" => "</assets/ansi_stream.self-92d4ee1a07d3e06eb3145a4809f336213d91ae61be15427ab27b6015a10f0375.css?body=1>; rel=preload; as=style; nopush,</assets/clusterize.self-e800b47f82f06468feec0f3d7582faad615cbc3bd97086ce25fc6430347a314f.css?body=1>; rel=preload; as=style; nopush,</assets/shipit.self-9435813317a8e23afe88c6733ae24f084ec0a975b665ab91ba7a9885e6a16b8f.css?body=1>; rel=preload; as=style; nopush,</assets/jquery.self-bd7ddd393353a8d2480a622e80342adf488fb6006d667e8b42e4c0073393abee.js?body=1>; rel=preload; as=script; nopush,</assets/jquery_ujs.self-a6375ab2b275439c922ac52b02a475d288976458aa11a6e8103c925ef2961f66.js?body=1>; rel=preload; as=script; nopush,</assets/jquery.timeago.self-93eb9343105e184ba97229398b7379fd3b3a776e75caed52b1822caa85c7dc1c.js?body=1>; rel=preload; as=script; nopush,</assets/rails-timeago.self-e64fd06c0b47de91c2d4d8add679349965a5fc3d79df086ed5e05f9a453a7682.js?body=1>; rel=preload; as=script; nopush",
+      "Vary" => "Accept",
+      "Etag" => 'W/"53563805e72c3850a046b02bf8ccd7ef"',
+      "Cache-Control" => "max-age=0, private, must-revalidate",
+      "X-Request-Id" => "602a0bce-1d08-4730-bc82-7630faa2e848",
+      "X-Runtime" => "0.022851",
+      "Set-Cookie" => "_dummy_session=2TRV9WNdqO02QYfGpNf5cdIhOBumI3TsndmAabnE3WdjDcqF09XPpcVzTF9FJIU26xhpZW8yeKBIS5qQHpBlSs63YZIv6lWXShZjLe24V%2Bq2xt8JthapJwcuH56ONUMtoWHVdVzqqu%2BgrF96ckyaFqu9JYF0%2FPfwhLbmXSLfUCgbNE3QSTquCTzvxxtHK5dbVLYtvDpG74Z1j9vTO%2FNnuuuVPOu3LXPW6ZZhMk7OnMQ8jVLWEx8wkB3e1yn%2Bz32fvttYSgbs865E9w8voN65NfZLXgzgXw%3D%3D--R7jc4YqCjlFYV6pD--%2Bten7S%2FmnotUFK6mHStxpQ%3D%3D; path=/; HttpOnly; SameSite=Lax",
+    }.freeze
     @server.setsockopt(:SOL_SOCKET, :SO_SNDBUF, @body.bytesize * 10)
     @buf = "".b
   end
