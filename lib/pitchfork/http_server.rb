@@ -878,7 +878,12 @@ module Pitchfork
 
       if workers_to_restart > 0
         outdated_workers = @children.workers.select { |w| !w.exiting? && w.outdated? }
-        outdated_workers.each do |worker|
+        # We restart workers in reverse order because the epoll+accept is fundamentally LIFO,
+        # hence older workers are more warm, and newer ones more cold.
+        # If we restart the warm ones first, we shift traffic to cold workers that we'll terminate
+        # soon after (warm -> cold -> cold). If we restart the cold ones first instead, we'll go
+        # (warm -> cold) which is preferable.
+        outdated_workers.reverse_each do |worker|
           if worker.soft_kill(:TERM)
             logger.info("Sent SIGTERM to #{worker.to_log}")
             workers_to_restart -= 1
