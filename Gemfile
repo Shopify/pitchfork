@@ -11,6 +11,7 @@ end
 
 group :benchmark do
   gem "puma"
+  gem "benchmark-ips"
 end
 
 gemspec
