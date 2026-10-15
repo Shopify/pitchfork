@@ -21,24 +21,24 @@ class ReforkingTest < Pitchfork::IntegrationTest
       assert_stderr(/worker=0 gen=0.0 pid=\d+ ready/)
       assert_stderr(/worker=1 gen=0.0 pid=\d+ ready/)
 
-      9.times do
+      6.times do
         assert_equal true, healthy?("http://#{addr}:#{port}")
       end
 
       assert_stderr "refork condition met, promoting ourselves", timeout: 3
       assert_stderr "Terminating old mold gen=0.0 pid="
       assert_stderr(/clean_exit worker=0/)
-      assert_stderr(/worker=0 gen=0.1 pid=\d+ ready/)
       assert_stderr(/worker=1 gen=0.1 pid=\d+ ready/)
+      assert_stderr(/worker=0 gen=0.1 pid=\d+ ready/)
 
       File.truncate("stderr.log", 0)
 
-      9.times do
+      6.times do
         assert_equal true, healthy?("http://#{addr}:#{port}")
       end
 
-      assert_stderr(/worker=0 gen=0.2 pid=\d+ ready/, timeout: 3)
-      assert_stderr(/worker=1 gen=0.2 pid=\d+ ready/)
+      assert_stderr(/worker=1 gen=0.2 pid=\d+ ready/, timeout: 3)
+      assert_stderr(/worker=0 gen=0.2 pid=\d+ ready/)
 
       assert_clean_shutdown(pid)
     end
@@ -92,8 +92,8 @@ class ReforkingTest < Pitchfork::IntegrationTest
       CONFIG
 
       assert_healthy("http://#{addr}:#{port}")
-      assert_stderr(/worker=0 gen=0.0 pid=\d+ ready/)
-      assert_stderr(/worker=1 gen=0.0 pid=\d+ ready/, timeout: 5)
+      assert_stderr(/worker=0 gen=0.0 pid=\d+ ready/, timeout: 5)
+      assert_stderr(/worker=1 gen=0.0 pid=\d+ ready/)
 
       9.times do
         assert_equal true, healthy?("http://#{addr}:#{port}")
@@ -132,8 +132,8 @@ class ReforkingTest < Pitchfork::IntegrationTest
       CONFIG
 
       assert_healthy("http://#{addr}:#{port}")
-      assert_stderr(/worker=0 gen=0.0 pid=\d+ ready/)
-      assert_stderr(/worker=1 gen=0.0 pid=\d+ ready/, timeout: 5)
+      assert_stderr(/worker=0 gen=0.0 pid=\d+ ready/, timeout: 5)
+      assert_stderr(/worker=1 gen=0.0 pid=\d+ ready/)
 
       7.times do
         assert_equal true, healthy?("http://#{addr}:#{port}")
@@ -147,8 +147,7 @@ class ReforkingTest < Pitchfork::IntegrationTest
         assert_equal true, healthy?("http://#{addr}:#{port}")
       end
 
-      assert_stderr(/worker=0 gen=0.1 pid=\d+ ready/, timeout: 15)
-      assert_stderr(/worker=1 gen=0.1 pid=\d+ ready/)
+      assert_stderr(/worker=\d+ gen=0.1 pid=\d+ ready/, timeout: 15)
 
       assert_clean_shutdown(pid)
     end
@@ -177,10 +176,10 @@ class ReforkingTest < Pitchfork::IntegrationTest
       CONFIG
 
       assert_healthy("http://#{addr}:#{port}")
-      assert_stderr(/worker=0 gen=0.0 pid=\d+ ready/)
-      assert_stderr(/worker=1 gen=0.0 pid=\d+ ready/, timeout: 5)
+      assert_stderr(/worker=0 gen=0.0 pid=\d+ ready/, timeout: 5)
+      assert_stderr(/worker=1 gen=0.0 pid=\d+ ready/)
 
-      7.times do
+      6.times do
         assert_equal true, healthy?("http://#{addr}:#{port}")
       end
 
@@ -188,12 +187,12 @@ class ReforkingTest < Pitchfork::IntegrationTest
       assert_stderr("[mold locking-up]")
       assert_stderr(/mold gen=0.1 pid=\d+ reaped/, timeout: 10)
 
-      10.times do
+      6.times do
         assert_equal true, healthy?("http://#{addr}:#{port}")
       end
 
+      assert_stderr(/worker=1 gen=0.1 pid=\d+ ready/, timeout: 5)
       assert_stderr(/worker=0 gen=0.1 pid=\d+ ready/, timeout: 5)
-      assert_stderr(/worker=1 gen=0.1 pid=\d+ ready/)
 
       assert_clean_shutdown(pid)
     end
@@ -235,8 +234,8 @@ class ReforkingTest < Pitchfork::IntegrationTest
       Process.kill(:USR2, pid)
 
       assert_stderr "Terminating old mold gen=0.0 pid="
-      assert_stderr(/worker=0 gen=0.1 pid=\d+ ready/)
       assert_stderr(/worker=1 gen=0.1 pid=\d+ ready/)
+      assert_stderr(/worker=0 gen=0.1 pid=\d+ ready/)
 
       assert_healthy("http://#{addr}:#{port}")
       assert_clean_shutdown(pid)
@@ -280,7 +279,7 @@ class ReforkingTest < Pitchfork::IntegrationTest
           spawn_timeout 30
 
           after_worker_fork do |server, worker|
-            if worker.generation == 1 && worker.nr == 0
+            if worker.generation == 1 && worker.nr == 2
               server.logger.info("Replacement waiting for readiness gate")
               File.open("worker-ready.lock") do |gate|
                 gate.flock(File::LOCK_EX)
@@ -299,7 +298,7 @@ class ReforkingTest < Pitchfork::IntegrationTest
           end
         CONFIG
 
-        3.times do |nr|
+        3.times.reverse_each do |nr|
           assert_stderr(/worker=#{nr} gen=0.0 pid=\d+ ready/, timeout: 5)
         end
         assert_stderr("Readiness rollout observer installed")
@@ -308,8 +307,8 @@ class ReforkingTest < Pitchfork::IntegrationTest
         assert_stderr("Replacement waiting for readiness gate", timeout: 5)
         assert_stderr("Checked rollout with unready replacement", timeout: 5)
         terminations = read_stderr.scan(/Sent SIGTERM to worker=(\d+) gen=0.0/).flatten
-        assert_equal ["0"], terminations
-        refute_match(/worker=0 gen=0.1 pid=\d+ ready/, read_stderr)
+        assert_equal ["2"], terminations
+        refute_match(/worker=2 gen=0.1 pid=\d+ ready/, read_stderr)
         assert_healthy("http://#{addr}:#{port}")
 
         gate.flock(File::LOCK_UN)

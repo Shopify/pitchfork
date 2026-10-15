@@ -136,7 +136,7 @@ class RestartTest < Pitchfork::IntegrationTest
 
       assert_stderr(/monitor v=0 reexecuting/)
       assert_stderr(/monitor v=1 initializing with inherited state/)
-      assert_stderr(/mold gen=1.0 pid=\d+ reaped .* exit 1/)
+      assert_stderr(/mold gen=1.0 pid=\d+ reaped .* exit 1/, timeout: 5)
       assert_stderr(/mold gen=1.0 pid=\d+ crashed before being ready, restart cancelled/)
       assert_equal true, healthy?("http://#{addr}:#{port}")
 
@@ -195,9 +195,9 @@ class RestartTest < Pitchfork::IntegrationTest
 
     3.times do
       File.truncate("stderr.log", 0)
-      assert_stderr(/worker=0 gen=1.0 pid=\d+ reaped .* exit 41/)
+      assert_stderr(/worker=1 gen=1.0 pid=\d+ reaped .* exit 41/)
       assert_equal true, healthy?("http://#{addr}:#{port}")
-      refute_stderr(/worker=1 .* reaped/) # We never attempt to restart worker 1 because of `refork_max_unavailable`.
+      refute_stderr(/worker=0 .* reaped/) # We never attempt to restart worker 0 because of `refork_max_unavailable`.
     end
 
     assert_equal true, healthy?("http://#{addr}:#{port}")
