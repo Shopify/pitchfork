@@ -65,6 +65,15 @@ module Pitchfork
             append_header(buf, key, value)
           end
         end
+
+        # If the body is an array, we can directly send it with the headers in a single
+        # IO#write call.
+        # The vast majority of responses should qualify.
+        if !hijack && body.is_a?(Array) && body.size < 1000
+          socket.write(buf, "\r\n", *body)
+          return
+        end
+
         socket.write(buf << "\r\n")
       end
 
