@@ -3,6 +3,8 @@ require 'test_helper'
 
 module Pitchfork
   class TestSharedMemory < Test
+    tag isolated: true # Many tests rely on closed FD that could be reopened by another thread
+
     setup do
       @page = MemoryPage.new(MemoryPage::SLOTS)
     end
