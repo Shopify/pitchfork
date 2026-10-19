@@ -878,6 +878,12 @@ module Pitchfork
 
       if workers_to_restart > 0
         outdated_workers = @children.workers.select { |w| !w.exiting? && w.outdated? }
+
+        # Restart the most outdated workers first, can happen if a
+        # restart or refork was triggered before the previous one was
+        # done fully rolling out.
+        outdated_workers.sort_by! { |w| [w.version, w.generation] }
+
         outdated_workers.each do |worker|
           if worker.soft_kill(:TERM)
             logger.info("Sent SIGTERM to #{worker.to_log}")
