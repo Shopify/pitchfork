@@ -576,9 +576,7 @@ module Pitchfork
 
       @children.each do |child|
         deadline = child.deadline
-        if 0 == deadline # worker is idle
-          next
-        elsif deadline > now # worker still has time
+        if deadline > now # worker still has time
           time_left = deadline - now
           if time_left < next_sleep
             next_sleep = time_left
@@ -801,6 +799,7 @@ module Pitchfork
         if REFORKING_AVAILABLE
           worker.version = @children.mold&.version || 0
           worker.generation = @children.mold&.generation || 0
+          worker.update_deadline(@spawn_timeout)
 
           if mold = @children.mold
             unless mold.spawn_worker(worker)
