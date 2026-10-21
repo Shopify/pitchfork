@@ -172,7 +172,7 @@ module Pitchfork
     end
 
     def each(&block)
-      @children.each_value(&block)
+      (@children.values + @pending_workers.values).each(&block)
     end
 
     def each_worker(&block)
@@ -194,7 +194,9 @@ module Pitchfork
 
     def hard_kill_all(sig)
       each do |child|
-        hard_kill(sig, child)
+        if child.pid
+          hard_kill(sig, child)
+        end
       end
     end
 
