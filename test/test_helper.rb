@@ -30,6 +30,7 @@ require 'logger'
 require 'pitchfork'
 require 'io/nonblock'
 require 'rack/lint'
+require 'securerandom'
 
 if ENV['DEBUG']
   require 'ruby-debug'
