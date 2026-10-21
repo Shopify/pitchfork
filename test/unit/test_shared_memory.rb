@@ -4,6 +4,8 @@ require 'test_helper'
 module Pitchfork
   class TestSharedMemory < Test
     setup do
+      # Megatest fixes the randomness by default and `memory_page.c` use `rand()` for `shm_open()`.
+      Random.srand(SecureRandom.hex.to_i(16))
       @page = MemoryPage.new(MemoryPage::SLOTS)
     end
 
