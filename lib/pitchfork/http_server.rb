@@ -882,7 +882,10 @@ module Pitchfork
         # Restart the most outdated workers first, can happen if a
         # restart or refork was triggered before the previous one was
         # done fully rolling out.
-        outdated_workers.sort_by! { |w| [w.version, w.generation] }
+        # NB: Array#sort_by isn't guaranteed stable so we use the original order as the
+        # last ordering criteria.
+        indexes = outdated_workers.each_with_index.to_h
+        outdated_workers = outdated_workers.sort_by { |w| [w.version, w.generation, indexes[w]] }
 
         outdated_workers.each do |worker|
           if worker.soft_kill(:TERM)
