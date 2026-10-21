@@ -275,6 +275,46 @@ static VALUE memory_page_close_on_exec_set(VALUE self, VALUE close_on_exec)
 
 #define SHM_NAME_BUF_SIZE 50
 
+static int memory_page_memfd_create(size_t map_size)
+{
+#ifdef HAVE_MEMFD_CREATE
+    int fd = memfd_create("pitchfork:memory_page", MFD_CLOEXEC);
+    if (fd == -1) {
+        rb_sys_fail("memfd_create");
+    }
+#else
+    char name[SHM_NAME_BUF_SIZE];
+    int fd;
+
+retry_shm_open:
+
+    if (snprintf(name, SHM_NAME_BUF_SIZE, "/pitchfork-%d", rand()) < 0) {
+        rb_sys_fail("snprintf");
+    }
+
+    fd = shm_open(name, O_CREAT | O_EXCL | O_RDWR, 0600);
+    if (fd == -1) {
+        if (errno == EEXIST) {
+            goto retry_shm_open;
+        }
+        rb_sys_fail("shm_open");
+    }
+
+    if (shm_unlink(name) == -1) {
+        close(fd);
+        rb_sys_fail("shm_unlink");
+    }
+
+#endif
+
+    if (ftruncate(fd, map_size)) {
+        close(fd);
+        rb_sys_fail("ftruncate");
+    }
+
+    return fd;
+}
+
 static VALUE memory_page_initialize(VALUE self, VALUE size)
 {
     struct memory_page *page;
@@ -293,30 +333,7 @@ static VALUE memory_page_initialize(VALUE self, VALUE size)
     page->capa = map_size / slot_size;
     assert(PAGE_ALIGN(slot_size * page->capa) == map_size && "not aligned");
 
-    char name[SHM_NAME_BUF_SIZE];
-
-retry_shm_open:
-    if (snprintf(name, SHM_NAME_BUF_SIZE, "/pitchfork-%d", rand()) < 0) {
-        rb_sys_fail("snprintf");
-    }
-
-    page->fd = shm_open(name, O_CREAT | O_EXCL | O_RDWR, 0600);
-    if (page->fd == -1) {
-        if (errno == EEXIST) {
-            goto retry_shm_open;
-        }
-        rb_sys_fail("shm_open");
-    }
-
-    if (shm_unlink(name) == -1) {
-        memory_page_close_fd(page);
-        rb_sys_fail("shm_unlink");
-    }
-
-    if (ftruncate(page->fd, map_size)) {
-        memory_page_close_fd(page);
-        rb_sys_fail("ftruncate");
-    }
+    page->fd = memory_page_memfd_create(map_size);
 
     memory_page_map(page, map_size);
 
