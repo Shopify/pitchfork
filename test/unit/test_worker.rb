@@ -58,8 +58,8 @@ module Pitchfork
       refute worker.busy?
 
       worker.close
-      assert_equal 0, worker.deadline
-      refute worker.ready?, "ready state failed to reset"
+      assert worker.ready?, "ready state was reset on close"
+      assert_equal now, worker.deadline
     end
 
     def test_dump_load
