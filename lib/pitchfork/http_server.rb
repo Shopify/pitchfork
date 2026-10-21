@@ -562,6 +562,8 @@ module Pitchfork
       unless worker.ready?
         @consecutive_spawn_errors += 1
       end
+      worker.reaped!
+
       run_callback!(@after_worker_exit, "after_worker_exit", self, worker, status)
 
       if worker.mold? && @children.mold != worker && worker.version > (@children.mold&.version || 0)
