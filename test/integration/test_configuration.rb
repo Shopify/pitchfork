@@ -251,6 +251,21 @@ class ConfigurationTest < Pitchfork::IntegrationTest
     assert_clean_shutdown(pid)
   end
 
+  def test_epoll_exclusive_false
+    addr, port = unused_port
+
+    pid = spawn_server(app: File.join(ROOT, "test/integration/pid.ru"), config: <<~CONFIG)
+      listen "#{addr}:#{port}"
+      worker_processes 1
+
+      epoll_exclusive false
+    CONFIG
+
+    assert_healthy("http://#{addr}:#{port}")
+
+    assert_clean_shutdown(pid)
+  end
+
   def test_at_exit_handlers
     addr, port = unused_port
 

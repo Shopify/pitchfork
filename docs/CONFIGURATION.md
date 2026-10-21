@@ -169,18 +169,6 @@ The following options may be specified (but are generally not needed):
 
   Default: `queues - 1`.
 
-- `setpgid: true or false`
-
-  When enabled, child processes will be made into a group leader with a pgid matching
-  their pid. The child process will no longer be in the foreground process group of
-  its control terminal.
-
-  This can break debugging sessions and interactive terminals inside the worker
-  processes. Set it to `false` if you need to activate a debugging session or read from
-  `STDIN` inside a worker process.
-
-  Default: `true` (enabled)
-
 - `umask: mode`
 
   Sets the file mode creation mask for UNIX sockets.
@@ -214,6 +202,33 @@ The following options may be specified (but are generally not needed):
   There is no good reason to ever disable this with a +zero+ value with pitchfork.
 
   Default: `1`
+
+
+### `epoll_exclusive`
+
+When enabled and available, workers poll for new requests using `epoll` with `EPOLLEXCLUSIVE`.
+
+As mentioned in the `queues: Integer` documentation, the use of `EPOLLEXCLUSIVE` mostly solves
+the thundering herd problem, however it also skew toward delivering more requests to specific
+workers, producing some very unevenly warmed up workers.
+
+When reforking enabled this is actually quite positive, however when it is disabled and the hot
+restart functionality is used, it can result in severe latency spikes when all the freshly booted
+cold workers get active in a short period of time.
+
+Default: `true`.
+
+### `setpgid`
+
+When enabled, child processes will be made into a group leader with a pgid matching
+their pid. The child process will no longer be in the foreground process group of
+its control terminal.
+
+This can break debugging sessions and interactive terminals inside the worker
+processes. Set it to `false` if you need to activate a debugging session or read from
+`STDIN` inside a worker process.
+
+Default: `true` (enabled)
 
 ### `timeout`
 

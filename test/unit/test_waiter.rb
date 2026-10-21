@@ -19,7 +19,7 @@ module Pitchfork
 
     def test_linux # ugh, also level-triggered, unlikely to change
       IO.pipe do |r,w|
-        wtr = Waiter.prep_readers([r])
+        wtr = Waiter.prep_readers([r], true)
         wtr.get_readers(ready = [], [r], 0)
         assert_equal [], ready
         w.syswrite '.'

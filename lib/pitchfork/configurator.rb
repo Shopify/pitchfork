@@ -37,6 +37,7 @@ module Pitchfork
       :spawn_timeout => 10,
       :timeout_signal => -> (_pid) { :KILL },
       :timeout => 22,
+      :epoll_exclusive => true,
       :logger => default_logger,
       :worker_processes => 1,
       :before_fork => nil,
@@ -203,6 +204,10 @@ module Pitchfork
 
     def setpgid(bool)
       set_bool(:setpgid, bool)
+    end
+
+    def epoll_exclusive(bool)
+      set_bool(:epoll_exclusive, bool)
     end
 
     def spawn_timeout(seconds)
