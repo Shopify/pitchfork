@@ -333,4 +333,50 @@ class RestartTest < Pitchfork::IntegrationTest
 
     assert_clean_shutdown(pid)
   end
+
+  if Pitchfork::REFORKING_AVAILABLE
+    def test_lost_spawn_worker_message
+      addr, port = unused_port
+
+      File.write("Gemfile", <<~RUBY)
+        source "https://rubygems.org"
+
+        gem "pitchfork", path: #{ROOT.inspect}
+      RUBY
+      pid = spawn_server(app: File.join(ROOT, "test/integration/env.ru"), bundler: true, config: <<~RUBY)
+        listen "#{addr}:#{port}"
+        worker_processes 2
+        spawn_timeout 1
+
+        restart_command ["bundle", "exec", "pitchfork"]
+
+        module BrokenMoldHandlerPatch
+          def mold_handle_message(mold, message)
+            @count ||= 0
+
+            case message
+            when Pitchfork::Message::SpawnWorker
+              @count += 1
+              # Simular half the SpawnWorker messages being lost
+              if @count.odd?
+                return
+              end
+            end
+
+            super
+          end
+        end
+
+        after_mold_fork do |server, _mold|
+          server.extend(BrokenMoldHandlerPatch)
+        end
+      RUBY
+
+      assert_stderr(/worker=1 gen=0.0 pid=\d+ ready/, timeout: 5)
+      assert_stderr(/worker=0 gen=0.0 timed out during spawn, abandoning/)
+      assert_stderr(/worker=0 gen=0.0 pid=\d+ ready/, timeout: 5)
+      assert_healthy("http://#{addr}:#{port}")
+      assert_clean_shutdown(pid)
+    end
+  end
 end
