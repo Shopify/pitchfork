@@ -37,6 +37,7 @@ module Pitchfork
       :spawn_timeout => 10,
       :timeout_signal => -> (_pid) { :KILL },
       :timeout => 22,
+      :poller => :epoll_exclusive,
       :logger => default_logger,
       :worker_processes => 1,
       :before_fork => nil,
@@ -203,6 +204,15 @@ module Pitchfork
 
     def setpgid(bool)
       set_bool(:setpgid, bool)
+    end
+
+    POLLING_METHODS = %i(epoll_exclusive epoll select)
+
+    def poller(method)
+      unless POLLING_METHODS.include?(method)
+        raise ArgumentError, "poller must be one of: #{POLLING_METHODS.map(&:inspect).join(", ")}, got: #{method.inspect}"
+      end
+      set[:poller] = method
     end
 
     def spawn_timeout(seconds)

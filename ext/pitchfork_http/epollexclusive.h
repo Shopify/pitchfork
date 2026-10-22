@@ -37,7 +37,7 @@ static int rb_io_descriptor(VALUE io)
  * :nodoc:
  * returns IO object if EPOLLEXCLUSIVE works and arms readers
  */
-static VALUE prep_readers(VALUE cls, VALUE readers)
+static VALUE prep_readers(VALUE cls, VALUE readers, VALUE exclusive)
 {
 	long i;
 	int epfd = epoll_create1(EPOLL_CLOEXEC);
@@ -62,7 +62,10 @@ static VALUE prep_readers(VALUE cls, VALUE readers)
 		 * code path for doing it).  So let the kernel spend
 		 * cycles on maintaining level-triggering.
 		 */
-		e.events = EPOLLEXCLUSIVE | EPOLLIN;
+		e.events = EPOLLIN;
+		if (RTEST(exclusive)) {
+			e.events |= EPOLLEXCLUSIVE;
+		}
 		io = rb_io_get_io(io);
 		rc = epoll_ctl(epfd, EPOLL_CTL_ADD, rb_io_descriptor(io), &e);
 		if (rc < 0) rb_sys_fail("epoll_ctl");
@@ -122,7 +125,7 @@ static void init_epollexclusive(VALUE mPitchfork)
 {
 #if USE_EPOLL
 	VALUE cWaiter = rb_define_class_under(mPitchfork, "Waiter", rb_cIO);
-	rb_define_singleton_method(cWaiter, "prep_readers", prep_readers, 1);
+	rb_define_singleton_method(cWaiter, "prep_readers", prep_readers, 2);
 	rb_define_method(cWaiter, "get_readers", get_readers, 3);
 #endif
 }
