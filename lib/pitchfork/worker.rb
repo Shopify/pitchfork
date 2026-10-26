@@ -361,18 +361,7 @@ module Pitchfork
     end
 
     def send_message_nonblock(message)
-      success = false
-      return false unless @monitor
-      begin
-        case @monitor.sendmsg_nonblock(message, exception: false)
-        when :wait_writable
-        else
-          success = true
-        end
-      rescue Errno::EPIPE, Errno::ECONNRESET, Errno::ECONNREFUSED, Errno::ENOTCONN
-        # worker will be reaped soon
-      end
-      success
+      @monitor&.try_send_message(message)
     end
   end
 end
