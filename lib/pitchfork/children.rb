@@ -189,7 +189,7 @@ module Pitchfork
       child.hard_kill(sig)
     rescue Errno::ESRCH
       reap(child.pid)
-      child.close
+      child.reaped!
     end
 
     def hard_kill_all(sig)

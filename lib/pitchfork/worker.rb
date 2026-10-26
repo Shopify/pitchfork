@@ -124,6 +124,7 @@ module Pitchfork
 
       control_socket.sendmsg(message)
       @monitor.close
+      @monitor = nil
     end
 
     def start_promotion(control_socket)
@@ -131,6 +132,7 @@ module Pitchfork
       message = Message::MoldSpawned.new(@nr, @pid, generation, version, @monitor)
       control_socket.sendmsg(message)
       @monitor.close
+      @monitor = nil
     end
 
     def finish_promotion(control_socket)
@@ -298,9 +300,22 @@ module Pitchfork
 
     # called in both the monitor (reaping worker) and worker (SIGQUIT handler)
     def close # :nodoc:
-      @state_drop.reset!
-      @monitor.close if @monitor
-      @to_io.close if @to_io
+      @monitor&.close
+      @monitor = nil
+      @to_io&.close
+      @to_io = nil
+    end
+
+    def reaped!
+      close
+      # Not ideal: All molds share two state_drops, so when reaping a mold
+      # we can't reset the state as it might have been adopted by another mold.
+      # Now that our shared memory pages are backed by a FD and can be sent across
+      # unix sockets, we could consider assigning a unique page for each mold to solve
+      # this problem.
+      unless mold?
+        @state_drop.reset!
+      end
     end
 
     def create_socketpair!
