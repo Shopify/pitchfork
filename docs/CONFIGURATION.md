@@ -229,11 +229,6 @@ A first "soft" timeout will invoke the `after_worker_timeout` from
 within the worker (but from a background thread) and then call `exit`
 to terminate the worker cleanly.
 
-Ruby re-raises that `exit` in the main thread as a `SystemExit` exception,
-which interrupts the request wherever it is. If the application swallows it,
-for instance with a `rescue Exception` like `ActionDispatch::ShowExceptions`
-does, the worker will still exit as soon as the request returns.
-
 The second "hard" timeout, is the sum of `timeout` and `cleanup`.
 Workers taking longer than this time period to be ready to handle a new
 request will be forcibly killed (via `SIGKILL`).
