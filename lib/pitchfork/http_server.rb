@@ -1141,6 +1141,8 @@ module Pitchfork
                 logger.info("#{worker.to_log} refork condition met, promoting ourselves")
               end
               @refork_condition.backoff!
+              # spawn_mold may have shortened our deadline to spawn_timeout, restore it before waiting for requests
+              worker.update_deadline(@timeout)
             end
           end
 

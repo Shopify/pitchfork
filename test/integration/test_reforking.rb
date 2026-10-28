@@ -157,7 +157,7 @@ class ReforkingTest < Pitchfork::IntegrationTest
       addr, port = unused_port
 
       pid = spawn_server(app: File.join(ROOT, "test/integration/env.ru"), config: <<~CONFIG)
-        Pitchfork::ReforkCondition.backoff_delay = 1.0
+        Pitchfork::ReforkCondition.backoff_delay = 0.0
 
         listen "#{addr}:#{port}"
         worker_processes 2
@@ -401,6 +401,38 @@ class ReforkingTest < Pitchfork::IntegrationTest
       end
 
       assert_stderr(/SUCCESS/)
+
+      assert_clean_shutdown(pid)
+    end
+
+    def test_idle_promoter_with_slow_mold
+      addr, port = unused_port
+
+      pid = spawn_server(app: File.join(ROOT, "test/integration/pid.ru"), config: <<~CONFIG)
+        listen "#{addr}:#{port}"
+        worker_processes 1
+        spawn_timeout 2
+        refork_after [1, nil]
+
+        after_mold_fork do |_server, mold|
+          if mold.generation > 0
+            # Run past spawn_timeout without getting the mold itself killed.
+            mold.update_deadline(10)
+            sleep 3
+          end
+        end
+      CONFIG
+
+      assert_stderr(/worker=0 gen=0.0 pid=\d+ ready/, timeout: 5)
+
+      # The only request, so the promoter stays idle until the mold is ready.
+      promoter_pid = http_get("http://#{addr}:#{port}").body.to_i
+      assert_stderr "refork condition met, promoting ourselves"
+
+      assert_stderr(/mold gen=0.1 pid=\d+ ready/, timeout: 5)
+      refute_stderr(/pid=#{promoter_pid} timed out, killing/)
+      assert_stderr(/worker=0 gen=0.0 pid=#{promoter_pid} reaped .* exit 0/)
+      assert_stderr(/worker=0 gen=0.1 pid=\d+ ready/)
 
       assert_clean_shutdown(pid)
     end
