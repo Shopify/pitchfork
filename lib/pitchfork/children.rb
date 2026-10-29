@@ -85,7 +85,9 @@ module Pitchfork
     def update(message)
       case message
       when Message::MoldSpawned
-        mold = Worker.new(nil)
+        # The initial mold PID is already known
+        # but for subsequent ones, we had no record of it.
+        mold = @children[message.pid] || Worker.new(nil)
         mold.update(message)
         @pending_molds[mold.pid] = mold
         @children[mold.pid] = mold
