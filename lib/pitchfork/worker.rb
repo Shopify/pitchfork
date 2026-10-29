@@ -51,6 +51,7 @@ module Pitchfork
       @monitor = fd ? MessageSocket.for_fd(fd) : nil
       @exiting = data.fetch(:exiting)
       @requests_count = data.fetch(:requests_count)
+      @spawned_at = data.fetch(:spawned_at, 0)
 
       @state_drop = if @nr
         SharedMemory.worker_state(@nr)
@@ -79,6 +80,7 @@ module Pitchfork
         monitor_fd: @monitor&.fileno,
         exiting: exiting?,
         requests_count: requests_count,
+        spawned_at: spawned_at,
       }
     end
 
