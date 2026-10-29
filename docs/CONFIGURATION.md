@@ -169,18 +169,6 @@ The following options may be specified (but are generally not needed):
 
   Default: `queues - 1`.
 
-- `setpgid: true or false`
-
-  When enabled, child processes will be made into a group leader with a pgid matching
-  their pid. The child process will no longer be in the foreground process group of
-  its control terminal.
-
-  This can break debugging sessions and interactive terminals inside the worker
-  processes. Set it to `false` if you need to activate a debugging session or read from
-  `STDIN` inside a worker process.
-
-  Default: `true` (enabled)
-
 - `umask: mode`
 
   Sets the file mode creation mask for UNIX sockets.
@@ -214,6 +202,37 @@ The following options may be specified (but are generally not needed):
   There is no good reason to ever disable this with a +zero+ value with pitchfork.
 
   Default: `1`
+
+
+### `poller`
+
+Pitchfork can use different methods to poll for incomming requests.
+
+When available the default is to use `epoll` with the `EPOLLEXCLUSIVE` flags.
+`EPOLLEXCLUSIVE` solves the thundering herd problem, reducing CPU usage a litte bit,
+however it has the downside of behaving like a LIFO queue (see https://blog.cloudflare.com/the-sad-state-of-linux-socket-balancing/),
+resulting in most requests being handled by older workers, which is somewhat desirable when reforking is enabled,
+but can be problematic when not using reforking and using hot restarts as traffic can
+very suddenly shift from very warm workers to new very cold workers, causing latency spikes.
+
+In such environment it may be more desirable to use either `select` or raw `epoll`, which have a
+bit more overhead but produce a more even distribution of requests between workers allowing them
+to warm up more progressively. We've found that the better polling in such setup is `select`.
+
+Valid values: `:epoll_exclusive`, `:epoll`, `:select`
+Default: `:epoll_exclusive`.
+
+### `setpgid`
+
+When enabled, child processes will be made into a group leader with a pgid matching
+their pid. The child process will no longer be in the foreground process group of
+its control terminal.
+
+This can break debugging sessions and interactive terminals inside the worker
+processes. Set it to `false` if you need to activate a debugging session or read from
+`STDIN` inside a worker process.
+
+Default: `true` (enabled)
 
 ### `timeout`
 

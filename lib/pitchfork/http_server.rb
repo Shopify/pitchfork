@@ -3,6 +3,7 @@
 
 require 'pitchfork/pitchfork_http'
 require 'pitchfork/listeners'
+require 'pitchfork/select_waiter'
 require 'pitchfork/flock'
 require 'pitchfork/soft_timeout'
 require 'pitchfork/shared_memory'
@@ -79,7 +80,7 @@ module Pitchfork
     # :stopdoc:
     attr_accessor :app, :timeout, :timeout_signal, :soft_timeout, :cleanup_timeout, :spawn_timeout, :worker_processes,
                   :before_fork, :after_worker_fork, :after_mold_fork, :before_service_worker_ready, :before_service_worker_exit,
-                  :listener_opts, :children,
+                  :listener_opts, :children, :poller,
                   :orig_app, :config, :ready_pipe, :early_hints, :setpgid, :restart_command, :restart_command_argv, :working_directory
     attr_writer   :after_worker_exit, :before_worker_exit, :after_worker_ready, :after_request_complete,
                   :refork_condition, :after_worker_timeout, :after_worker_hard_timeout, :after_monitor_ready, :refork_max_unavailable,
@@ -1078,10 +1079,16 @@ module Pitchfork
 
     if Pitchfork.const_defined?(:Waiter)
       def prep_readers(readers)
-        Pitchfork::Info.keep_io(Pitchfork::Waiter.prep_readers(readers))
+        case @poller
+        when :epoll_exclusive
+          Info.keep_io(Waiter.prep_readers(readers, true))
+        when :epoll
+          Info.keep_io(Waiter.prep_readers(readers, false))
+        else
+          Pitchfork::SelectWaiter.new
+        end
       end
     else
-      require_relative 'select_waiter'
       def prep_readers(_readers)
         Pitchfork::SelectWaiter.new
       end
