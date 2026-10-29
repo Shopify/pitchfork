@@ -82,7 +82,7 @@ module Pitchfork
                   :listener_opts, :children,
                   :orig_app, :config, :ready_pipe, :early_hints, :setpgid, :restart_command, :restart_command_argv, :working_directory
     attr_writer   :after_worker_exit, :before_worker_exit, :after_worker_ready, :after_request_complete,
-                  :refork_condition, :after_worker_timeout, :after_worker_hard_timeout, :after_monitor_ready, :refork_max_unavailable,
+                  :refork_condition, :after_worker_timeout, :after_worker_hard_timeout, :after_monitor_ready, :after_child_ready, :refork_max_unavailable,
                   :max_consecutive_spawn_errors
 
     attr_reader :logger, :version
@@ -226,7 +226,9 @@ module Pitchfork
       else
         build_app!
         SharedMemory.current_version = @version
-        after_mold_fork&.call(self, Worker.new(nil, pid: $$).promoted!(@spawn_timeout))
+        mold = Worker.new(nil, pid: $$).promoted!(@spawn_timeout)
+        after_mold_fork&.call(self, mold)
+        safe_run_callback(@after_child_ready, "after_child_ready", self, mold)
       end
 
       if sync
@@ -432,9 +434,11 @@ module Pitchfork
               mold.soft_kill(:TERM)
             end
           end
+          safe_run_callback(@after_child_ready, "after_child_ready", self, new_mold)
         end
       when Message::WorkerReady, Message::ServiceReady
         @consecutive_spawn_errors = 0
+        safe_run_callback(@after_child_ready, "after_child_ready", self, @children.fetch(message.pid))
       else
         logger.error("Unexpected message in sig_queue #{message.inspect}")
       end

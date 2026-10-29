@@ -14,7 +14,7 @@ module Pitchfork
     # :stopdoc:
     EXIT_SIGNALS = [:QUIT, :TERM]
     attr_accessor :nr, :pid, :generation, :version
-    attr_reader :monitor, :requests_count
+    attr_reader :monitor, :requests_count, :spawned_at
 
     class << self
       def load(data)
@@ -34,6 +34,7 @@ module Pitchfork
       @monitor = nil
       @exiting = false
       @requests_count = 0
+      @spawned_at = Pitchfork.time_now
       init_state
     end
 

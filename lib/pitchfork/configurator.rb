@@ -42,6 +42,7 @@ module Pitchfork
       :before_fork => nil,
       :after_worker_fork => nil,
       :after_mold_fork => nil,
+      :after_child_ready => nil,
       :before_worker_exit => nil,
       :after_worker_exit => lambda { |server, worker, status|
         m = if worker.nil?
@@ -152,6 +153,10 @@ module Pitchfork
 
     def after_monitor_ready(*args, &block)
       set_hook(:after_monitor_ready, block_given? ? block : args[0], 1)
+    end
+
+    def after_child_ready(*args, &block)
+      set_hook(:after_child_ready, block_given? ? block : args[0])
     end
 
     def after_worker_timeout(*args, &block)

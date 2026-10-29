@@ -372,6 +372,18 @@ issues caused by forking. If you detect something wrong, you can
 call `Process.exit`, and this mold won't be used, another one will be
 spawned later. e.g. you can check `Socket.getaddrinfo` still works, etc.
 
+
+### `after_child_ready`
+
+Called by the monitor process when a worker, service or mold reports
+ready. Outdated molds discarded by the monitor don't trigger it.
+
+```ruby
+after_child_ready do |server, child|
+  server.logger.info("#{child.to_log} ready")
+end
+```
+
 ### `after_worker_fork`
 
 ```ruby
