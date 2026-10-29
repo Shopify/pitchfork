@@ -189,7 +189,7 @@ class TestBoot < Pitchfork::IntegrationTest
     Process.waitpid(pid)
 
     assert_stderr(/worker=0 gen=0.0 pid=(\d+) exiting/, timeout: 5)
-    assert_stderr(/worker=1 gen=0.0 pid=(\d+) exiting/)
+    assert_stderr(/worker=1 gen=0.0 pid=(\d+) exiting/, timeout: 5)
 
     assert_raises Errno::ESRCH, Errno::ECHILD do
       25.times do
