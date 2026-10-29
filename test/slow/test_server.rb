@@ -288,8 +288,7 @@ class WebServerTest < Pitchfork::Test
     assert_nil sock.close
     next_client = Net::HTTP.get(URI.parse("http://127.0.0.1:#@port/"))
     assert_equal 'hello!\n', next_client
-    lines = File.readlines("test_stderr.#$$.log")
-    lines = lines.grep(/^Pitchfork::HttpParserError: .* true$/)
+    lines = wait_for_stderr(/^Pitchfork::HttpParserError: .* true$/)
     assert_equal 1, lines.size
   end
 

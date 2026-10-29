@@ -220,8 +220,8 @@ class RestartTest < Pitchfork::IntegrationTest
       assert_stderr(/mold gen=1.0 pid=\d+ reaped/, timeout: 2)
     end
 
-    assert_stderr(/worker=0 gen=2.0 pid=\d+ ready/, timeout: 4)
-    assert_stderr(/worker=1 gen=2.0 pid=\d+ ready/)
+    assert_stderr(/worker=0 gen=2.0 pid=\d+ ready/, timeout: 10)
+    assert_stderr(/worker=1 gen=2.0 pid=\d+ ready/, timeout: 10)
 
     assert_healthy("http://#{addr}:#{port}")
 

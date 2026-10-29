@@ -223,6 +223,19 @@ module Pitchfork
       assert File.exist?(path), "path=#{path} exists #{caller.inspect}"
     end
 
+    def wait_for_stderr(pattern, timeout: 2)
+      path = "test_stderr.#$$.log"
+      pattern = Regexp.new(Regexp.escape(pattern)) if String === pattern
+      (timeout * 20).times do
+        if File.exist?(path)
+          lines = File.readlines(path).grep(pattern)
+          return lines unless lines.empty?
+        end
+        sleep 0.05
+      end
+      []
+    end
+
     def xfork(&block)
       fork do
         ObjectSpace.each_object(Tempfile) do |tmp|
