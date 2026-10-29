@@ -1,6 +1,7 @@
 # Unreleased
 
 - `RACK_ENV` now default to `"production"` instead of `"development"`.
+- Fix workers surviving a soft timeout when the application swallows the `SystemExit` (e.g. Rails' `ActionDispatch::ShowExceptions`).
 
 # 0.18.2
 

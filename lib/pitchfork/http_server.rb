@@ -43,13 +43,19 @@ module Pitchfork
         @callback = callback
         @rack_env = nil
         @timeout_request = nil
+        @timed_out = false
       end
 
       def inspect
         "#<Pitchfork::HttpServer::TimeoutHandler##{object_id}>"
       end
 
+      def timed_out? # :nodoc:
+        @timed_out
+      end
+
       def call(original_thread) # :nodoc:
+        @timed_out = true
         begin
           @server.logger.error("#{@worker.to_log} timed out, exiting")
           if @callback
@@ -1128,7 +1134,15 @@ module Pitchfork
               worker.update(client)
             else
               worker.busy = true
-              if (request_env = process_client(client, worker, prepare_timeout(worker)))
+              timeout_handler = prepare_timeout(worker)
+              request_env = process_client(client, worker, timeout_handler)
+              if timeout_handler.timed_out?
+                # before_worker_exit already ran in the timeout thread.
+                logger.error("#{worker.to_log} SystemExit was swallowed by the application, exiting")
+                Process.exit
+              end
+
+              if request_env
                 worker.increment_requests_count
                 safe_run_callback(@after_request_complete, "after_request_complete", self, worker, request_env)
               end

@@ -108,6 +108,34 @@ class ConfigurationTest < Pitchfork::IntegrationTest
     assert_clean_shutdown(pid)
   end
 
+  def test_soft_timeout_swallowed_exit
+    addr, port = unused_port
+
+    pid = spawn_server(app: File.join(ROOT, "test/integration/apps/rescue_exception.ru"), config: <<~CONFIG)
+      listen "#{addr}:#{port}"
+      worker_processes 1
+      timeout 3, cleanup: 10
+
+      before_worker_exit do |server, worker|
+        $stderr.puts "[before_worker_exit]"
+      end
+    CONFIG
+
+    assert_healthy("http://#{addr}:#{port}/")
+    old_pid = http_get("http://#{addr}:#{port}/").body
+
+    assert_equal "rescued SystemExit", http_get("http://#{addr}:#{port}/?10", timeout: 5).body
+    assert_stderr("timed out, exiting")
+    assert_stderr("SystemExit was swallowed by the application, exiting")
+    assert_stderr(/worker=0 gen=0\.0 #{old_pid} reaped/, timeout: 3)
+
+    assert_healthy("http://#{addr}:#{port}/")
+    refute_equal old_pid, http_get("http://#{addr}:#{port}/").body
+    assert_equal 1, read_stderr.scan("[before_worker_exit]").size
+
+    assert_clean_shutdown(pid)
+  end
+
   def test_hard_timeout
     addr, port = unused_port
 
