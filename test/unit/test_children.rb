@@ -238,8 +238,8 @@ module Pitchfork
       assert_equal [worker], @children.workers
 
       pipe = Pitchfork.socketpair.last
-      @children.update(Message::MoldSpawned.new(nil, 42, 1, 0, pipe))
-      @children.update(Message::MoldReady.new(42))
+      @children.update(Message::MoldSpawned.new(nil, 44, 1, 0, pipe))
+      @children.update(Message::MoldReady.new(44))
 
       assert_not_nil @children.mold
       @children = assert_roundtrip(@children)
@@ -252,6 +252,22 @@ module Pitchfork
 
       @children = assert_roundtrip(@children)
       assert_not_nil @children.service
+    end
+
+    def test_mold_ready_spawned_at_preserved
+      pipe = Pitchfork.socketpair.last
+
+      mold = Worker.new(nil, pid: 42) # Initial mold pid is known
+      spawned_at = mold.spawned_at
+      @children.register_mold(mold)
+
+      returned_mold = @children.update(Message::MoldSpawned.new(nil, 42, 0, 0, pipe))
+      assert_same mold, returned_mold
+      assert_same spawned_at, returned_mold.spawned_at
+
+      returned_mold = @children.update(Message::MoldReady.new(42))
+      assert_same mold, returned_mold
+      assert_same spawned_at, returned_mold.spawned_at
     end
 
     private
