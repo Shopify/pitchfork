@@ -157,7 +157,7 @@ module Pitchfork
       end
     end
 
-    SpawnWorker = new(:nr)
+    SpawnWorkers = new(:nrs)
     WorkerSpawned = new(:nr, :pid, :generation, :version, :pipe)
     WorkerReady = new(:nr, :pid)
     PromoteWorker = new(:generation)

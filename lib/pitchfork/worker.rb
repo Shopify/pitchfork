@@ -158,8 +158,8 @@ module Pitchfork
       send_message_nonblock(Message::PromoteWorker.new(generation))
     end
 
-    def spawn_worker(new_worker)
-      send_message_nonblock(Message::SpawnWorker.new(new_worker.nr))
+    def spawn_workers(new_workers)
+      send_message_nonblock(Message::SpawnWorkers.new(new_workers.map(&:nr)))
     end
 
     def spawn_service(_new_service)
