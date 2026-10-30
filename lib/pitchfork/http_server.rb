@@ -699,7 +699,11 @@ module Pitchfork
     def spawn_workers_from_mold(workers)
       if REFORKING_AVAILABLE
         if mold = @children.mold
-          workers.each { |worker| worker.update_deadline(@spawn_timeout) }
+          # On larger app, the fork call necessary to spawn a worker can take hundreds of milliseconds
+          # so we're giving some extra spawn timeout when spawning more than a single worker.
+          workers.each_with_index do |worker, i|
+            worker.update_deadline(@spawn_timeout + (i * 0.25))
+          end
 
           if mold.spawn_workers(workers)
             workers.each { |worker| @children.register(worker) }
