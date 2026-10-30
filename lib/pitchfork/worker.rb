@@ -277,7 +277,7 @@ module Pitchfork
     end
 
     def update_deadline(timeout)
-      self.deadline = Pitchfork.time_now(true) + timeout
+      self.deadline = Integer(Pitchfork.time_now + timeout)
     end
 
     # called in the worker process
