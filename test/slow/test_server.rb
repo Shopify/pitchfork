@@ -86,9 +86,8 @@ module BaseWebServerTests
   def teardown
     if @server
       redirect_test_io do
-        wait_workers_ready("test_stderr.#$$.log", 1)
-        File.truncate("test_stderr.#$$.log", 0)
         @server.stop(false)
+        File.delete("test_stderr.#$$.log")
       end
       reset_sig_handlers
     end

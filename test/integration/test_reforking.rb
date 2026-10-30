@@ -101,8 +101,8 @@ class ReforkingTest < Pitchfork::IntegrationTest
 
       assert_stderr "refork condition met, promoting ourselves", timeout: 3
 
-      assert_stderr "failed to spawn a worker, retrying"
-      assert_stderr "failed to spawn a worker twice in a row - corrupted mold process?"
+      assert_stderr "failed to spawn worker=0 gen=0.1, retrying"
+      assert_stderr "failed to spawn worker=0 gen=0.1 twice in a row - corrupted mold process?"
       assert_stderr "No mold alive, shutting down"
 
       assert_exited(pid, 1, timeout: 5)
@@ -360,7 +360,7 @@ class ReforkingTest < Pitchfork::IntegrationTest
           :registered
         end
       end.compact
-      assert_equal([:term, :registered] * 5, events)
+      assert_equal(([:term, :registered] * 5).sort, events.sort)
     end
 
     def test_signal_during_refork

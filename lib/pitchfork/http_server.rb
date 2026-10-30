@@ -362,6 +362,13 @@ module Pitchfork
 
       case message = @sig_queue.shift
       when nil
+        if @respawn
+          # Spawn missing workers first so that `murder_lazy_workers` can consider their spawn timeout
+          # when computing how long to sleep.
+          maintain_worker_count
+          restart_outdated_workers
+        end
+
         # avoid murdering workers after our monitor process (or the
         # machine) comes out of suspend/hibernation
         if (@last_check + @timeout) >= (@last_check = Pitchfork.time_now)
@@ -376,10 +383,6 @@ module Pitchfork
         else
           sleep_time = @timeout/2.0 + 1
           @logger.debug("waiting #{sleep_time}s after suspend/hibernation")
-        end
-        if @respawn
-          maintain_worker_count
-          restart_outdated_workers
         end
 
         monitor_sleep(sleep_time) if sleep
@@ -417,8 +420,11 @@ module Pitchfork
           logger.info("reaped unknown subprocess #{message.status.inspect}")
         end
       when Message::WorkerSpawned, Message::MoldSpawned, Message::ServiceSpawned
-        worker = @children.update(message)
-        logger.info("#{worker.to_log} spawned")
+        if worker = @children.update(message)
+          logger.info("#{worker.to_log} spawned")
+        else
+          logger.error("message for abandoned worker: #{message}")
+        end
       when Message::MoldReady
         new_mold = @children.update(message)
 
@@ -690,7 +696,34 @@ module Pitchfork
       OpenSSL::Random.seed(rand.to_s) if defined?(OpenSSL::Random)
     end
 
-    def spawn_worker(worker, detach:)
+    def spawn_workers_from_mold(workers)
+      if REFORKING_AVAILABLE
+        if mold = @children.mold
+          # On larger app, the fork call necessary to spawn a worker can take hundreds of milliseconds
+          # so we're giving some extra spawn timeout when spawning more than a single worker.
+          workers.each_with_index do |worker, i|
+            worker.update_deadline(@spawn_timeout + (i * 0.25))
+          end
+
+          if mold.spawn_workers(workers)
+            workers.each { |worker| @children.register(worker) }
+          else
+            @logger.error("Failed to send a spawn_workers command to #{mold.to_log}")
+            workers.each(&:reaped!)
+          end
+        else
+          @logger.error("Failed to send a spawn_workers command: no active mold")
+        end
+      else
+        workers.each do |worker|
+          worker.update_deadline(@spawn_timeout)
+          spawn_worker(worker)
+          @children.register(worker)
+        end
+      end
+    end
+
+    def spawn_worker(worker)
       logger.info("#{worker.to_log} spawning...")
 
       # We set the deadline before spawning the child so that if for some
@@ -748,7 +781,23 @@ module Pitchfork
       end
     end
 
-    def spawn_service(service, detach:)
+    def spawn_service_from_mold(service)
+      service.update_deadline(@spawn_timeout)
+
+      if REFORKING_AVAILABLE
+        if @children.mold&.spawn_service(service)
+          @children.register_service(service)
+        else
+          @logger.error("Failed to send a spawn_service command")
+          service.reaped!
+        end
+      else
+        spawn_service(service)
+        @children.register_service(service)
+      end
+    end
+
+    def spawn_service(service)
       logger.info("#{service.to_log} spawning...")
 
       # We set the deadline before spawning the child so that if for some
@@ -784,51 +833,35 @@ module Pitchfork
     end
 
     def spawn_missing_workers
+      if REFORKING_AVAILABLE
+        return unless @children.mold
+
+        version = @children.mold&.version || 0
+        generation = @children.mold&.generation || 0
+      else
+        version = @version
+        generation = 0
+      end
+
       if @before_service_worker_ready && !@children.service
-        service = Worker.new(nil, service: true)
-        if REFORKING_AVAILABLE
-          service.version = @children.mold&.version || 0
-          service.generation = @children.mold&.generation || 0
-
-          unless @children.mold&.spawn_service(service)
-            @logger.error("Failed to send a spawn_service command")
-          end
-        else
-          service.version = @version
-          spawn_service(service, detach: false)
-        end
-
-        @children.register_service(service)
+        service = Worker.new(nil, service: true, version: version, generation: generation)
+        spawn_service_from_mold(service)
       end
 
       worker_nr = -1
+      missing_workers = []
+
+
       until (worker_nr += 1) == @worker_processes
         if @children.nr_alive?(worker_nr)
           next
         end
-        worker = Worker.new(worker_nr)
-        worker.update_deadline(@spawn_timeout)
 
-        if REFORKING_AVAILABLE
-          worker.version = @children.mold&.version || 0
-          worker.generation = @children.mold&.generation || 0
+        missing_workers << Worker.new(worker_nr, version: version, generation: generation)
+      end
 
-          if mold = @children.mold
-            unless mold.spawn_worker(worker)
-              @logger.error("Failed to send a spawn_worker command to #{mold.to_log}")
-            end
-          else
-            @logger.error("Failed to send a spawn_worker command: no active mold")
-          end
-        else
-          worker.version = @version
-          spawn_worker(worker, detach: false)
-        end
-        # We could directly register workers when we spawn from the
-        # monitor, like unicorn does. However it is preferable to
-        # always go through the asynchronous registering process for
-        # consistency.
-        @children.register(worker)
+      unless missing_workers.empty?
+        spawn_workers_from_mold(missing_workers)
       end
     rescue => e
       @logger.error(e) rescue nil
@@ -1232,26 +1265,29 @@ module Pitchfork
       case message
       when false
         # no message, keep looping
-      when Message::SpawnWorker
-        retries = 1
-        begin
-          spawn_worker(Worker.new(message.nr, generation: mold.generation, version: mold.version), detach: true)
-        rescue ForkFailure
-          if retries > 0
-            @logger.fatal("#{mold.to_log} failed to spawn a worker, retrying")
-            retries -= 1
-            retry
-          else
-            @logger.fatal("#{mold.to_log} failed to spawn a worker twice in a row - corrupted mold process?")
-            Process.exit(1)
+      when Message::SpawnWorkers
+        message.nrs.each do |nr|
+          retries = 1
+          worker = Worker.new(nr, generation: mold.generation, version: mold.version)
+          begin
+            spawn_worker(worker)
+          rescue ForkFailure
+            if retries > 0
+              @logger.fatal("#{mold.to_log} failed to spawn #{worker.to_log}, retrying")
+              retries -= 1
+              retry
+            else
+              @logger.fatal("#{mold.to_log} failed to spawn #{worker.to_log} twice in a row - corrupted mold process?")
+              Process.exit(1)
+            end
+          rescue => error
+            raise BootFailure, error.message
           end
-        rescue => error
-          raise BootFailure, error.message
         end
       when Message::SpawnService
         retries = 1
         begin
-          spawn_service(Pitchfork::Worker.new(nil, generation: mold.generation, version: mold.version, service: true), detach: true)
+          spawn_service(Pitchfork::Worker.new(nil, generation: mold.generation, version: mold.version, service: true))
         rescue ForkFailure
           if retries > 0
             @logger.fatal("#{mold.to_log} failed to spawn a service, retrying")

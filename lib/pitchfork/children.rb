@@ -97,22 +97,23 @@ module Pitchfork
         return service
       end
 
-      child = @children[message.pid] || (message.nr && @workers[message.nr])
-      child.update(message)
+      if child = @children[message.pid] || (message.nr && @workers[message.nr])
+        child.update(message)
 
-      if child.mold?
-        @pending_molds.delete(child.pid)
-        @molds[child.pid] = child
-        # Don't assume that new mold is the most up to date one.
-        @mold = @molds.values.max_by { |m| [m.version, m.generation] }
+        if child.mold?
+          @pending_molds.delete(child.pid)
+          @molds[child.pid] = child
+          # Don't assume that new mold is the most up to date one.
+          @mold = @molds.values.max_by { |m| [m.version, m.generation] }
+        end
+
+        if child.pid
+          @children[child.pid] = child
+          @pending_workers.delete(child.nr)
+        end
+
+        child
       end
-
-      if child.pid
-        @children[child.pid] = child
-        @pending_workers.delete(child.nr)
-      end
-
-      child
     end
 
     def nr_alive?(nr)
