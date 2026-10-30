@@ -134,7 +134,7 @@ class TestBoot < Pitchfork::IntegrationTest
     pid = spawn_server(app: APP, config: <<~RUBY)
       listen "#{addr}:#{port}"
       worker_processes 3
-      max_consecutive_spawn_errors 4
+      max_consecutive_spawn_errors 2
       spawn_timeout 1
       after_worker_fork do |_server, worker|
         raise "Ooops"

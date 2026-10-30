@@ -355,10 +355,11 @@ class RestartTest < Pitchfork::IntegrationTest
             @count ||= 0
 
             case message
-            when Pitchfork::Message::SpawnWorker
+            when Pitchfork::Message::SpawnWorkers
               @count += 1
-              # Simular half the SpawnWorker messages being lost
+              # Simular half the SpawnWorkers messages being lost
               if @count.odd?
+                logger.info("[dropped] \#{message}")
                 return
               end
             end
@@ -372,8 +373,7 @@ class RestartTest < Pitchfork::IntegrationTest
         end
       RUBY
 
-      assert_stderr(/worker=1 gen=0.0 pid=\d+ ready/, timeout: 5)
-      assert_stderr(/worker=0 gen=0.0 timed out during spawn, abandoning/)
+      assert_stderr(/worker=0 gen=0.0 timed out during spawn, abandoning/, timeout: 5)
       assert_stderr(/worker=0 gen=0.0 pid=\d+ ready/, timeout: 5)
       assert_healthy("http://#{addr}:#{port}")
       assert_clean_shutdown(pid)
