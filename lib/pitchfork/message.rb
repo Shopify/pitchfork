@@ -88,6 +88,20 @@ module Pitchfork
       end
     end
 
+    def try_send_message(message)
+      success = false
+      begin
+        case sendmsg_nonblock(message, exception: false)
+        when :wait_writable
+        else
+          success = true
+        end
+      rescue Errno::EPIPE, Errno::ECONNRESET, Errno::ECONNREFUSED, Errno::ENOTCONN
+        # worker will be reaped soon
+      end
+      success
+    end
+
     private
 
     MARSHAL_PREFIX = (Marshal::MAJOR_VERSION.chr << Marshal::MINOR_VERSION.chr).freeze
@@ -157,7 +171,7 @@ module Pitchfork
       end
     end
 
-    SpawnWorker = new(:nr)
+    SpawnWorkers = new(:nrs)
     WorkerSpawned = new(:nr, :pid, :generation, :version, :pipe)
     WorkerReady = new(:nr, :pid)
     PromoteWorker = new(:generation)

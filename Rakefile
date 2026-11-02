@@ -8,11 +8,13 @@ namespace :test do
   Megatest::TestTask.create(:unit) do |t|
     t.tests = FileList["test/unit/**/test_*.rb"]
     t.deps << :compile
+    t.extra_args = ['--jobs', '2'] if ENV["CI"]
   end
 
   Megatest::TestTask.create(:integration) do |t|
     t.tests = FileList["test/integration/**/test_*.rb"]
     t.deps << :compile
+    t.extra_args = ['--jobs', '2'] if ENV["CI"]
   end
 
   # It's not so much that these tests are slow, but they tend to fork
@@ -23,6 +25,7 @@ namespace :test do
   Megatest::TestTask.create(:slow) do |t|
     t.tests = FileList["test/slow/**/test_*.rb"]
     t.deps << :compile
+    t.extra_args = ['--jobs', '2'] if ENV["CI"]
   end
 
   # Unicorn had its own POSIX-shell based testing framework.

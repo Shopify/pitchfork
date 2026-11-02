@@ -134,7 +134,7 @@ class TestBoot < Pitchfork::IntegrationTest
     pid = spawn_server(app: APP, config: <<~RUBY)
       listen "#{addr}:#{port}"
       worker_processes 3
-      max_consecutive_spawn_errors 4
+      max_consecutive_spawn_errors 2
       spawn_timeout 1
       after_worker_fork do |_server, worker|
         raise "Ooops"
@@ -197,5 +197,43 @@ class TestBoot < Pitchfork::IntegrationTest
         sleep 0.2
       end
     end
+  end
+
+  test "abandoned worker coming up late" do
+    addr, port = unused_port
+
+    pid = spawn_server(app: APP, config: <<~RUBY)
+      listen "#{addr}:#{port}"
+      worker_processes 1
+      spawn_timeout 1
+
+      module SlowSpawnWorkerPatch
+        def spawn_worker(worker)
+          @_spawn_worker_count ||= 0
+          @_spawn_worker_count += 1
+          super
+        end
+
+        def init_worker_process(worker)
+          if @_spawn_worker_count == 1
+            sleep 3
+            logger.info("getting ready")
+          end
+          super
+        end
+      end
+
+      after_mold_fork do |server, _mold|
+        server.extend(SlowSpawnWorkerPatch)
+      end
+    RUBY
+
+    assert_stderr(/worker=0 gen=0.0 timed out during spawn, abandoning/, timeout: 5)
+    assert_stderr(/worker=0 gen=0.0 pid=(\d+) spawned but slot is taken/, timeout: 5)
+
+    abandoned_worker_pid = read_stderr.match(/worker=0 gen=0.0 pid=(\d+) spawned but slot is taken/)[1]
+    assert_stderr(/reaped unknown subprocess .* pid #{abandoned_worker_pid} exit 0/)
+
+    assert_clean_shutdown(pid)
   end
 end

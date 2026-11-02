@@ -97,22 +97,28 @@ module Pitchfork
         return service
       end
 
-      child = @children[message.pid] || (message.nr && @workers[message.nr])
-      child.update(message)
+      if child = @children[message.pid] || (message.nr && @workers[message.nr])
+        if child.pid && child.pid != message.pid
+          # An abandoned spawn may still come up late: never rebind a slot that already has a process.
+          return
+        end
 
-      if child.mold?
-        @pending_molds.delete(child.pid)
-        @molds[child.pid] = child
-        # Don't assume that new mold is the most up to date one.
-        @mold = @molds.values.max_by { |m| [m.version, m.generation] }
+        child.update(message)
+
+        if child.mold?
+          @pending_molds.delete(child.pid)
+          @molds[child.pid] = child
+          # Don't assume that new mold is the most up to date one.
+          @mold = @molds.values.max_by { |m| [m.version, m.generation] }
+        end
+
+        if child.pid
+          @children[child.pid] = child
+          @pending_workers.delete(child.nr)
+        end
+
+        child
       end
-
-      if child.pid
-        @children[child.pid] = child
-        @pending_workers.delete(child.nr)
-      end
-
-      child
     end
 
     def nr_alive?(nr)
@@ -126,10 +132,10 @@ module Pitchfork
 
     def reap(pid)
       if child = @children.delete(pid)
-        @pending_workers.delete(child.nr)
+        @pending_workers.delete(child.nr) if @pending_workers[child.nr].equal?(child)
         @pending_molds.delete(child.pid)
         @molds.delete(child.pid)
-        @workers.delete(child.nr)
+        @workers.delete(child.nr) if @workers[child.nr]&.pid == child.pid
 
         if @mold == child
           @pending_workers.reject! do |nr, worker|
