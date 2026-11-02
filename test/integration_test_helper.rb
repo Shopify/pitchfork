@@ -16,7 +16,7 @@ module Pitchfork
 
     def teardown
       pids = @_pids.select do |pid|
-        Process.kill('INT', pid)
+        Process.kill('QUIT', pid)
         true
       rescue Errno::ESRCH
         false
