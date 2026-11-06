@@ -23,6 +23,12 @@ file, if it contains it. Reloading is not a supported feature of Pitchfork.
 
 * The configuration `after_fork` has been split between `after_worker_fork` and `after_mold_fork`.
 
+* The `before_fork` callback is only passed the server: `before_fork do |server|`. Unicorn's is also passed
+the worker, and Pitchfork raises an `ArgumentError` at boot for a block that takes two arguments.
+
+* `TERM` triggers a graceful shutdown, like `QUIT`, for both the monitor and the workers, where Unicorn treats
+`TERM` as a quick shutdown, like `INT`. Send `INT` for a quick shutdown. See [Signals](SIGNALS.md).
+
 * If you use `unicorn-worker-killer` or similar gems, you will need to implement this functionally yourself since
 there is no `pitchfork-worker-killer`. Changes to Pitchfork internals make this a pretty painless
 ordeal, you can check out the following GitHub issue to get started: https://github.com/Shopify/pitchfork/issues/92
