@@ -4,6 +4,7 @@ require 'etc'
 require 'stringio'
 require 'io/wait'
 require 'rack'
+require 'rack/multipart' # Ensure rack doesn't load code at runtime
 
 # :stopdoc:
 # Pitchfork module containing all of the classes (include C extensions) for
