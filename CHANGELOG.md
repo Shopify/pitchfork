@@ -1,7 +1,7 @@
 # Unreleased
 
 - `RACK_ENV` now default to `"production"` instead of `"development"`.
-- Fix workers surviving a soft timeout when the application swallows the `SystemExit` (e.g. Rails' `ActionDispatch::ShowExceptions`).
+- Fix workers surviving a soft timeout when the application swallows the `SystemExit` (e.g. Rails' `ActionDispatch::ShowExceptions`). The worker now exits once the response is written, and `after_request_complete` isn't called for that request.
 
 # 0.18.2
 
