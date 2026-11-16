@@ -158,8 +158,8 @@ module Pitchfork
       send_message_nonblock(Message::PromoteWorker.new(generation))
     end
 
-    def spawn_worker(new_worker)
-      send_message_nonblock(Message::SpawnWorker.new(new_worker.nr))
+    def spawn_workers(new_workers)
+      send_message_nonblock(Message::SpawnWorkers.new(new_workers.map(&:nr)))
     end
 
     def spawn_service(_new_service)
@@ -277,7 +277,7 @@ module Pitchfork
     end
 
     def update_deadline(timeout)
-      self.deadline = Pitchfork.time_now(true) + timeout
+      self.deadline = Integer(Pitchfork.time_now + timeout)
     end
 
     # called in the worker process
