@@ -3,6 +3,8 @@ require 'test_helper'
 
 module Pitchfork
   class TestSharedMemory < Test
+    tag isolated: true # Many tests rely on closed FD that could be reopened by another thread
+
     setup do
       # Megatest fixes the randomness by default and `memory_page.c` use `rand()` for `shm_open()`.
       Random.srand(SecureRandom.hex.to_i(16))
