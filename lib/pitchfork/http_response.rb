@@ -24,21 +24,35 @@ module Pitchfork
     end
 
     def append_header(buf, key, value)
+      key = header_bytes(key)
       case value
       when Array # Rack 3
         value.each do |v|
+          v = header_bytes(v)
           next if ILLEGAL_HEADER_VALUE.match?(v)
-          buf << key.to_s << ": " << v.to_s << "\r\n"
-        end
-      when /\n/ # Rack 2
-        # avoiding blank, key-only cookies with /\n+/
-        value.split(/\n+/).each do |v|
-          next if ILLEGAL_HEADER_VALUE.match?(v)
-          buf << key.to_s << ": " << v.to_s << "\r\n"
+          buf << key << ": " << v << "\r\n"
         end
       else
-        buf << key.to_s << ": " << value.to_s << "\r\n"
+        value = header_bytes(value)
+        if value.include?("\n") # Rack 2
+          # avoiding blank, key-only cookies with /\n+/
+          value.split(/\n+/).each do |v|
+            next if ILLEGAL_HEADER_VALUE.match?(v)
+            buf << key << ": " << v << "\r\n"
+          end
+        else
+          buf << key << ": " << value << "\r\n"
+        end
       end
+    end
+
+    # Check and write bytes, not characters: obs-text (0x80-0xFF) is valid in
+    # field values even when the String's encoding says it is invalid, and
+    # the response buffer is binary. ASCII-only and binary Strings are used
+    # as they are to avoid a copy.
+    private def header_bytes(str)
+      str = str.to_s
+      str.ascii_only? || str.encoding == Encoding::BINARY ? str : str.b
     end
 
     # writes the rack_response to socket as an HTTP response

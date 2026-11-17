@@ -6,6 +6,8 @@ if defined?(Rack::RELEASE) && Rack::RELEASE > "3"
   require "rack/utils"
 end
 
+require_relative "http_response"
+
 module Pitchfork
   # Middleware that applies chunked transfer encoding to response bodies
   # when the response does not include a content-length header.
@@ -77,6 +79,13 @@ module Pitchfork
       # Yield strings for each trailer header.
       def yield_trailers
         @body.trailers.each_pair do |k, v|
+          # Check bytes, not characters: obs-text is valid in field values
+          # even when the String's encoding says it is invalid.
+          k = k.to_s.b
+          v = v.to_s.b
+          next if HttpResponse::ILLEGAL_HEADER_VALUE.match?(k) || k.include?("\x7f")
+          next if HttpResponse::ILLEGAL_HEADER_VALUE.match?(v) || v.include?("\x7f")
+
           yield "#{k}: #{v}\r\n"
         end
       end

@@ -72,6 +72,46 @@ module Pitchfork
       assert_match(/^X-Whatever: stuff\r\nX-Whatever: bleh\r\n/, out.string)
     end
 
+    # obs-text (0x80-0xFF) is valid in field values whatever the String's
+    # encoding tag says.
+    def test_header_values_with_invalid_encoding
+      invalid = "\xFF".dup.force_encoding(Encoding::UTF_8).freeze
+      out = StringIO.new
+      http_response_write(out, 200, {
+        "X-Array" => [invalid],
+        "X-String" => invalid,
+        "X-Lines" => "a\xFF\nb\rc".dup.force_encoding(Encoding::UTF_8),
+      }, ["body"])
+      head, body = out.string.b.split("\r\n\r\n", 2)
+      assert_equal [
+        "X-Array: \xFF",
+        "X-String: \xFF",
+        "X-Lines: a\xFF",
+      ], head.split("\r\n").grep(/\AX-/)
+      assert_equal "body", body
+      assert_equal Encoding::UTF_8, invalid.encoding
+    end
+
+    def test_header_values_with_invalid_encoding_cannot_inject_headers
+      out = StringIO.new
+      http_response_write(out, 200, {
+        "X-Array" => ["\xFF\r\nX-Injected: yes".dup.force_encoding(Encoding::UTF_8), "ok"],
+        "X-Lines" => "\xFF\rX-Injected: yes\nok".dup.force_encoding(Encoding::UTF_8),
+      }, [])
+      head = out.string.b.split("\r\n\r\n", 2).first
+      assert_equal ["X-Array: ok", "X-Lines: ok"], head.split("\r\n").grep(/\AX-/)
+    end
+
+    def test_header_values_with_mixed_encodings
+      out = StringIO.new
+      http_response_write(out, 200, {
+        "X-Utf8" => ["\xC3\xA9".dup.force_encoding(Encoding::UTF_8)],
+        "X-Binary" => ["\xFF".b],
+      }, [])
+      head = out.string.b.split("\r\n\r\n", 2).first
+      assert_equal ["X-Utf8: \xC3\xA9", "X-Binary: \xFF"], head.split("\r\n").grep(/\AX-/)
+    end
+
     # Even though Rack explicitly forbids "Status" in the header hash,
     # some broken clients still rely on it
     def test_status_header_added
