@@ -180,12 +180,6 @@ http_version(struct http_parser *hp, const char *ptr, size_t len)
   rb_hash_aset(hp->env, g_http_version, v);
 }
 
-static inline void hp_invalid_if_trailer(struct http_parser *hp)
-{
-  if (HP_FL_TEST(hp, INTRAILER))
-    parser_raise(eHttpParserError, "invalid Trailer");
-}
-
 static void write_cont_value(struct http_parser *hp,
                              char *buffer, const char *p)
 {
@@ -239,10 +233,16 @@ static void write_value(VALUE self, struct http_parser *hp,
                         const char *buffer, const char *p)
 {
   VALUE f = find_common_field(PTR_TO(start.field), hp->s.field_len);
+  VALUE target = hp->env;
   VALUE v;
   VALUE e;
+  int in_trailer = HP_FL_TEST(hp, INTRAILER);
 
   VALIDATE_MAX_LENGTH(LEN(mark, p), FIELD_VALUE);
+  if (in_trailer && (f == g_content_length ||
+                     f == g_http_transfer_encoding || f == g_http_trailer))
+    parser_raise(eHttpParserError, "invalid Trailer");
+
   v = LEN(mark, p) == 0 ? rb_str_buf_new(128) : STRIPPED_STR_NEW(mark, p);
   if (NIL_P(f)) {
     const char *field = PTR_TO(start.field);
@@ -254,14 +254,14 @@ static void write_value(VALUE self, struct http_parser *hp,
      * ignore "Version" headers since they conflict with the HTTP_VERSION
      * rack env variable.
      */
-    if (CONST_MEM_EQ("VERSION", field, flen)) {
+    if (!in_trailer && CONST_MEM_EQ("VERSION", field, flen)) {
       RB_OBJ_WRITE(self, &hp->cont, Qnil);
       return;
     }
     f = uncommon_field(field, flen);
-  } else if (f == g_http_connection) {
+  } else if (!in_trailer && f == g_http_connection) {
     hp_keepalive_connection(hp, v);
-  } else if (f == g_content_length && !HP_FL_TEST(hp, CHUNKED)) {
+  } else if (!in_trailer && f == g_content_length && !HP_FL_TEST(hp, CHUNKED)) {
     if (hp->len.content)
       parser_raise(eHttpParserError, "Content-Length already set");
     hp->len.content = parse_length(RSTRING_PTR(v), RSTRING_LEN(v));
@@ -269,8 +269,7 @@ static void write_value(VALUE self, struct http_parser *hp,
       parser_raise(eHttpParserError, "invalid Content-Length");
     if (hp->len.content != 0)
       HP_FL_SET(hp, HASBODY);
-    hp_invalid_if_trailer(hp);
-  } else if (f == g_http_transfer_encoding) {
+  } else if (!in_trailer && f == g_http_transfer_encoding) {
     if (is_chunked(v)) {
       if (HP_FL_TEST(hp, CHUNKED))
         /*
@@ -296,19 +295,25 @@ static void write_value(VALUE self, struct http_parser *hp,
        */
       parser_raise(eHttpParserError, "invalid Transfer-Encoding");
     }
-    hp_invalid_if_trailer(hp);
-  } else if (f == g_http_trailer) {
+  } else if (!in_trailer && f == g_http_trailer) {
     HP_FL_SET(hp, HASTRAILER);
-    hp_invalid_if_trailer(hp);
   } else {
     assert(TYPE(f) == T_STRING && "memoized object is not a string");
     assert_frozen(f);
   }
 
-  e = rb_hash_aref(hp->env, f);
+  if (in_trailer) {
+    target = rb_hash_aref(hp->env, g_request_trailers);
+    if (NIL_P(target)) {
+      target = rb_hash_new();
+      rb_hash_aset(hp->env, g_request_trailers, target);
+    }
+  }
+
+  e = rb_hash_aref(target, f);
   if (NIL_P(e)) {
-    RB_OBJ_WRITE(self, &hp->cont, rb_hash_aset(hp->env, f, v));
-  } else if (f == g_http_host) {
+    RB_OBJ_WRITE(self, &hp->cont, rb_hash_aset(target, f, v));
+  } else if (!in_trailer && f == g_http_host) {
     /*
      * ignored, absolute URLs in REQUEST_URI take precedence over
      * the Host: header (ref: rfc 2616, section 5.2.1)
@@ -398,6 +403,7 @@ static void write_value(VALUE self, struct http_parser *hp,
 
   action end_chunked_body {
     HP_FL_SET(hp, INTRAILER);
+    RB_OBJ_WRITE(self, &hp->cont, Qfalse);
     cs = http_parser_en_Trailers;
     ++p;
     assert(p <= pe && "buffer overflow after chunked body");

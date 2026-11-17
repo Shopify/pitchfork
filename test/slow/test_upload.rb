@@ -47,7 +47,7 @@ class UploadTest < Pitchfork::Test
         end
       end
       resp[:size] = input.size
-      resp[:content_md5] = env['HTTP_CONTENT_MD5']
+      resp[:content_md5] = env.dig('pitchfork.request_trailers', 'HTTP_CONTENT_MD5')
 
       [ 200, @hdr.merge({'X-Resp' => resp.inspect}), [] ]
     end

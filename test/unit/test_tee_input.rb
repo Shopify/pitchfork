@@ -246,7 +246,8 @@ module Pitchfork
       assert_nil ti.len
       assert ! @parser.body_eof?
       assert_equal 25, ti.size
-      assert_equal "World", @parser.env['HTTP_HELLO']
+      assert_nil @parser.env['HTTP_HELLO']
+      assert_equal 'World', @parser.env['pitchfork.request_trailers']['HTTP_HELLO']
       pid, status = Process.waitpid2(pid)
       assert status.success?
     end
@@ -271,7 +272,65 @@ module Pitchfork
       assert_equal 9, ti.size
       assert_equal "fghi", ti.read(9)
       assert_nil ti.read(9)
-      assert_equal "World", @parser.env['HTTP_HELLO']
+      assert_nil @parser.env['HTTP_HELLO']
+      assert_equal 'World', @parser.env['pitchfork.request_trailers']['HTTP_HELLO']
+    end
+
+    def test_chunked_trailers_do_not_change_request_headers
+      [nil, "Cookie, Authorization, X-New"].each do |trailer|
+        @parser = HttpParser.new
+        buf = @parser.buf
+        buf << "POST / HTTP/1.1\r\n" \
+               "Host: original.example\r\n" \
+               "Authorization: Bearer original\r\n" \
+               "Transfer-Encoding: chunked\r\n"
+        buf << "Trailer: #{trailer}\r\n" if trailer
+        buf << "\r\n"
+        env = @parser.parse
+        input = TeeInput.new(@rd, @parser)
+        env['rack.input'] = input
+        assert_nil env['pitchfork.request_trailers']
+        expected = env.transform_values { |value| value.is_a?(String) ? value.dup : value }
+
+        @wr.write("4\r\nbody\r\n0\r\n" \
+                  "Cookie: session=attacker\r\n" \
+                  "Authorization: Bearer attacker\r\n" \
+                  " folded\r\n" \
+                  "Authorization: Bearer second\r\n" \
+                  "X-New: trailer\r\n" \
+                  "x-new: second\r\n" \
+                  "Host: attacker.example\r\n" \
+                  "Host: other.example\r\n" \
+                  "Version: forged\r\n" \
+                  "Content-Type: text/plain\r\n" \
+                  "Connection: close\r\n\r\n")
+        assert_equal 'body', input.read
+        assert_nil env['HTTP_COOKIE']
+        assert_equal 'Bearer original', env['HTTP_AUTHORIZATION']
+        assert_equal expected, env.reject { |key, _| key == 'pitchfork.request_trailers' }
+        assert_equal({
+          'HTTP_COOKIE' => 'session=attacker',
+          'HTTP_AUTHORIZATION' => 'Bearer attacker folded,Bearer second',
+          'HTTP_X_NEW' => 'trailer,second',
+          'HTTP_HOST' => 'attacker.example,other.example',
+          'HTTP_VERSION' => 'forged',
+          'CONTENT_TYPE' => 'text/plain',
+          'HTTP_CONNECTION' => 'close',
+        }, env['pitchfork.request_trailers'])
+        assert @parser.keepalive?
+      end
+    end
+
+    def test_leading_trailer_continuation_does_not_change_body
+      @parser = HttpParser.new
+      buf = @parser.buf
+      buf << "POST / HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n"
+      assert @parser.parse
+      buf << "4\r\nbody\r\n0\r\n injected\r\n\r\n"
+      input = TeeInput.new(@rd, @parser)
+
+      assert_equal 'body', input.read(4)
+      assert_raises(HttpParserError) { input.read(4) }
     end
 
     def test_gets_read_mix

@@ -230,7 +230,8 @@ module Pitchfork
       assert ! @parser.keepalive?
       str << "TY: FOO\r\n\r\n"
       assert_equal req, @parser.parse
-      assert_equal "FOO", req["HTTP_PUTTY"]
+      assert_nil req["HTTP_PUTTY"]
+      assert_equal({ 'HTTP_PUTTY' => 'FOO' }, req['pitchfork.request_trailers'])
       assert @parser.keepalive?
     end
 
@@ -243,6 +244,8 @@ module Pitchfork
       tmp = "".b
       assert_equal str, @parser.filter_body(tmp, str << "0\r\n\r\n")
       assert_equal "", tmp
+      assert_equal req, @parser.parse
+      assert_nil req['pitchfork.request_trailers']
     end
 
     def test_two_chunks
@@ -349,6 +352,7 @@ module Pitchfork
       assert_equal req, @parser.parse
       assert_equal 'Content-MD5', req['HTTP_TRAILER']
       assert_nil req['HTTP_CONTENT_MD5']
+      assert_nil req['pitchfork.request_trailers']
       tmp = +''
       assert_nil @parser.filter_body(tmp, str)
       assert_equal 'a..', tmp
@@ -359,7 +363,8 @@ module Pitchfork
       md5_hdr = "Content-MD5: #{md5_b64}\r\n"
       str << md5_hdr
       assert_nil @parser.trailers(req, str)
-      assert_equal md5_b64, req['HTTP_CONTENT_MD5']
+      assert_nil req['HTTP_CONTENT_MD5']
+      assert_equal md5_b64, req['pitchfork.request_trailers']['HTTP_CONTENT_MD5']
       assert_equal "CONTENT_MD5: #{md5_b64}\r\n", str
       str << "\r"
       assert_nil @parser.parse
@@ -379,6 +384,7 @@ module Pitchfork
       assert_equal req, @parser.parse
       assert_equal 'Content-MD5', req['HTTP_TRAILER']
       assert_nil req['HTTP_CONTENT_MD5']
+      assert_nil req['pitchfork.request_trailers']
       tmp = +''
       assert_nil @parser.filter_body(tmp, str)
       assert_equal 'a..', tmp
@@ -387,12 +393,14 @@ module Pitchfork
       assert_equal rv.object_id, str.object_id
       assert_equal '', str
       assert_nil @parser.trailers(req, str)
+      assert_nil req['pitchfork.request_trailers']
       md5_hdr = "Content-MD5: #{md5_b64}\r\n"
       md5_hdr.each_byte { |byte|
         str << byte.chr
         assert_nil @parser.trailers(req, str)
       }
-      assert_equal md5_b64, req['HTTP_CONTENT_MD5']
+      assert_nil req['HTTP_CONTENT_MD5']
+      assert_equal md5_b64, req['pitchfork.request_trailers']['HTTP_CONTENT_MD5']
       assert_equal "CONTENT_MD5: #{md5_b64}\r\n", str
       str << "\r"
       assert_nil @parser.parse
@@ -507,20 +515,22 @@ module Pitchfork
     end
 
     def test_bad_trailers
-      str = @parser.buf
-      req = @parser.env
-      str << "PUT / HTTP/1.1\r\n" \
-             "Trailer: Transfer-Encoding\r\n" \
-             "transfer-Encoding: chunked\r\n\r\n" \
-             "1\r\na\r\n2\r\n..\r\n0\r\n"
-      assert_equal req, @parser.parse
-      assert_equal 'Transfer-Encoding', req['HTTP_TRAILER']
-      tmp = +''
-      assert_nil @parser.filter_body(tmp, str)
-      assert_equal 'a..', tmp
-      assert_equal '', str
-      str << "Transfer-Encoding: identity\r\n\r\n"
-      assert_raises(HttpParserError) { @parser.parse }
+      ["Content-Length: 5", "Transfer-Encoding: identity", "Trailer: X-Foo"].each do |field|
+        parser = HttpParser.new
+        str = parser.buf
+        req = parser.env
+        str << "PUT / HTTP/1.1\r\n" \
+               "transfer-Encoding: chunked\r\n\r\n" \
+               "1\r\na\r\n2\r\n..\r\n0\r\n"
+        assert_equal req, parser.parse
+        tmp = +''
+        assert_nil parser.filter_body(tmp, str)
+        assert_equal 'a..', tmp
+        assert_equal '', str
+        str << "#{field}\r\n\r\n"
+        assert_raises(HttpParserError) { parser.parse }
+        assert_nil req['pitchfork.request_trailers']
+      end
     end
 
     def test_repeat_headers

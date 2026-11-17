@@ -5,6 +5,7 @@ static VALUE e413;
 static VALUE e414;
 
 static VALUE g_rack_url_scheme;
+static VALUE g_request_trailers;
 static VALUE g_request_method;
 static VALUE g_request_uri;
 static VALUE g_fragment;
@@ -70,6 +71,7 @@ DEF_MAX_LENGTH(QUERY_STRING, (1024 * 10));
 static void init_globals(void)
 {
   DEF_GLOBAL(rack_url_scheme, "rack.url_scheme");
+  DEF_GLOBAL(request_trailers, "pitchfork.request_trailers");
   DEF_GLOBAL(request_method, "REQUEST_METHOD");
   DEF_GLOBAL(request_uri, "REQUEST_URI");
   DEF_GLOBAL(fragment, "FRAGMENT");
