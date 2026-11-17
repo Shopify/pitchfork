@@ -143,6 +143,29 @@ module Pitchfork
       assert_equal "1.0", [@children.mold.version, @children.mold.generation].join('.')
     end
 
+    def test_late_worker_spawned_after_abandon
+      pipe = IO.pipe.last
+      abandoned = Worker.new(0)
+      @children.register(abandoned)
+      @children.abandon(abandoned)
+
+      replacement = Worker.new(0)
+      @children.register(replacement)
+
+      assert_equal replacement, @children.update(Message::WorkerSpawned.new(0, 42, 0, 0, pipe))
+      assert_equal 42, replacement.pid
+
+      assert_nil @children.update(Message::WorkerSpawned.new(0, 43, 0, 0, pipe))
+      assert_equal 42, replacement.pid
+      assert_equal [replacement], @children.workers
+
+      assert_nil @children.reap(43)
+      assert @children.nr_alive?(0)
+
+      assert_equal replacement, @children.reap(42)
+      refute @children.nr_alive?(0)
+    end
+
     def test_reap_worker
       pipe = IO.pipe.last
       worker = Worker.new(0)

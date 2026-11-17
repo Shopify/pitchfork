@@ -423,7 +423,11 @@ module Pitchfork
         if worker = @children.update(message)
           logger.info("#{worker.to_log} spawned")
         else
-          logger.error("message for abandoned worker: #{message}")
+          logger.error("worker=#{message.nr} gen=#{message.version}.#{message.generation} pid=#{message.pid} spawned but slot is taken (abandoned worker?), killing")
+
+          # Send SIGINT for immediate shutdown so that shared state isn't reset on exit.
+          MessageSocket.new(message.pipe).try_send_message(Message::SoftKill.new(Signal.list.fetch("INT")))
+          message.pipe.close
         end
       when Message::MoldReady
         new_mold = @children.update(message)
