@@ -1,5 +1,6 @@
 # Unreleased
 
+- [GHSA-p9r3-wjcg-rwv5](https://github.com/Shopify/pitchfork/security/advisories/GHSA-p9r3-wjcg-rwv5) Fix chunked body parse errors that could disclose unread data.
 - `RACK_ENV` now default to `"production"` instead of `"development"`.
 - Fix workers surviving a soft timeout when the application swallows the `SystemExit` (e.g. Rails' `ActionDispatch::ShowExceptions`). The worker now exits once the response is written, and `after_request_complete` isn't called for that request.
 
@@ -32,7 +33,7 @@
 
 # 0.16.0
 
-- Use `exit!` for exiting the middle process when forking a new worker or mold. 
+- Use `exit!` for exiting the middle process when forking a new worker or mold.
   This skips `at_exit` and finalizer hooks, which shouldn't be needed.
 
 # 0.15.0

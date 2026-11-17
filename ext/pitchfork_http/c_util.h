@@ -81,7 +81,7 @@ static off_t step_incr(off_t i, int xdigit, const int base)
 
   if (offset > (base - 1))
     return -1;
-  if (i > next_max)
+  if (i < 0 || i > next_max)
     return -1;
   i *= base;
 

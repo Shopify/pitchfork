@@ -430,7 +430,9 @@ module Pitchfork
              "#{n.to_s(16)}\r\na\r\n2\r\n..\r\n0\r\n"
       assert_equal req, @parser.parse
       assert_nil @parser.content_length
-      assert_raises(HttpParserError) { @parser.filter_body(''.b, str) }
+      2.times do
+        assert_raises(HttpParserError) { @parser.filter_body(''.b, str) }
+      end
     end
 
     def test_overflow_content_length
@@ -447,6 +449,56 @@ module Pitchfork
       assert_equal req, @parser.parse
       assert_nil @parser.content_length
       assert_raises(HttpParserError) { @parser.filter_body("".b, @parser.buf) }
+    end
+
+    def test_bad_chunk_clears_destination
+      ["#invalid\r\n", "3\r\nabc\r\n#invalid\r\n"].each do |body|
+        @parser = HttpParser.new
+        @parser.buf << "PUT / HTTP/1.1\r\ntransfer-Encoding: chunked\r\n\r\n#{body}"
+        @parser.parse
+        dst = 'previous body data' * 8
+
+        assert_raises(HttpParserError) { @parser.filter_body(dst, @parser.buf) }
+        assert_equal '', dst
+      end
+    end
+
+    # The decoded length must be set before anything can allocate: GC
+    # compaction re-embeds Strings and only copies their logical length.
+    # Runs in a subprocess so GC.stress and GC.auto_compact can't leak.
+    def test_filter_body_survives_gc_compaction
+      skip 'GC auto-compaction is unavailable' unless GC.respond_to?(:auto_compact=)
+
+      script = <<~'RUBY'
+        require "pitchfork/pitchfork_http"
+        begin
+          GC.auto_compact = true
+        rescue NotImplementedError
+          puts "SKIP"
+          exit
+        end
+        10.times do
+          parser = Pitchfork::HttpParser.new
+          parser.buf << "POST / HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n"
+          parser.parse
+          dst = "x" * 64 << "x" * 2048 # heap-allocated, reused for a short body
+          src = String.new(capacity: 2048) << "20\r\n" << "A" * 32 << "\r\n"
+          shared = src.dup # advancing a shared source has to allocate
+          GC.stress = true
+          begin
+            parser.filter_body(dst, shared)
+          ensure
+            GC.stress = false
+          end
+          abort dst.inspect unless dst == "A" * 32
+        end
+        puts "OK"
+      RUBY
+      lib = File.expand_path('../../lib', __dir__)
+      output = IO.popen([RbConfig.ruby, '-I', lib, '-e', script], err: [:child, :out], &:read)
+      skip 'GC compaction is not supported' if output.include?('SKIP')
+      assert $?.success?, output
+      assert_includes output, 'OK'
     end
 
     def test_bad_content_length

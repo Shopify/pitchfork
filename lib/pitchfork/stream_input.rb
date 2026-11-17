@@ -50,17 +50,20 @@ module Pitchfork
         else
           to_read = length - @rbuf.size
           rv.replace(@rbuf.slice!(0, @rbuf.size))
-          until to_read == 0 || eof? || (rv.size > 0 && @chunked)
-            begin
-              @socket.readpartial(to_read, @buf)
-            rescue EOFError
-              eof!
+          begin
+            until to_read == 0 || eof? || (rv.size > 0 && @chunked)
+              begin
+                @socket.readpartial(to_read, @buf)
+              rescue EOFError
+                eof!
+              end
+              filter_body(@rbuf, @buf)
+              rv << @rbuf
+              to_read -= @rbuf.size
             end
-            filter_body(@rbuf, @buf)
-            rv << @rbuf
-            to_read -= @rbuf.size
+          ensure
+            @rbuf.clear
           end
-          @rbuf.clear
         end
         rv = nil if rv.empty? && length != 0
       else

@@ -175,6 +175,27 @@ module Pitchfork
       assert_nil si.read(9)
     end
 
+    def test_read_after_chunked_parse_error
+      @parser = HttpParser.new
+      @parser.buf << "POST / HTTP/1.1\r\nHost: localhost\r\nTransfer-Encoding: chunked\r\n\r\n"
+      @parser.parse
+      si = StreamInput.new(@rd, @parser)
+      @wr.write("3\r\nabc\r\n#invalid\r\n")
+      @wr.close
+
+      assert_raises(HttpParserError) { si.read(64) }
+      assert_raises(ClientShutdown) { si.read(1) }
+    end
+
+    def test_read_after_client_shutdown
+      si = StreamInput.new(@rd, init_request('', 4))
+      @wr.write('abc')
+      @wr.close
+
+      assert_raises(ClientShutdown) { si.read(4) }
+      assert_raises(ClientShutdown) { si.read(1) }
+    end
+
     def test_gets_read_mix_big
       r = init_request("hello\n#{'.' * 65536}")
       si = StreamInput.new(@rd, r)

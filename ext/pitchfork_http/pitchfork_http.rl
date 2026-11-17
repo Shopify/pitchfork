@@ -896,7 +896,8 @@ static VALUE HttpParser_filter_body(VALUE self, VALUE dst, VALUE src)
   if (HP_FL_TEST(hp, CHUNKED)) {
     if (!chunked_eof(hp)) {
       rb_str_modify(dst);
-      rb_str_resize(dst, srclen); /* we can never copy more than srclen bytes */
+      rb_str_set_len(dst, 0);
+      rb_str_modify_expand(dst, srclen); /* we can never copy more than srclen bytes */
 
       hp->s.dest_offset = 0;
       RB_OBJ_WRITE(self, &hp->cont, dst);
@@ -907,8 +908,12 @@ static VALUE HttpParser_filter_body(VALUE self, VALUE dst, VALUE src)
 
       assert(hp->s.dest_offset <= hp->offset &&
              "destination buffer overflow");
-      advance_str(src, hp->offset);
+      /*
+       * set the decoded length before advance_str can allocate: GC
+       * compaction may re-embed dst and only copies its logical length
+       */
       rb_str_set_len(dst, hp->s.dest_offset);
+      advance_str(src, hp->offset);
 
       if (RSTRING_LEN(dst) == 0 && chunked_eof(hp)) {
         assert(hp->len.chunk == 0 && "chunk at EOF but more to parse");
