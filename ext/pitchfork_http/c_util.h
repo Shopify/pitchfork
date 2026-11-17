@@ -34,16 +34,11 @@ static inline void *deconst(const void *in)
   return tmp.out;
 }
 
-/*
- * capitalizes all lower-case ASCII characters and converts dashes
- * to underscores for HTTP headers.  Locale-agnostic.
- */
-static void snake_upcase_char(char *c)
+/* Capitalizes a single ASCII character.  Locale-agnostic. */
+static void upcase_char(char *c)
 {
   if (*c >= 'a' && *c <= 'z')
     *c &= ~0x20;
-  else if (*c == '-')
-    *c = '_';
 }
 
 /* Downcases a single ASCII character.  Locale-agnostic. */

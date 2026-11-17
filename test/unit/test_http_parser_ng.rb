@@ -626,6 +626,143 @@ module Pitchfork
       end
     end
 
+    def test_reject_underscore_framing_headers
+      headers = {
+        "Content_Length" => ["1", "invalid Content-Length"],
+        "CONTENT_LENGTH" => ["1", "invalid Content-Length"],
+        "content_length" => ["", "invalid Content-Length"],
+        "cOnTeNt_LeNgTh" => ["1", "invalid Content-Length"],
+        "Transfer_Encoding" => ["chunked", "invalid Transfer-Encoding"],
+        "TRANSFER_ENCODING" => ["chunked", "invalid Transfer-Encoding"],
+        "transfer_encoding" => ["", "invalid Transfer-Encoding"],
+        "tRaNsFeR_EnCoDiNg" => ["gzip", "invalid Transfer-Encoding"],
+      }
+      standard = ["Content-Length: 1", "Transfer-Encoding: chunked"]
+
+      headers.each do |name, (value, message)|
+        [[], standard].each do |other|
+          [other + ["#{name}: #{value}"], ["#{name}: #{value}"] + other].each do |lines|
+            @parser = HttpParser.new
+            @parser.buf << "POST / HTTP/1.1\r\n#{lines.join("\r\n")}\r\n\r\n"
+            error = assert_raises(HttpParserError) { @parser.parse }
+            assert_equal message, error.message
+          end
+        end
+      end
+    end
+
+    def test_reject_fragmented_underscore_framing_headers
+      ["Content_Length", "Transfer_Encoding"].each do |name|
+        (0..name.length).each do |split|
+          @parser = HttpParser.new
+          @parser.buf << "POST / HTTP/1.1\r\n#{name[0, split]}"
+          assert_nil @parser.parse
+          @parser.buf << "#{name[split..-1]}: 1\r\n\r\n"
+          assert_raises(HttpParserError) { @parser.parse }
+        end
+      end
+    end
+
+    def test_reject_underscore_framing_headers_in_trailers
+      ["Content_Length", "Transfer_Encoding"].each do |name|
+        @parser = HttpParser.new
+        @parser.buf << "POST / HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n0\r\n"
+        @parser.parse
+        @parser.filter_body(+"", @parser.buf)
+        @parser.buf << "#{name}: 1\r\n\r\n"
+        assert_raises(HttpParserError) { @parser.parse }
+      end
+    end
+
+    def test_underscore_headers_do_not_create_rack_keys
+      baseline = HttpParser.new
+      baseline.buf << "GET / HTTP/1.1\r\n\r\n"
+      expected = baseline.parse
+
+      @parser.buf << "GET / HTTP/1.1\r\n" \
+                     "X_Forwarded_For: forged\r\n" \
+                     "Content_Type: text/plain\r\n" \
+                     "Content_Length_Extra: one\r\n" \
+                     "Transfer_Encoding_Extra: two\r\n" \
+                     "X_Custom-Header: three\r\n\r\n"
+      env = @parser.parse
+      assert_nil env["HTTP_X_FORWARDED_FOR"]
+      assert_nil env["CONTENT_TYPE"]
+      assert_nil env["HTTP_CONTENT_LENGTH_EXTRA"]
+      assert_nil env["HTTP_TRANSFER_ENCODING_EXTRA"]
+      assert_nil env["HTTP_X_CUSTOM_HEADER"]
+      assert_equal expected, env
+    end
+
+    def test_underscore_headers_do_not_change_normal_headers
+      normal = [
+        "X-Forwarded-For: trusted",
+        "Content-Type: text/plain",
+        "X-Custom-Header: normal",
+        "X-Custom-Header: second",
+      ]
+      ignored = [
+        "X_Forwarded_For: forged",
+        "Content_Type: text/forged",
+        "X_Custom-Header: first",
+        "x_custom-header: second",
+        "X-Custom_Header: distinct",
+        "X_Forwarded_Proto: https",
+      ]
+      baseline = HttpParser.new
+      baseline.buf << "GET / HTTP/1.1\r\n#{normal.join("\r\n")}\r\n\r\n"
+      expected = baseline.parse
+
+      [normal + ignored, ignored + normal].each do |headers|
+        @parser = HttpParser.new
+        @parser.buf << "GET / HTTP/1.1\r\n#{headers.join("\r\n")}\r\n\r\n"
+        env = @parser.parse
+        assert_equal "trusted", env["HTTP_X_FORWARDED_FOR"]
+        assert_equal "text/plain", env["CONTENT_TYPE"]
+        assert_equal "normal,second", env["HTTP_X_CUSTOM_HEADER"]
+        assert_equal "http", env["rack.url_scheme"]
+        assert_nil env["HTTP_X_FORWARDED_PROTO"]
+        assert_equal expected, env
+      end
+    end
+
+    def test_ignored_underscore_headers_and_continuations_when_fragmented
+      name = "X_Custom-Header"
+      (0..name.length).each do |split|
+        @parser = HttpParser.new
+        @parser.buf << "GET / HTTP/1.1\r\nX-Custom-Header: normal\r\n#{name[0, split]}"
+        assert_nil @parser.parse
+        @parser.buf << "#{name[split..-1]}: forged\r\n\tinjected\r\n"
+        assert_nil @parser.parse
+        @parser.buf << "X-Custom-Header: after\r\n\tkept\r\n\r\n"
+        env = @parser.parse
+        assert_equal "normal,after kept", env["HTTP_X_CUSTOM_HEADER"]
+      end
+    end
+
+    def test_ignored_underscore_trailer_continuations_do_not_poison_valid_trailers
+      @parser.buf << "POST / HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n0\r\n"
+      env = @parser.parse
+      @parser.filter_body(+"", @parser.buf)
+      @parser.buf << "X_Custom-Header: forged\r\n\tinjected\r\n" \
+                     "Only_Trailer: ignored\r\n" \
+                     "X-Custom-Header: trailer\r\n\tkept\r\n\r\n"
+      @parser.parse
+      assert_nil env["HTTP_X_CUSTOM_HEADER"]
+      assert_nil env["HTTP_ONLY_TRAILER"]
+      assert_equal({"HTTP_X_CUSTOM_HEADER" => "trailer kept"}, env["pitchfork.request_trailers"])
+    end
+
+    def test_ignored_underscore_header_name_length_limit
+      name = "X_" + "a" * 254
+      @parser.buf << "GET / HTTP/1.1\r\n#{name}: value\r\n\r\n"
+      assert_nil @parser.parse["HTTP_#{name.upcase}"]
+
+      @parser = HttpParser.new
+      @parser.buf << "GET / HTTP/1.1\r\n#{name}a: value\r\n\r\n"
+      assert_raises(HttpParserError) { @parser.parse }
+    end
+
     def test_negative_content_length
       req = {}
       str = "PUT / HTTP/1.1\r\n" \

@@ -232,13 +232,34 @@ static int is_chunked(VALUE v)
 }
 
 static void write_value(VALUE self, struct http_parser *hp,
-                        const char *buffer, const char *p)
+                        char *buffer, const char *p)
 {
-  VALUE f = find_common_field(PTR_TO(start.field), hp->s.field_len);
+  VALUE f;
+  char *field = PTR_TO(start.field);
+  size_t i;
   VALUE target = hp->env;
   VALUE v;
   VALUE e;
   int in_trailer = HP_FL_TEST(hp, INTRAILER);
+
+  /* Reject ambiguous framing headers before normalizing dashes for Rack. */
+  if (CONST_MEM_EQ("CONTENT_LENGTH", field, hp->s.field_len))
+    parser_raise(eHttpParserError, "invalid Content-Length");
+  if (CONST_MEM_EQ("TRANSFER_ENCODING", field, hp->s.field_len))
+    parser_raise(eHttpParserError, "invalid Transfer-Encoding");
+
+  if (memchr(field, '_', hp->s.field_len)) {
+    VALIDATE_MAX_LENGTH(hp->s.field_len, FIELD_NAME);
+    VALIDATE_MAX_LENGTH(LEN(mark, p), FIELD_VALUE);
+    RB_OBJ_WRITE(self, &hp->cont, Qnil);
+    return;
+  }
+
+  for (i = 0; i < hp->s.field_len; i++)
+    if (field[i] == '-')
+      field[i] = '_';
+
+  f = find_common_field(field, hp->s.field_len);
 
   VALIDATE_MAX_LENGTH(LEN(mark, p), FIELD_VALUE);
   if (in_trailer && (f == g_content_length ||
@@ -247,7 +268,6 @@ static void write_value(VALUE self, struct http_parser *hp,
 
   v = LEN(mark, p) == 0 ? rb_str_buf_new(128) : STRIPPED_STR_NEW(mark, p);
   if (NIL_P(f)) {
-    const char *field = PTR_TO(start.field);
     size_t flen = hp->s.field_len;
 
     VALIDATE_MAX_LENGTH(flen, FIELD_NAME);
@@ -330,12 +350,12 @@ static void write_value(VALUE self, struct http_parser *hp,
 /** Machine **/
 
 
-#line 431 "pitchfork_http.rl"
+#line 451 "pitchfork_http.rl"
 
 
 /** Data **/
 
-#line 339 "pitchfork_http.c"
+#line 359 "pitchfork_http.c"
 static const int http_parser_start = 1;
 static const int http_parser_first_final = 122;
 static const int http_parser_error = 0;
@@ -346,7 +366,7 @@ static const int http_parser_en_Trailers = 114;
 static const int http_parser_en_main = 1;
 
 
-#line 435 "pitchfork_http.rl"
+#line 455 "pitchfork_http.rl"
 
 static void http_parser_init(struct http_parser *hp)
 {
@@ -359,12 +379,12 @@ static void http_parser_init(struct http_parser *hp)
   hp->len.content = 0;
   hp->cont = Qfalse; /* zero on MRI, should be optimized away by above */
   
-#line 363 "pitchfork_http.c"
+#line 383 "pitchfork_http.c"
 	{
 	cs = http_parser_start;
 	}
 
-#line 447 "pitchfork_http.rl"
+#line 467 "pitchfork_http.rl"
   hp->cs = cs;
 }
 
@@ -392,7 +412,7 @@ http_parser_execute(VALUE self, struct http_parser *hp, char *buffer, size_t len
     goto skip_chunk_data_hack;
   }
   
-#line 396 "pitchfork_http.c"
+#line 416 "pitchfork_http.c"
 	{
 	if ( p == pe )
 		goto _test_eof;
@@ -427,14 +447,14 @@ st0:
 cs = 0;
 	goto _out;
 tr0:
-#line 333 "pitchfork_http.rl"
+#line 353 "pitchfork_http.rl"
 	{MARK(mark, p); }
 	goto st2;
 st2:
 	if ( ++p == pe )
 		goto _test_eof2;
 case 2:
-#line 438 "pitchfork_http.c"
+#line 458 "pitchfork_http.c"
 	switch( (*p) ) {
 		case 32: goto tr3;
 		case 33: goto st49;
@@ -460,14 +480,14 @@ case 2:
 		goto st49;
 	goto st0;
 tr3:
-#line 342 "pitchfork_http.rl"
+#line 362 "pitchfork_http.rl"
 	{ request_method(hp, PTR_TO(mark), LEN(mark, p)); }
 	goto st3;
 st3:
 	if ( ++p == pe )
 		goto _test_eof3;
 case 3:
-#line 471 "pitchfork_http.c"
+#line 491 "pitchfork_http.c"
 	switch( (*p) ) {
 		case 42: goto tr5;
 		case 47: goto tr6;
@@ -476,21 +496,21 @@ case 3:
 	}
 	goto st0;
 tr5:
-#line 333 "pitchfork_http.rl"
+#line 353 "pitchfork_http.rl"
 	{MARK(mark, p); }
 	goto st4;
 st4:
 	if ( ++p == pe )
 		goto _test_eof4;
 case 4:
-#line 487 "pitchfork_http.c"
+#line 507 "pitchfork_http.c"
 	switch( (*p) ) {
 		case 32: goto tr8;
 		case 35: goto tr9;
 	}
 	goto st0;
 tr8:
-#line 347 "pitchfork_http.rl"
+#line 367 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -502,24 +522,24 @@ tr8:
     }
   }
 	goto st5;
-tr42:
-#line 333 "pitchfork_http.rl"
+tr41:
+#line 353 "pitchfork_http.rl"
 	{MARK(mark, p); }
-#line 357 "pitchfork_http.rl"
+#line 377 "pitchfork_http.rl"
 	{
     VALIDATE_MAX_URI_LENGTH(LEN(mark, p), FRAGMENT);
     rb_hash_aset(hp->env, g_fragment, STR_NEW(mark, p));
   }
 	goto st5;
-tr45:
-#line 357 "pitchfork_http.rl"
+tr44:
+#line 377 "pitchfork_http.rl"
 	{
     VALIDATE_MAX_URI_LENGTH(LEN(mark, p), FRAGMENT);
     rb_hash_aset(hp->env, g_fragment, STR_NEW(mark, p));
   }
 	goto st5;
-tr49:
-#line 367 "pitchfork_http.rl"
+tr48:
+#line 387 "pitchfork_http.rl"
 	{
     VALUE val;
 
@@ -528,7 +548,7 @@ tr49:
 
     rb_hash_aset(hp->env, g_path_info, val);
   }
-#line 347 "pitchfork_http.rl"
+#line 367 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -540,15 +560,15 @@ tr49:
     }
   }
 	goto st5;
-tr55:
-#line 361 "pitchfork_http.rl"
+tr54:
+#line 381 "pitchfork_http.rl"
 	{MARK(start.query, p); }
-#line 362 "pitchfork_http.rl"
+#line 382 "pitchfork_http.rl"
 	{
     VALIDATE_MAX_URI_LENGTH(LEN(start.query, p), QUERY_STRING);
     rb_hash_aset(hp->env, g_query_string, STR_NEW(start.query, p));
   }
-#line 347 "pitchfork_http.rl"
+#line 367 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -560,13 +580,13 @@ tr55:
     }
   }
 	goto st5;
-tr59:
-#line 362 "pitchfork_http.rl"
+tr58:
+#line 382 "pitchfork_http.rl"
 	{
     VALIDATE_MAX_URI_LENGTH(LEN(start.query, p), QUERY_STRING);
     rb_hash_aset(hp->env, g_query_string, STR_NEW(start.query, p));
   }
-#line 347 "pitchfork_http.rl"
+#line 367 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -582,19 +602,19 @@ st5:
 	if ( ++p == pe )
 		goto _test_eof5;
 case 5:
-#line 586 "pitchfork_http.c"
+#line 606 "pitchfork_http.c"
 	if ( (*p) == 72 )
 		goto tr10;
 	goto st0;
 tr10:
-#line 333 "pitchfork_http.rl"
+#line 353 "pitchfork_http.rl"
 	{MARK(mark, p); }
 	goto st6;
 st6:
 	if ( ++p == pe )
 		goto _test_eof6;
 case 6:
-#line 598 "pitchfork_http.c"
+#line 618 "pitchfork_http.c"
 	if ( (*p) == 84 )
 		goto st7;
 	goto st0;
@@ -654,34 +674,34 @@ case 13:
 		goto st13;
 	goto st0;
 tr18:
-#line 366 "pitchfork_http.rl"
+#line 386 "pitchfork_http.rl"
 	{ http_version(hp, PTR_TO(mark), LEN(mark, p)); }
 	goto st14;
-tr26:
-#line 339 "pitchfork_http.rl"
+tr25:
+#line 359 "pitchfork_http.rl"
 	{ MARK(mark, p); }
-#line 341 "pitchfork_http.rl"
+#line 361 "pitchfork_http.rl"
 	{ write_cont_value(hp, buffer, p); }
 	goto st14;
-tr29:
-#line 341 "pitchfork_http.rl"
+tr30:
+#line 361 "pitchfork_http.rl"
 	{ write_cont_value(hp, buffer, p); }
 	goto st14;
-tr36:
-#line 339 "pitchfork_http.rl"
+tr35:
+#line 359 "pitchfork_http.rl"
 	{ MARK(mark, p); }
-#line 340 "pitchfork_http.rl"
+#line 360 "pitchfork_http.rl"
 	{ write_value(self, hp, buffer, p); }
 	goto st14;
 tr39:
-#line 340 "pitchfork_http.rl"
+#line 360 "pitchfork_http.rl"
 	{ write_value(self, hp, buffer, p); }
 	goto st14;
 st14:
 	if ( ++p == pe )
 		goto _test_eof14;
 case 14:
-#line 685 "pitchfork_http.c"
+#line 705 "pitchfork_http.c"
 	switch( (*p) ) {
 		case 9: goto st15;
 		case 10: goto tr21;
@@ -709,79 +729,79 @@ case 14:
 	} else
 		goto tr23;
 	goto st0;
-tr25:
-#line 339 "pitchfork_http.rl"
+tr24:
+#line 359 "pitchfork_http.rl"
 	{ MARK(mark, p); }
 	goto st15;
 st15:
 	if ( ++p == pe )
 		goto _test_eof15;
 case 15:
-#line 721 "pitchfork_http.c"
+#line 741 "pitchfork_http.c"
 	switch( (*p) ) {
-		case 9: goto tr25;
-		case 10: goto tr26;
-		case 13: goto tr27;
-		case 32: goto tr25;
+		case 9: goto tr24;
+		case 10: goto tr25;
+		case 13: goto tr26;
+		case 32: goto tr24;
 		case 127: goto st0;
 	}
-	if ( 0 <= (*p) && (*p) <= 31 )
+	if ( (*p) <= 31 )
 		goto st0;
-	goto tr24;
-tr24:
-#line 339 "pitchfork_http.rl"
+	goto tr27;
+tr19:
+#line 386 "pitchfork_http.rl"
+	{ http_version(hp, PTR_TO(mark), LEN(mark, p)); }
+	goto st16;
+tr26:
+#line 359 "pitchfork_http.rl"
 	{ MARK(mark, p); }
+#line 361 "pitchfork_http.rl"
+	{ write_cont_value(hp, buffer, p); }
+	goto st16;
+tr31:
+#line 361 "pitchfork_http.rl"
+	{ write_cont_value(hp, buffer, p); }
+	goto st16;
+tr36:
+#line 359 "pitchfork_http.rl"
+	{ MARK(mark, p); }
+#line 360 "pitchfork_http.rl"
+	{ write_value(self, hp, buffer, p); }
+	goto st16;
+tr40:
+#line 360 "pitchfork_http.rl"
+	{ write_value(self, hp, buffer, p); }
 	goto st16;
 st16:
 	if ( ++p == pe )
 		goto _test_eof16;
 case 16:
-#line 740 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 10: goto tr29;
-		case 13: goto tr30;
-		case 127: goto st0;
-	}
-	if ( (*p) > 8 ) {
-		if ( 11 <= (*p) && (*p) <= 31 )
-			goto st0;
-	} else if ( (*p) >= 0 )
-		goto st0;
-	goto st16;
-tr19:
-#line 366 "pitchfork_http.rl"
-	{ http_version(hp, PTR_TO(mark), LEN(mark, p)); }
-	goto st17;
+#line 780 "pitchfork_http.c"
+	if ( (*p) == 10 )
+		goto st14;
+	goto st0;
 tr27:
-#line 339 "pitchfork_http.rl"
+#line 359 "pitchfork_http.rl"
 	{ MARK(mark, p); }
-#line 341 "pitchfork_http.rl"
-	{ write_cont_value(hp, buffer, p); }
-	goto st17;
-tr30:
-#line 341 "pitchfork_http.rl"
-	{ write_cont_value(hp, buffer, p); }
-	goto st17;
-tr37:
-#line 339 "pitchfork_http.rl"
-	{ MARK(mark, p); }
-#line 340 "pitchfork_http.rl"
-	{ write_value(self, hp, buffer, p); }
-	goto st17;
-tr40:
-#line 340 "pitchfork_http.rl"
-	{ write_value(self, hp, buffer, p); }
 	goto st17;
 st17:
 	if ( ++p == pe )
 		goto _test_eof17;
 case 17:
-#line 780 "pitchfork_http.c"
-	if ( (*p) == 10 )
-		goto st14;
-	goto st0;
+#line 792 "pitchfork_http.c"
+	switch( (*p) ) {
+		case 10: goto tr30;
+		case 13: goto tr31;
+		case 127: goto st0;
+	}
+	if ( (*p) > 8 ) {
+		if ( 11 <= (*p) && (*p) <= 31 )
+			goto st0;
+	} else
+		goto st0;
+	goto st17;
 tr21:
-#line 380 "pitchfork_http.rl"
+#line 400 "pitchfork_http.rl"
 	{
     finalize_header(hp);
 
@@ -802,7 +822,7 @@ tr21:
   }
 	goto st122;
 tr104:
-#line 347 "pitchfork_http.rl"
+#line 367 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -813,7 +833,7 @@ tr104:
       rb_hash_aset(hp->env, g_path_info, str);
     }
   }
-#line 380 "pitchfork_http.rl"
+#line 400 "pitchfork_http.rl"
 	{
     finalize_header(hp);
 
@@ -833,15 +853,15 @@ tr104:
     goto post_exec;
   }
 	goto st122;
-tr108:
-#line 333 "pitchfork_http.rl"
+tr107:
+#line 353 "pitchfork_http.rl"
 	{MARK(mark, p); }
-#line 357 "pitchfork_http.rl"
+#line 377 "pitchfork_http.rl"
 	{
     VALIDATE_MAX_URI_LENGTH(LEN(mark, p), FRAGMENT);
     rb_hash_aset(hp->env, g_fragment, STR_NEW(mark, p));
   }
-#line 380 "pitchfork_http.rl"
+#line 400 "pitchfork_http.rl"
 	{
     finalize_header(hp);
 
@@ -861,13 +881,13 @@ tr108:
     goto post_exec;
   }
 	goto st122;
-tr112:
-#line 357 "pitchfork_http.rl"
+tr111:
+#line 377 "pitchfork_http.rl"
 	{
     VALIDATE_MAX_URI_LENGTH(LEN(mark, p), FRAGMENT);
     rb_hash_aset(hp->env, g_fragment, STR_NEW(mark, p));
   }
-#line 380 "pitchfork_http.rl"
+#line 400 "pitchfork_http.rl"
 	{
     finalize_header(hp);
 
@@ -887,8 +907,8 @@ tr112:
     goto post_exec;
   }
 	goto st122;
-tr117:
-#line 367 "pitchfork_http.rl"
+tr116:
+#line 387 "pitchfork_http.rl"
 	{
     VALUE val;
 
@@ -897,7 +917,7 @@ tr117:
 
     rb_hash_aset(hp->env, g_path_info, val);
   }
-#line 347 "pitchfork_http.rl"
+#line 367 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -908,7 +928,7 @@ tr117:
       rb_hash_aset(hp->env, g_path_info, str);
     }
   }
-#line 380 "pitchfork_http.rl"
+#line 400 "pitchfork_http.rl"
 	{
     finalize_header(hp);
 
@@ -928,15 +948,15 @@ tr117:
     goto post_exec;
   }
 	goto st122;
-tr124:
-#line 361 "pitchfork_http.rl"
+tr123:
+#line 381 "pitchfork_http.rl"
 	{MARK(start.query, p); }
-#line 362 "pitchfork_http.rl"
+#line 382 "pitchfork_http.rl"
 	{
     VALIDATE_MAX_URI_LENGTH(LEN(start.query, p), QUERY_STRING);
     rb_hash_aset(hp->env, g_query_string, STR_NEW(start.query, p));
   }
-#line 347 "pitchfork_http.rl"
+#line 367 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -947,7 +967,7 @@ tr124:
       rb_hash_aset(hp->env, g_path_info, str);
     }
   }
-#line 380 "pitchfork_http.rl"
+#line 400 "pitchfork_http.rl"
 	{
     finalize_header(hp);
 
@@ -967,13 +987,13 @@ tr124:
     goto post_exec;
   }
 	goto st122;
-tr129:
-#line 362 "pitchfork_http.rl"
+tr128:
+#line 382 "pitchfork_http.rl"
 	{
     VALIDATE_MAX_URI_LENGTH(LEN(start.query, p), QUERY_STRING);
     rb_hash_aset(hp->env, g_query_string, STR_NEW(start.query, p));
   }
-#line 347 "pitchfork_http.rl"
+#line 367 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -984,7 +1004,7 @@ tr129:
       rb_hash_aset(hp->env, g_path_info, str);
     }
   }
-#line 380 "pitchfork_http.rl"
+#line 400 "pitchfork_http.rl"
 	{
     finalize_header(hp);
 
@@ -1008,10 +1028,10 @@ st122:
 	if ( ++p == pe )
 		goto _test_eof122;
 case 122:
-#line 1012 "pitchfork_http.c"
+#line 1032 "pitchfork_http.c"
 	goto st0;
 tr105:
-#line 347 "pitchfork_http.rl"
+#line 367 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -1023,24 +1043,24 @@ tr105:
     }
   }
 	goto st18;
-tr109:
-#line 333 "pitchfork_http.rl"
+tr108:
+#line 353 "pitchfork_http.rl"
 	{MARK(mark, p); }
-#line 357 "pitchfork_http.rl"
+#line 377 "pitchfork_http.rl"
 	{
     VALIDATE_MAX_URI_LENGTH(LEN(mark, p), FRAGMENT);
     rb_hash_aset(hp->env, g_fragment, STR_NEW(mark, p));
   }
 	goto st18;
-tr113:
-#line 357 "pitchfork_http.rl"
+tr112:
+#line 377 "pitchfork_http.rl"
 	{
     VALIDATE_MAX_URI_LENGTH(LEN(mark, p), FRAGMENT);
     rb_hash_aset(hp->env, g_fragment, STR_NEW(mark, p));
   }
 	goto st18;
-tr118:
-#line 367 "pitchfork_http.rl"
+tr117:
+#line 387 "pitchfork_http.rl"
 	{
     VALUE val;
 
@@ -1049,7 +1069,7 @@ tr118:
 
     rb_hash_aset(hp->env, g_path_info, val);
   }
-#line 347 "pitchfork_http.rl"
+#line 367 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -1061,15 +1081,15 @@ tr118:
     }
   }
 	goto st18;
-tr125:
-#line 361 "pitchfork_http.rl"
+tr124:
+#line 381 "pitchfork_http.rl"
 	{MARK(start.query, p); }
-#line 362 "pitchfork_http.rl"
+#line 382 "pitchfork_http.rl"
 	{
     VALIDATE_MAX_URI_LENGTH(LEN(start.query, p), QUERY_STRING);
     rb_hash_aset(hp->env, g_query_string, STR_NEW(start.query, p));
   }
-#line 347 "pitchfork_http.rl"
+#line 367 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -1081,13 +1101,13 @@ tr125:
     }
   }
 	goto st18;
-tr130:
-#line 362 "pitchfork_http.rl"
+tr129:
+#line 382 "pitchfork_http.rl"
 	{
     VALIDATE_MAX_URI_LENGTH(LEN(start.query, p), QUERY_STRING);
     rb_hash_aset(hp->env, g_query_string, STR_NEW(start.query, p));
   }
-#line 347 "pitchfork_http.rl"
+#line 367 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -1103,25 +1123,25 @@ st18:
 	if ( ++p == pe )
 		goto _test_eof18;
 case 18:
-#line 1107 "pitchfork_http.c"
+#line 1127 "pitchfork_http.c"
 	if ( (*p) == 10 )
 		goto tr21;
 	goto st0;
 tr23:
-#line 335 "pitchfork_http.rl"
+#line 355 "pitchfork_http.rl"
 	{ MARK(start.field, p); }
-#line 336 "pitchfork_http.rl"
-	{ snake_upcase_char(deconst(p)); }
+#line 356 "pitchfork_http.rl"
+	{ upcase_char(deconst(p)); }
 	goto st19;
 tr32:
-#line 336 "pitchfork_http.rl"
-	{ snake_upcase_char(deconst(p)); }
+#line 356 "pitchfork_http.rl"
+	{ upcase_char(deconst(p)); }
 	goto st19;
 st19:
 	if ( ++p == pe )
 		goto _test_eof19;
 case 19:
-#line 1125 "pitchfork_http.c"
+#line 1145 "pitchfork_http.c"
 	switch( (*p) ) {
 		case 33: goto tr32;
 		case 58: goto tr33;
@@ -1146,38 +1166,38 @@ case 19:
 	} else
 		goto tr32;
 	goto st0;
-tr35:
-#line 339 "pitchfork_http.rl"
+tr34:
+#line 359 "pitchfork_http.rl"
 	{ MARK(mark, p); }
 	goto st20;
 tr33:
-#line 338 "pitchfork_http.rl"
+#line 358 "pitchfork_http.rl"
 	{ hp->s.field_len = LEN(start.field, p); }
 	goto st20;
 st20:
 	if ( ++p == pe )
 		goto _test_eof20;
 case 20:
-#line 1162 "pitchfork_http.c"
+#line 1182 "pitchfork_http.c"
 	switch( (*p) ) {
-		case 9: goto tr35;
-		case 10: goto tr36;
-		case 13: goto tr37;
-		case 32: goto tr35;
+		case 9: goto tr34;
+		case 10: goto tr35;
+		case 13: goto tr36;
+		case 32: goto tr34;
 		case 127: goto st0;
 	}
-	if ( 0 <= (*p) && (*p) <= 31 )
+	if ( (*p) <= 31 )
 		goto st0;
-	goto tr34;
-tr34:
-#line 339 "pitchfork_http.rl"
+	goto tr37;
+tr37:
+#line 359 "pitchfork_http.rl"
 	{ MARK(mark, p); }
 	goto st21;
 st21:
 	if ( ++p == pe )
 		goto _test_eof21;
 case 21:
-#line 1181 "pitchfork_http.c"
+#line 1201 "pitchfork_http.c"
 	switch( (*p) ) {
 		case 10: goto tr39;
 		case 13: goto tr40;
@@ -1186,11 +1206,11 @@ case 21:
 	if ( (*p) > 8 ) {
 		if ( 11 <= (*p) && (*p) <= 31 )
 			goto st0;
-	} else if ( (*p) >= 0 )
+	} else
 		goto st0;
 	goto st21;
 tr9:
-#line 347 "pitchfork_http.rl"
+#line 367 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -1203,7 +1223,7 @@ tr9:
   }
 	goto st22;
 tr50:
-#line 367 "pitchfork_http.rl"
+#line 387 "pitchfork_http.rl"
 	{
     VALUE val;
 
@@ -1212,7 +1232,7 @@ tr50:
 
     rb_hash_aset(hp->env, g_path_info, val);
   }
-#line 347 "pitchfork_http.rl"
+#line 367 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -1225,14 +1245,14 @@ tr50:
   }
 	goto st22;
 tr56:
-#line 361 "pitchfork_http.rl"
+#line 381 "pitchfork_http.rl"
 	{MARK(start.query, p); }
-#line 362 "pitchfork_http.rl"
+#line 382 "pitchfork_http.rl"
 	{
     VALIDATE_MAX_URI_LENGTH(LEN(start.query, p), QUERY_STRING);
     rb_hash_aset(hp->env, g_query_string, STR_NEW(start.query, p));
   }
-#line 347 "pitchfork_http.rl"
+#line 367 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -1245,12 +1265,12 @@ tr56:
   }
 	goto st22;
 tr60:
-#line 362 "pitchfork_http.rl"
+#line 382 "pitchfork_http.rl"
 	{
     VALIDATE_MAX_URI_LENGTH(LEN(start.query, p), QUERY_STRING);
     rb_hash_aset(hp->env, g_query_string, STR_NEW(start.query, p));
   }
-#line 347 "pitchfork_http.rl"
+#line 367 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -1266,43 +1286,43 @@ st22:
 	if ( ++p == pe )
 		goto _test_eof22;
 case 22:
-#line 1270 "pitchfork_http.c"
+#line 1290 "pitchfork_http.c"
 	switch( (*p) ) {
-		case 32: goto tr42;
+		case 32: goto tr41;
 		case 35: goto st0;
 		case 37: goto tr43;
 		case 127: goto st0;
 	}
-	if ( 0 <= (*p) && (*p) <= 31 )
+	if ( (*p) <= 31 )
 		goto st0;
-	goto tr41;
-tr41:
-#line 333 "pitchfork_http.rl"
+	goto tr42;
+tr42:
+#line 353 "pitchfork_http.rl"
 	{MARK(mark, p); }
 	goto st23;
 st23:
 	if ( ++p == pe )
 		goto _test_eof23;
 case 23:
-#line 1288 "pitchfork_http.c"
+#line 1308 "pitchfork_http.c"
 	switch( (*p) ) {
-		case 32: goto tr45;
+		case 32: goto tr44;
 		case 35: goto st0;
 		case 37: goto st24;
 		case 127: goto st0;
 	}
-	if ( 0 <= (*p) && (*p) <= 31 )
+	if ( (*p) <= 31 )
 		goto st0;
 	goto st23;
 tr43:
-#line 333 "pitchfork_http.rl"
+#line 353 "pitchfork_http.rl"
 	{MARK(mark, p); }
 	goto st24;
 st24:
 	if ( ++p == pe )
 		goto _test_eof24;
 case 24:
-#line 1306 "pitchfork_http.c"
+#line 1326 "pitchfork_http.c"
 	if ( (*p) < 65 ) {
 		if ( 48 <= (*p) && (*p) <= 57 )
 			goto st25;
@@ -1326,28 +1346,28 @@ case 25:
 		goto st23;
 	goto st0;
 tr6:
-#line 333 "pitchfork_http.rl"
+#line 353 "pitchfork_http.rl"
 	{MARK(mark, p); }
 	goto st26;
 tr76:
-#line 346 "pitchfork_http.rl"
+#line 366 "pitchfork_http.rl"
 	{ rb_hash_aset(hp->env, g_http_host, STR_NEW(mark, p)); }
-#line 333 "pitchfork_http.rl"
+#line 353 "pitchfork_http.rl"
 	{MARK(mark, p); }
 	goto st26;
 st26:
 	if ( ++p == pe )
 		goto _test_eof26;
 case 26:
-#line 1343 "pitchfork_http.c"
+#line 1363 "pitchfork_http.c"
 	switch( (*p) ) {
-		case 32: goto tr49;
+		case 32: goto tr48;
 		case 35: goto tr50;
 		case 37: goto st27;
 		case 63: goto tr52;
 		case 127: goto st0;
 	}
-	if ( 0 <= (*p) && (*p) <= 31 )
+	if ( (*p) <= 31 )
 		goto st0;
 	goto st26;
 st27:
@@ -1377,7 +1397,7 @@ case 28:
 		goto st26;
 	goto st0;
 tr52:
-#line 367 "pitchfork_http.rl"
+#line 387 "pitchfork_http.rl"
 	{
     VALUE val;
 
@@ -1391,43 +1411,43 @@ st29:
 	if ( ++p == pe )
 		goto _test_eof29;
 case 29:
-#line 1395 "pitchfork_http.c"
+#line 1415 "pitchfork_http.c"
 	switch( (*p) ) {
-		case 32: goto tr55;
+		case 32: goto tr54;
 		case 35: goto tr56;
 		case 37: goto tr57;
 		case 127: goto st0;
 	}
-	if ( 0 <= (*p) && (*p) <= 31 )
+	if ( (*p) <= 31 )
 		goto st0;
-	goto tr54;
-tr54:
-#line 361 "pitchfork_http.rl"
+	goto tr55;
+tr55:
+#line 381 "pitchfork_http.rl"
 	{MARK(start.query, p); }
 	goto st30;
 st30:
 	if ( ++p == pe )
 		goto _test_eof30;
 case 30:
-#line 1413 "pitchfork_http.c"
+#line 1433 "pitchfork_http.c"
 	switch( (*p) ) {
-		case 32: goto tr59;
+		case 32: goto tr58;
 		case 35: goto tr60;
 		case 37: goto st31;
 		case 127: goto st0;
 	}
-	if ( 0 <= (*p) && (*p) <= 31 )
+	if ( (*p) <= 31 )
 		goto st0;
 	goto st30;
 tr57:
-#line 361 "pitchfork_http.rl"
+#line 381 "pitchfork_http.rl"
 	{MARK(start.query, p); }
 	goto st31;
 st31:
 	if ( ++p == pe )
 		goto _test_eof31;
 case 31:
-#line 1431 "pitchfork_http.c"
+#line 1451 "pitchfork_http.c"
 	if ( (*p) < 65 ) {
 		if ( 48 <= (*p) && (*p) <= 57 )
 			goto st32;
@@ -1451,58 +1471,58 @@ case 32:
 		goto st30;
 	goto st0;
 tr7:
-#line 333 "pitchfork_http.rl"
+#line 353 "pitchfork_http.rl"
 	{MARK(mark, p); }
-#line 337 "pitchfork_http.rl"
+#line 357 "pitchfork_http.rl"
 	{ downcase_char(deconst(p)); }
 	goto st33;
 st33:
 	if ( ++p == pe )
 		goto _test_eof33;
 case 33:
-#line 1464 "pitchfork_http.c"
+#line 1484 "pitchfork_http.c"
 	switch( (*p) ) {
 		case 84: goto tr63;
 		case 116: goto tr63;
 	}
 	goto st0;
 tr63:
-#line 337 "pitchfork_http.rl"
+#line 357 "pitchfork_http.rl"
 	{ downcase_char(deconst(p)); }
 	goto st34;
 st34:
 	if ( ++p == pe )
 		goto _test_eof34;
 case 34:
-#line 1478 "pitchfork_http.c"
+#line 1498 "pitchfork_http.c"
 	switch( (*p) ) {
 		case 84: goto tr64;
 		case 116: goto tr64;
 	}
 	goto st0;
 tr64:
-#line 337 "pitchfork_http.rl"
+#line 357 "pitchfork_http.rl"
 	{ downcase_char(deconst(p)); }
 	goto st35;
 st35:
 	if ( ++p == pe )
 		goto _test_eof35;
 case 35:
-#line 1492 "pitchfork_http.c"
+#line 1512 "pitchfork_http.c"
 	switch( (*p) ) {
 		case 80: goto tr65;
 		case 112: goto tr65;
 	}
 	goto st0;
 tr65:
-#line 337 "pitchfork_http.rl"
+#line 357 "pitchfork_http.rl"
 	{ downcase_char(deconst(p)); }
 	goto st36;
 st36:
 	if ( ++p == pe )
 		goto _test_eof36;
 case 36:
-#line 1506 "pitchfork_http.c"
+#line 1526 "pitchfork_http.c"
 	switch( (*p) ) {
 		case 58: goto tr66;
 		case 83: goto tr67;
@@ -1510,7 +1530,7 @@ case 36:
 	}
 	goto st0;
 tr66:
-#line 343 "pitchfork_http.rl"
+#line 363 "pitchfork_http.rl"
 	{
     rb_hash_aset(hp->env, g_rack_url_scheme, STR_NEW(mark, p));
   }
@@ -1519,7 +1539,7 @@ st37:
 	if ( ++p == pe )
 		goto _test_eof37;
 case 37:
-#line 1523 "pitchfork_http.c"
+#line 1543 "pitchfork_http.c"
 	if ( (*p) == 47 )
 		goto st38;
 	goto st0;
@@ -1546,7 +1566,7 @@ case 39:
 		if ( (*p) > 32 ) {
 			if ( 34 <= (*p) && (*p) <= 35 )
 				goto st0;
-		} else if ( (*p) >= 0 )
+		} else
 			goto st0;
 	} else if ( (*p) > 57 ) {
 		if ( (*p) < 65 ) {
@@ -1572,7 +1592,7 @@ case 40:
 		case 127: goto st0;
 	}
 	if ( (*p) < 34 ) {
-		if ( 0 <= (*p) && (*p) <= 32 )
+		if ( (*p) <= 32 )
 			goto st0;
 	} else if ( (*p) > 35 ) {
 		if ( 62 <= (*p) && (*p) <= 63 )
@@ -1607,14 +1627,14 @@ case 42:
 		goto st40;
 	goto st0;
 tr72:
-#line 333 "pitchfork_http.rl"
+#line 353 "pitchfork_http.rl"
 	{MARK(mark, p); }
 	goto st43;
 st43:
 	if ( ++p == pe )
 		goto _test_eof43;
 case 43:
-#line 1618 "pitchfork_http.c"
+#line 1638 "pitchfork_http.c"
 	switch( (*p) ) {
 		case 37: goto st41;
 		case 47: goto tr76;
@@ -1628,7 +1648,7 @@ case 43:
 		if ( (*p) > 32 ) {
 			if ( 34 <= (*p) && (*p) <= 35 )
 				goto st0;
-		} else if ( (*p) >= 0 )
+		} else
 			goto st0;
 	} else if ( (*p) > 57 ) {
 		if ( (*p) < 65 ) {
@@ -1654,7 +1674,7 @@ case 44:
 		case 127: goto st0;
 	}
 	if ( (*p) < 34 ) {
-		if ( 0 <= (*p) && (*p) <= 32 )
+		if ( (*p) <= 32 )
 			goto st0;
 	} else if ( (*p) > 35 ) {
 		if ( (*p) > 57 ) {
@@ -1666,14 +1686,14 @@ case 44:
 		goto st0;
 	goto st40;
 tr73:
-#line 333 "pitchfork_http.rl"
+#line 353 "pitchfork_http.rl"
 	{MARK(mark, p); }
 	goto st45;
 st45:
 	if ( ++p == pe )
 		goto _test_eof45;
 case 45:
-#line 1677 "pitchfork_http.c"
+#line 1697 "pitchfork_http.c"
 	switch( (*p) ) {
 		case 37: goto st41;
 		case 47: goto st0;
@@ -1685,7 +1705,7 @@ case 45:
 		if ( (*p) > 32 ) {
 			if ( 34 <= (*p) && (*p) <= 35 )
 				goto st0;
-		} else if ( (*p) >= 0 )
+		} else
 			goto st0;
 	} else if ( (*p) > 58 ) {
 		if ( (*p) < 65 ) {
@@ -1715,7 +1735,7 @@ case 46:
 		if ( (*p) > 32 ) {
 			if ( 34 <= (*p) && (*p) <= 35 )
 				goto st0;
-		} else if ( (*p) >= 0 )
+		} else
 			goto st0;
 	} else if ( (*p) > 58 ) {
 		if ( (*p) < 65 ) {
@@ -1742,7 +1762,7 @@ case 47:
 		case 127: goto st0;
 	}
 	if ( (*p) < 34 ) {
-		if ( 0 <= (*p) && (*p) <= 32 )
+		if ( (*p) <= 32 )
 			goto st0;
 	} else if ( (*p) > 35 ) {
 		if ( 62 <= (*p) && (*p) <= 63 )
@@ -1751,14 +1771,14 @@ case 47:
 		goto st0;
 	goto st40;
 tr67:
-#line 337 "pitchfork_http.rl"
+#line 357 "pitchfork_http.rl"
 	{ downcase_char(deconst(p)); }
 	goto st48;
 st48:
 	if ( ++p == pe )
 		goto _test_eof48;
 case 48:
-#line 1762 "pitchfork_http.c"
+#line 1782 "pitchfork_http.c"
 	if ( (*p) == 58 )
 		goto tr66;
 	goto st0;
@@ -2274,14 +2294,14 @@ case 67:
 		goto tr3;
 	goto st0;
 tr2:
-#line 333 "pitchfork_http.rl"
+#line 353 "pitchfork_http.rl"
 	{MARK(mark, p); }
 	goto st68;
 st68:
 	if ( ++p == pe )
 		goto _test_eof68;
 case 68:
-#line 2285 "pitchfork_http.c"
+#line 2305 "pitchfork_http.c"
 	switch( (*p) ) {
 		case 32: goto tr3;
 		case 33: goto st49;
@@ -2365,14 +2385,14 @@ case 70:
 		goto st51;
 	goto st0;
 tr100:
-#line 342 "pitchfork_http.rl"
+#line 362 "pitchfork_http.rl"
 	{ request_method(hp, PTR_TO(mark), LEN(mark, p)); }
 	goto st71;
 st71:
 	if ( ++p == pe )
 		goto _test_eof71;
 case 71:
-#line 2376 "pitchfork_http.c"
+#line 2396 "pitchfork_http.c"
 	switch( (*p) ) {
 		case 42: goto tr101;
 		case 47: goto tr102;
@@ -2381,14 +2401,14 @@ case 71:
 	}
 	goto st0;
 tr101:
-#line 333 "pitchfork_http.rl"
+#line 353 "pitchfork_http.rl"
 	{MARK(mark, p); }
 	goto st72;
 st72:
 	if ( ++p == pe )
 		goto _test_eof72;
 case 72:
-#line 2392 "pitchfork_http.c"
+#line 2412 "pitchfork_http.c"
 	switch( (*p) ) {
 		case 10: goto tr104;
 		case 13: goto tr105;
@@ -2397,7 +2417,7 @@ case 72:
 	}
 	goto st0;
 tr106:
-#line 347 "pitchfork_http.rl"
+#line 367 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -2410,7 +2430,7 @@ tr106:
   }
 	goto st73;
 tr119:
-#line 367 "pitchfork_http.rl"
+#line 387 "pitchfork_http.rl"
 	{
     VALUE val;
 
@@ -2419,7 +2439,7 @@ tr119:
 
     rb_hash_aset(hp->env, g_path_info, val);
   }
-#line 347 "pitchfork_http.rl"
+#line 367 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -2432,14 +2452,14 @@ tr119:
   }
 	goto st73;
 tr126:
-#line 361 "pitchfork_http.rl"
+#line 381 "pitchfork_http.rl"
 	{MARK(start.query, p); }
-#line 362 "pitchfork_http.rl"
+#line 382 "pitchfork_http.rl"
 	{
     VALIDATE_MAX_URI_LENGTH(LEN(start.query, p), QUERY_STRING);
     rb_hash_aset(hp->env, g_query_string, STR_NEW(start.query, p));
   }
-#line 347 "pitchfork_http.rl"
+#line 367 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -2452,12 +2472,12 @@ tr126:
   }
 	goto st73;
 tr131:
-#line 362 "pitchfork_http.rl"
+#line 382 "pitchfork_http.rl"
 	{
     VALIDATE_MAX_URI_LENGTH(LEN(start.query, p), QUERY_STRING);
     rb_hash_aset(hp->env, g_query_string, STR_NEW(start.query, p));
   }
-#line 347 "pitchfork_http.rl"
+#line 367 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -2473,47 +2493,47 @@ st73:
 	if ( ++p == pe )
 		goto _test_eof73;
 case 73:
-#line 2477 "pitchfork_http.c"
+#line 2497 "pitchfork_http.c"
 	switch( (*p) ) {
-		case 10: goto tr108;
-		case 13: goto tr109;
-		case 32: goto tr42;
+		case 10: goto tr107;
+		case 13: goto tr108;
+		case 32: goto tr41;
 		case 35: goto st0;
 		case 37: goto tr110;
 		case 127: goto st0;
 	}
-	if ( 0 <= (*p) && (*p) <= 31 )
+	if ( (*p) <= 31 )
 		goto st0;
-	goto tr107;
-tr107:
-#line 333 "pitchfork_http.rl"
+	goto tr109;
+tr109:
+#line 353 "pitchfork_http.rl"
 	{MARK(mark, p); }
 	goto st74;
 st74:
 	if ( ++p == pe )
 		goto _test_eof74;
 case 74:
-#line 2497 "pitchfork_http.c"
+#line 2517 "pitchfork_http.c"
 	switch( (*p) ) {
-		case 10: goto tr112;
-		case 13: goto tr113;
-		case 32: goto tr45;
+		case 10: goto tr111;
+		case 13: goto tr112;
+		case 32: goto tr44;
 		case 35: goto st0;
 		case 37: goto st75;
 		case 127: goto st0;
 	}
-	if ( 0 <= (*p) && (*p) <= 31 )
+	if ( (*p) <= 31 )
 		goto st0;
 	goto st74;
 tr110:
-#line 333 "pitchfork_http.rl"
+#line 353 "pitchfork_http.rl"
 	{MARK(mark, p); }
 	goto st75;
 st75:
 	if ( ++p == pe )
 		goto _test_eof75;
 case 75:
-#line 2517 "pitchfork_http.c"
+#line 2537 "pitchfork_http.c"
 	if ( (*p) < 65 ) {
 		if ( 48 <= (*p) && (*p) <= 57 )
 			goto st76;
@@ -2537,30 +2557,30 @@ case 76:
 		goto st74;
 	goto st0;
 tr102:
-#line 333 "pitchfork_http.rl"
+#line 353 "pitchfork_http.rl"
 	{MARK(mark, p); }
 	goto st77;
 tr147:
-#line 346 "pitchfork_http.rl"
+#line 366 "pitchfork_http.rl"
 	{ rb_hash_aset(hp->env, g_http_host, STR_NEW(mark, p)); }
-#line 333 "pitchfork_http.rl"
+#line 353 "pitchfork_http.rl"
 	{MARK(mark, p); }
 	goto st77;
 st77:
 	if ( ++p == pe )
 		goto _test_eof77;
 case 77:
-#line 2554 "pitchfork_http.c"
+#line 2574 "pitchfork_http.c"
 	switch( (*p) ) {
-		case 10: goto tr117;
-		case 13: goto tr118;
-		case 32: goto tr49;
+		case 10: goto tr116;
+		case 13: goto tr117;
+		case 32: goto tr48;
 		case 35: goto tr119;
 		case 37: goto st78;
 		case 63: goto tr121;
 		case 127: goto st0;
 	}
-	if ( 0 <= (*p) && (*p) <= 31 )
+	if ( (*p) <= 31 )
 		goto st0;
 	goto st77;
 st78:
@@ -2590,7 +2610,7 @@ case 79:
 		goto st77;
 	goto st0;
 tr121:
-#line 367 "pitchfork_http.rl"
+#line 387 "pitchfork_http.rl"
 	{
     VALUE val;
 
@@ -2604,47 +2624,47 @@ st80:
 	if ( ++p == pe )
 		goto _test_eof80;
 case 80:
-#line 2608 "pitchfork_http.c"
+#line 2628 "pitchfork_http.c"
 	switch( (*p) ) {
-		case 10: goto tr124;
-		case 13: goto tr125;
-		case 32: goto tr55;
+		case 10: goto tr123;
+		case 13: goto tr124;
+		case 32: goto tr54;
 		case 35: goto tr126;
 		case 37: goto tr127;
 		case 127: goto st0;
 	}
-	if ( 0 <= (*p) && (*p) <= 31 )
+	if ( (*p) <= 31 )
 		goto st0;
-	goto tr123;
-tr123:
-#line 361 "pitchfork_http.rl"
+	goto tr125;
+tr125:
+#line 381 "pitchfork_http.rl"
 	{MARK(start.query, p); }
 	goto st81;
 st81:
 	if ( ++p == pe )
 		goto _test_eof81;
 case 81:
-#line 2628 "pitchfork_http.c"
+#line 2648 "pitchfork_http.c"
 	switch( (*p) ) {
-		case 10: goto tr129;
-		case 13: goto tr130;
-		case 32: goto tr59;
+		case 10: goto tr128;
+		case 13: goto tr129;
+		case 32: goto tr58;
 		case 35: goto tr131;
 		case 37: goto st82;
 		case 127: goto st0;
 	}
-	if ( 0 <= (*p) && (*p) <= 31 )
+	if ( (*p) <= 31 )
 		goto st0;
 	goto st81;
 tr127:
-#line 361 "pitchfork_http.rl"
+#line 381 "pitchfork_http.rl"
 	{MARK(start.query, p); }
 	goto st82;
 st82:
 	if ( ++p == pe )
 		goto _test_eof82;
 case 82:
-#line 2648 "pitchfork_http.c"
+#line 2668 "pitchfork_http.c"
 	if ( (*p) < 65 ) {
 		if ( 48 <= (*p) && (*p) <= 57 )
 			goto st83;
@@ -2668,58 +2688,58 @@ case 83:
 		goto st81;
 	goto st0;
 tr103:
-#line 333 "pitchfork_http.rl"
+#line 353 "pitchfork_http.rl"
 	{MARK(mark, p); }
-#line 337 "pitchfork_http.rl"
+#line 357 "pitchfork_http.rl"
 	{ downcase_char(deconst(p)); }
 	goto st84;
 st84:
 	if ( ++p == pe )
 		goto _test_eof84;
 case 84:
-#line 2681 "pitchfork_http.c"
+#line 2701 "pitchfork_http.c"
 	switch( (*p) ) {
 		case 84: goto tr134;
 		case 116: goto tr134;
 	}
 	goto st0;
 tr134:
-#line 337 "pitchfork_http.rl"
+#line 357 "pitchfork_http.rl"
 	{ downcase_char(deconst(p)); }
 	goto st85;
 st85:
 	if ( ++p == pe )
 		goto _test_eof85;
 case 85:
-#line 2695 "pitchfork_http.c"
+#line 2715 "pitchfork_http.c"
 	switch( (*p) ) {
 		case 84: goto tr135;
 		case 116: goto tr135;
 	}
 	goto st0;
 tr135:
-#line 337 "pitchfork_http.rl"
+#line 357 "pitchfork_http.rl"
 	{ downcase_char(deconst(p)); }
 	goto st86;
 st86:
 	if ( ++p == pe )
 		goto _test_eof86;
 case 86:
-#line 2709 "pitchfork_http.c"
+#line 2729 "pitchfork_http.c"
 	switch( (*p) ) {
 		case 80: goto tr136;
 		case 112: goto tr136;
 	}
 	goto st0;
 tr136:
-#line 337 "pitchfork_http.rl"
+#line 357 "pitchfork_http.rl"
 	{ downcase_char(deconst(p)); }
 	goto st87;
 st87:
 	if ( ++p == pe )
 		goto _test_eof87;
 case 87:
-#line 2723 "pitchfork_http.c"
+#line 2743 "pitchfork_http.c"
 	switch( (*p) ) {
 		case 58: goto tr137;
 		case 83: goto tr138;
@@ -2727,7 +2747,7 @@ case 87:
 	}
 	goto st0;
 tr137:
-#line 343 "pitchfork_http.rl"
+#line 363 "pitchfork_http.rl"
 	{
     rb_hash_aset(hp->env, g_rack_url_scheme, STR_NEW(mark, p));
   }
@@ -2736,7 +2756,7 @@ st88:
 	if ( ++p == pe )
 		goto _test_eof88;
 case 88:
-#line 2740 "pitchfork_http.c"
+#line 2760 "pitchfork_http.c"
 	if ( (*p) == 47 )
 		goto st89;
 	goto st0;
@@ -2763,7 +2783,7 @@ case 90:
 		if ( (*p) > 32 ) {
 			if ( 34 <= (*p) && (*p) <= 35 )
 				goto st0;
-		} else if ( (*p) >= 0 )
+		} else
 			goto st0;
 	} else if ( (*p) > 57 ) {
 		if ( (*p) < 65 ) {
@@ -2789,7 +2809,7 @@ case 91:
 		case 127: goto st0;
 	}
 	if ( (*p) < 34 ) {
-		if ( 0 <= (*p) && (*p) <= 32 )
+		if ( (*p) <= 32 )
 			goto st0;
 	} else if ( (*p) > 35 ) {
 		if ( 62 <= (*p) && (*p) <= 63 )
@@ -2824,14 +2844,14 @@ case 93:
 		goto st91;
 	goto st0;
 tr143:
-#line 333 "pitchfork_http.rl"
+#line 353 "pitchfork_http.rl"
 	{MARK(mark, p); }
 	goto st94;
 st94:
 	if ( ++p == pe )
 		goto _test_eof94;
 case 94:
-#line 2835 "pitchfork_http.c"
+#line 2855 "pitchfork_http.c"
 	switch( (*p) ) {
 		case 37: goto st92;
 		case 47: goto tr147;
@@ -2845,7 +2865,7 @@ case 94:
 		if ( (*p) > 32 ) {
 			if ( 34 <= (*p) && (*p) <= 35 )
 				goto st0;
-		} else if ( (*p) >= 0 )
+		} else
 			goto st0;
 	} else if ( (*p) > 57 ) {
 		if ( (*p) < 65 ) {
@@ -2871,7 +2891,7 @@ case 95:
 		case 127: goto st0;
 	}
 	if ( (*p) < 34 ) {
-		if ( 0 <= (*p) && (*p) <= 32 )
+		if ( (*p) <= 32 )
 			goto st0;
 	} else if ( (*p) > 35 ) {
 		if ( (*p) > 57 ) {
@@ -2883,14 +2903,14 @@ case 95:
 		goto st0;
 	goto st91;
 tr144:
-#line 333 "pitchfork_http.rl"
+#line 353 "pitchfork_http.rl"
 	{MARK(mark, p); }
 	goto st96;
 st96:
 	if ( ++p == pe )
 		goto _test_eof96;
 case 96:
-#line 2894 "pitchfork_http.c"
+#line 2914 "pitchfork_http.c"
 	switch( (*p) ) {
 		case 37: goto st92;
 		case 47: goto st0;
@@ -2902,7 +2922,7 @@ case 96:
 		if ( (*p) > 32 ) {
 			if ( 34 <= (*p) && (*p) <= 35 )
 				goto st0;
-		} else if ( (*p) >= 0 )
+		} else
 			goto st0;
 	} else if ( (*p) > 58 ) {
 		if ( (*p) < 65 ) {
@@ -2932,7 +2952,7 @@ case 97:
 		if ( (*p) > 32 ) {
 			if ( 34 <= (*p) && (*p) <= 35 )
 				goto st0;
-		} else if ( (*p) >= 0 )
+		} else
 			goto st0;
 	} else if ( (*p) > 58 ) {
 		if ( (*p) < 65 ) {
@@ -2959,7 +2979,7 @@ case 98:
 		case 127: goto st0;
 	}
 	if ( (*p) < 34 ) {
-		if ( 0 <= (*p) && (*p) <= 32 )
+		if ( (*p) <= 32 )
 			goto st0;
 	} else if ( (*p) > 35 ) {
 		if ( 62 <= (*p) && (*p) <= 63 )
@@ -2968,14 +2988,14 @@ case 98:
 		goto st0;
 	goto st91;
 tr138:
-#line 337 "pitchfork_http.rl"
+#line 357 "pitchfork_http.rl"
 	{ downcase_char(deconst(p)); }
 	goto st99;
 st99:
 	if ( ++p == pe )
 		goto _test_eof99;
 case 99:
-#line 2979 "pitchfork_http.c"
+#line 2999 "pitchfork_http.c"
 	if ( (*p) == 58 )
 		goto tr137;
 	goto st0;
@@ -2995,7 +3015,7 @@ case 100:
 		goto tr152;
 	goto st0;
 tr151:
-#line 375 "pitchfork_http.rl"
+#line 395 "pitchfork_http.rl"
 	{
     hp->len.chunk = step_incr(hp->len.chunk, (*p), 16);
     if (hp->len.chunk < 0)
@@ -3006,7 +3026,7 @@ st101:
 	if ( ++p == pe )
 		goto _test_eof101;
 case 101:
-#line 3010 "pitchfork_http.c"
+#line 3030 "pitchfork_http.c"
 	switch( (*p) ) {
 		case 10: goto tr153;
 		case 13: goto st102;
@@ -3023,7 +3043,7 @@ case 101:
 		goto tr152;
 	goto st0;
 tr153:
-#line 404 "pitchfork_http.rl"
+#line 424 "pitchfork_http.rl"
 	{
     HP_FL_SET(hp, INTRAILER);
     RB_OBJ_WRITE(self, &hp->cont, Qfalse);
@@ -3037,7 +3057,7 @@ st123:
 	if ( ++p == pe )
 		goto _test_eof123;
 case 123:
-#line 3041 "pitchfork_http.c"
+#line 3061 "pitchfork_http.c"
 	goto st0;
 st102:
 	if ( ++p == pe )
@@ -3047,7 +3067,7 @@ case 102:
 		goto tr153;
 	goto st0;
 tr152:
-#line 375 "pitchfork_http.rl"
+#line 395 "pitchfork_http.rl"
 	{
     hp->len.chunk = step_incr(hp->len.chunk, (*p), 16);
     if (hp->len.chunk < 0)
@@ -3058,7 +3078,7 @@ st103:
 	if ( ++p == pe )
 		goto _test_eof103;
 case 103:
-#line 3062 "pitchfork_http.c"
+#line 3082 "pitchfork_http.c"
 	switch( (*p) ) {
 		case 10: goto st104;
 		case 13: goto st107;
@@ -3079,7 +3099,7 @@ st104:
 case 104:
 	goto tr159;
 tr159:
-#line 413 "pitchfork_http.rl"
+#line 433 "pitchfork_http.rl"
 	{
   skip_chunk_data_hack: {
     size_t nr = MIN((size_t)hp->len.chunk, REMAINING);
@@ -3101,7 +3121,7 @@ st105:
 	if ( ++p == pe )
 		goto _test_eof105;
 case 105:
-#line 3105 "pitchfork_http.c"
+#line 3125 "pitchfork_http.c"
 	switch( (*p) ) {
 		case 10: goto st100;
 		case 13: goto st106;
@@ -3307,31 +3327,31 @@ case 113:
 	} else
 		goto st113;
 	goto st0;
-tr172:
-#line 339 "pitchfork_http.rl"
+tr171:
+#line 359 "pitchfork_http.rl"
 	{ MARK(mark, p); }
-#line 341 "pitchfork_http.rl"
+#line 361 "pitchfork_http.rl"
 	{ write_cont_value(hp, buffer, p); }
 	goto st114;
-tr175:
-#line 341 "pitchfork_http.rl"
+tr176:
+#line 361 "pitchfork_http.rl"
 	{ write_cont_value(hp, buffer, p); }
 	goto st114;
-tr182:
-#line 339 "pitchfork_http.rl"
+tr181:
+#line 359 "pitchfork_http.rl"
 	{ MARK(mark, p); }
-#line 340 "pitchfork_http.rl"
+#line 360 "pitchfork_http.rl"
 	{ write_value(self, hp, buffer, p); }
 	goto st114;
 tr185:
-#line 340 "pitchfork_http.rl"
+#line 360 "pitchfork_http.rl"
 	{ write_value(self, hp, buffer, p); }
 	goto st114;
 st114:
 	if ( ++p == pe )
 		goto _test_eof114;
 case 114:
-#line 3335 "pitchfork_http.c"
+#line 3355 "pitchfork_http.c"
 	switch( (*p) ) {
 		case 9: goto st115;
 		case 10: goto tr167;
@@ -3359,75 +3379,75 @@ case 114:
 	} else
 		goto tr169;
 	goto st0;
-tr171:
-#line 339 "pitchfork_http.rl"
+tr170:
+#line 359 "pitchfork_http.rl"
 	{ MARK(mark, p); }
 	goto st115;
 st115:
 	if ( ++p == pe )
 		goto _test_eof115;
 case 115:
-#line 3371 "pitchfork_http.c"
+#line 3391 "pitchfork_http.c"
 	switch( (*p) ) {
-		case 9: goto tr171;
-		case 10: goto tr172;
-		case 13: goto tr173;
-		case 32: goto tr171;
+		case 9: goto tr170;
+		case 10: goto tr171;
+		case 13: goto tr172;
+		case 32: goto tr170;
 		case 127: goto st0;
 	}
-	if ( 0 <= (*p) && (*p) <= 31 )
+	if ( (*p) <= 31 )
 		goto st0;
-	goto tr170;
-tr170:
-#line 339 "pitchfork_http.rl"
+	goto tr173;
+tr172:
+#line 359 "pitchfork_http.rl"
 	{ MARK(mark, p); }
+#line 361 "pitchfork_http.rl"
+	{ write_cont_value(hp, buffer, p); }
+	goto st116;
+tr177:
+#line 361 "pitchfork_http.rl"
+	{ write_cont_value(hp, buffer, p); }
+	goto st116;
+tr182:
+#line 359 "pitchfork_http.rl"
+	{ MARK(mark, p); }
+#line 360 "pitchfork_http.rl"
+	{ write_value(self, hp, buffer, p); }
+	goto st116;
+tr186:
+#line 360 "pitchfork_http.rl"
+	{ write_value(self, hp, buffer, p); }
 	goto st116;
 st116:
 	if ( ++p == pe )
 		goto _test_eof116;
 case 116:
-#line 3390 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 10: goto tr175;
-		case 13: goto tr176;
-		case 127: goto st0;
-	}
-	if ( (*p) > 8 ) {
-		if ( 11 <= (*p) && (*p) <= 31 )
-			goto st0;
-	} else if ( (*p) >= 0 )
-		goto st0;
-	goto st116;
+#line 3426 "pitchfork_http.c"
+	if ( (*p) == 10 )
+		goto st114;
+	goto st0;
 tr173:
-#line 339 "pitchfork_http.rl"
+#line 359 "pitchfork_http.rl"
 	{ MARK(mark, p); }
-#line 341 "pitchfork_http.rl"
-	{ write_cont_value(hp, buffer, p); }
-	goto st117;
-tr176:
-#line 341 "pitchfork_http.rl"
-	{ write_cont_value(hp, buffer, p); }
-	goto st117;
-tr183:
-#line 339 "pitchfork_http.rl"
-	{ MARK(mark, p); }
-#line 340 "pitchfork_http.rl"
-	{ write_value(self, hp, buffer, p); }
-	goto st117;
-tr186:
-#line 340 "pitchfork_http.rl"
-	{ write_value(self, hp, buffer, p); }
 	goto st117;
 st117:
 	if ( ++p == pe )
 		goto _test_eof117;
 case 117:
-#line 3426 "pitchfork_http.c"
-	if ( (*p) == 10 )
-		goto st114;
-	goto st0;
+#line 3438 "pitchfork_http.c"
+	switch( (*p) ) {
+		case 10: goto tr176;
+		case 13: goto tr177;
+		case 127: goto st0;
+	}
+	if ( (*p) > 8 ) {
+		if ( 11 <= (*p) && (*p) <= 31 )
+			goto st0;
+	} else
+		goto st0;
+	goto st117;
 tr167:
-#line 399 "pitchfork_http.rl"
+#line 419 "pitchfork_http.rl"
 	{
     cs = http_parser_first_final;
     goto post_exec;
@@ -3437,7 +3457,7 @@ st124:
 	if ( ++p == pe )
 		goto _test_eof124;
 case 124:
-#line 3441 "pitchfork_http.c"
+#line 3461 "pitchfork_http.c"
 	goto st0;
 st118:
 	if ( ++p == pe )
@@ -3447,20 +3467,20 @@ case 118:
 		goto tr167;
 	goto st0;
 tr169:
-#line 335 "pitchfork_http.rl"
+#line 355 "pitchfork_http.rl"
 	{ MARK(start.field, p); }
-#line 336 "pitchfork_http.rl"
-	{ snake_upcase_char(deconst(p)); }
+#line 356 "pitchfork_http.rl"
+	{ upcase_char(deconst(p)); }
 	goto st119;
 tr178:
-#line 336 "pitchfork_http.rl"
-	{ snake_upcase_char(deconst(p)); }
+#line 356 "pitchfork_http.rl"
+	{ upcase_char(deconst(p)); }
 	goto st119;
 st119:
 	if ( ++p == pe )
 		goto _test_eof119;
 case 119:
-#line 3464 "pitchfork_http.c"
+#line 3484 "pitchfork_http.c"
 	switch( (*p) ) {
 		case 33: goto tr178;
 		case 58: goto tr179;
@@ -3485,38 +3505,38 @@ case 119:
 	} else
 		goto tr178;
 	goto st0;
-tr181:
-#line 339 "pitchfork_http.rl"
+tr180:
+#line 359 "pitchfork_http.rl"
 	{ MARK(mark, p); }
 	goto st120;
 tr179:
-#line 338 "pitchfork_http.rl"
+#line 358 "pitchfork_http.rl"
 	{ hp->s.field_len = LEN(start.field, p); }
 	goto st120;
 st120:
 	if ( ++p == pe )
 		goto _test_eof120;
 case 120:
-#line 3501 "pitchfork_http.c"
+#line 3521 "pitchfork_http.c"
 	switch( (*p) ) {
-		case 9: goto tr181;
-		case 10: goto tr182;
-		case 13: goto tr183;
-		case 32: goto tr181;
+		case 9: goto tr180;
+		case 10: goto tr181;
+		case 13: goto tr182;
+		case 32: goto tr180;
 		case 127: goto st0;
 	}
-	if ( 0 <= (*p) && (*p) <= 31 )
+	if ( (*p) <= 31 )
 		goto st0;
-	goto tr180;
-tr180:
-#line 339 "pitchfork_http.rl"
+	goto tr183;
+tr183:
+#line 359 "pitchfork_http.rl"
 	{ MARK(mark, p); }
 	goto st121;
 st121:
 	if ( ++p == pe )
 		goto _test_eof121;
 case 121:
-#line 3520 "pitchfork_http.c"
+#line 3540 "pitchfork_http.c"
 	switch( (*p) ) {
 		case 10: goto tr185;
 		case 13: goto tr186;
@@ -3525,7 +3545,7 @@ case 121:
 	if ( (*p) > 8 ) {
 		if ( 11 <= (*p) && (*p) <= 31 )
 			goto st0;
-	} else if ( (*p) >= 0 )
+	} else
 		goto st0;
 	goto st121;
 	}
@@ -3657,7 +3677,7 @@ case 121:
 	_out: {}
 	}
 
-#line 474 "pitchfork_http.rl"
+#line 494 "pitchfork_http.rl"
 post_exec: /* "_out:" also goes here */
   if (hp->cs != http_parser_error)
     hp->cs = cs;

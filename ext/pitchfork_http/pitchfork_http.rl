@@ -230,13 +230,34 @@ static int is_chunked(VALUE v)
 }
 
 static void write_value(VALUE self, struct http_parser *hp,
-                        const char *buffer, const char *p)
+                        char *buffer, const char *p)
 {
-  VALUE f = find_common_field(PTR_TO(start.field), hp->s.field_len);
+  VALUE f;
+  char *field = PTR_TO(start.field);
+  size_t i;
   VALUE target = hp->env;
   VALUE v;
   VALUE e;
   int in_trailer = HP_FL_TEST(hp, INTRAILER);
+
+  /* Reject ambiguous framing headers before normalizing dashes for Rack. */
+  if (CONST_MEM_EQ("CONTENT_LENGTH", field, hp->s.field_len))
+    parser_raise(eHttpParserError, "invalid Content-Length");
+  if (CONST_MEM_EQ("TRANSFER_ENCODING", field, hp->s.field_len))
+    parser_raise(eHttpParserError, "invalid Transfer-Encoding");
+
+  if (memchr(field, '_', hp->s.field_len)) {
+    VALIDATE_MAX_LENGTH(hp->s.field_len, FIELD_NAME);
+    VALIDATE_MAX_LENGTH(LEN(mark, p), FIELD_VALUE);
+    RB_OBJ_WRITE(self, &hp->cont, Qnil);
+    return;
+  }
+
+  for (i = 0; i < hp->s.field_len; i++)
+    if (field[i] == '-')
+      field[i] = '_';
+
+  f = find_common_field(field, hp->s.field_len);
 
   VALIDATE_MAX_LENGTH(LEN(mark, p), FIELD_VALUE);
   if (in_trailer && (f == g_content_length ||
@@ -245,7 +266,6 @@ static void write_value(VALUE self, struct http_parser *hp,
 
   v = LEN(mark, p) == 0 ? rb_str_buf_new(128) : STRIPPED_STR_NEW(mark, p);
   if (NIL_P(f)) {
-    const char *field = PTR_TO(start.field);
     size_t flen = hp->s.field_len;
 
     VALIDATE_MAX_LENGTH(flen, FIELD_NAME);
@@ -333,7 +353,7 @@ static void write_value(VALUE self, struct http_parser *hp,
   action mark {MARK(mark, fpc); }
 
   action start_field { MARK(start.field, fpc); }
-  action snake_upcase_field { snake_upcase_char(deconst(fpc)); }
+  action upcase_field { upcase_char(deconst(fpc)); }
   action downcase_char { downcase_char(deconst(fpc)); }
   action write_field { hp->s.field_len = LEN(start.field, fpc); }
   action start_value { MARK(mark, fpc); }
