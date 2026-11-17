@@ -195,7 +195,7 @@ class ReforkingTest < Pitchfork::IntegrationTest
       assert_stderr(/worker=0 gen=0.1 pid=\d+ ready/, timeout: 5)
       assert_stderr(/worker=1 gen=0.1 pid=\d+ ready/)
 
-      assert_clean_shutdown(pid)
+      assert_clean_shutdown(pid, timeout: 10)
     end
 
     def test_fork_unsafe

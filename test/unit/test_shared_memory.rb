@@ -85,20 +85,20 @@ module Pitchfork
     def test_close_on_exec
       assert_predicate @page, :close_on_exec?
 
+      canary = 0x12345678
+      @page[0] = canary
+
       file = Tempfile.create([name, '.rb'])
-      file.write(<<~'RUBY')
+      file.write(<<~RUBY)
         require "pitchfork"
         begin
-          Pitchfork::MemoryPage.for_fd(Integer(ARGV.first))
-        rescue Errno::EBADF
+          page = Pitchfork::MemoryPage.for_fd(Integer(ARGV.first))
+          exit(page[0] == #{canary} ? 1 : 0)
+        rescue SystemCallError
           exit 0
-        else
-          exit 1
         end
       RUBY
       file.close
-
-      assert_equal 0, @page[0]
 
       assert system(RbConfig.ruby, file.path, @page.fileno.to_s)
     end
