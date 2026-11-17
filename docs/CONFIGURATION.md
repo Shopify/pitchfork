@@ -248,6 +248,13 @@ A first "soft" timeout will invoke the `after_worker_timeout` from
 within the worker (but from a background thread) and then call `exit`
 to terminate the worker cleanly.
 
+Ruby delivers the resulting `SystemExit` to the thread serving the
+request. If the application rescues it and returns a response anyway, as
+Rails does in production, where `ActionDispatch::ShowExceptions` renders
+an error page, the response is written, then the worker logs that the
+`SystemExit` was swallowed and exits without calling
+`after_request_complete`.
+
 The second "hard" timeout, is the sum of `timeout` and `cleanup`.
 Workers taking longer than this time period to be ready to handle a new
 request will be forcibly killed (via `SIGKILL`).
@@ -437,11 +444,16 @@ thread local state could contain thread unsafe objects.
 Also note that at this stage, the thread is still alive, if your callback does
 substantial work, you may want to kill the thread.
 
-After the callback is executed the worker will exit with status `0`.
+After the callback is executed, `before_worker_exit` is called from the
+same thread, and the worker exits with status `0`. See [`timeout`](#timeout)
+for what happens when the application rescues the resulting `SystemExit`.
 
 It is recommended not to do slow operations in this callback, but if you
 really have to, make sure to configure the `cleanup` timeout so that the
 callback has time to complete before the "hard" timeout triggers.
+`cleanup` also has to cover `before_worker_exit`, the rest of the request
+and any `at_exit` hooks, since a worker still running at the "hard"
+timeout is killed with `SIGKILL`.
 By default the cleanup timeout is 2 seconds.
 
 ### `after_worker_hard_timeout`
@@ -462,6 +474,9 @@ soft timeout from working.
 ### `before_worker_exit`
 
 Called in the worker process before it is shut down.
+
+On a soft timeout it is called from the timeout thread, right after
+`after_worker_timeout`, while the request may still be running.
 
 ```ruby
 before_worker_exit do |server, worker|
@@ -487,6 +502,9 @@ end
 Called in the worker processes after a request has completed.
 
 Can be used for out of band work, or to exit unhealthy workers.
+
+It isn't called for a request that hit the soft timeout, since the worker
+exits instead.
 
 ```ruby
 after_request_complete do |server, worker, env|
