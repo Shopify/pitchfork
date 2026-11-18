@@ -1,5 +1,7 @@
 # Unreleased
 
+- Preserve worker spawn deadlines when the mold starts workers.
+
 # 0.18.4
 
 - Avoid stale body source pointers when Ruby compacts strings.

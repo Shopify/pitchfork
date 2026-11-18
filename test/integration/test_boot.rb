@@ -211,6 +211,13 @@ class TestBoot < Pitchfork::IntegrationTest
         def spawn_worker(worker)
           @_spawn_worker_count ||= 0
           @_spawn_worker_count += 1
+          if @_spawn_worker_count == 1
+            File.write("first-spawn-pending", "")
+            deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 8
+            until File.exist?("release-first-spawn") || Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
+              sleep 0.01
+            end
+          end
           super
         end
 
@@ -226,9 +233,23 @@ class TestBoot < Pitchfork::IntegrationTest
       after_mold_fork do |server, _mold|
         server.extend(SlowSpawnWorkerPatch)
       end
+
+      after_monitor_ready do |server|
+        def server.murder_lazy_workers
+          if children.workers_count > 0 && !@checked_first_spawn
+            deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 5
+            until File.exist?("first-spawn-pending") || Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
+              sleep 0.01
+            end
+            @checked_first_spawn = true
+          end
+          super
+        end
+      end
     RUBY
 
     assert_stderr(/worker=0 gen=0.0 timed out during spawn, abandoning/, timeout: 5)
+    File.write("release-first-spawn", "")
     assert_stderr(/worker=0 gen=0.0 pid=(\d+) spawned but slot is taken/, timeout: 5)
 
     abandoned_worker_pid = read_stderr.match(/worker=0 gen=0.0 pid=(\d+) spawned but slot is taken/)[1]

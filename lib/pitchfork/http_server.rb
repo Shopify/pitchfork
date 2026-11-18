@@ -1266,6 +1266,7 @@ module Pitchfork
     end
 
     def mold_handle_message(mold, message)
+      # The monitor initializes shared state and sets spawn deadlines before sending these messages.
       case message
       when false
         # no message, keep looping
@@ -1273,7 +1274,7 @@ module Pitchfork
         message.nrs.each do |nr|
           retries = 1
           mold.update_deadline(@timeout)
-          worker = Worker.new(nr, generation: mold.generation, version: mold.version)
+          worker = Worker.new(nr, generation: mold.generation, version: mold.version, reset_state: false)
           begin
             spawn_worker(worker)
           rescue ForkFailure
@@ -1292,7 +1293,10 @@ module Pitchfork
       when Message::SpawnService
         retries = 1
         begin
-          spawn_service(Pitchfork::Worker.new(nil, generation: mold.generation, version: mold.version, service: true))
+          service = Pitchfork::Worker.new(
+            nil, generation: mold.generation, version: mold.version, service: true, reset_state: false
+          )
+          spawn_service(service)
         rescue ForkFailure
           if retries > 0
             @logger.fatal("#{mold.to_log} failed to spawn a service, retrying")
