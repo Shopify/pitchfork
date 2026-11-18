@@ -349,6 +349,8 @@ static void write_value(VALUE self, struct http_parser *hp,
 
 %%{
   machine http_parser;
+  alphtype unsigned char;
+  getkey (unsigned char)*p;
 
   action mark {MARK(mark, fpc); }
 

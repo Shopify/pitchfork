@@ -872,6 +872,25 @@ module Pitchfork
       assert_equal Encoding::UTF_8, env.keys.find { |k| k == 'HTTP_HOST' }.encoding
     end
 
+    def test_binary_header_value_bytes
+      value = (0x80..0xff).to_a.pack("C*")
+      parser = HttpParser.new
+      parser.buf << "GET / HTTP/1.1\r\nX-Binary: ".b << value << "\r\n\r\n"
+
+      assert parser.parse
+      assert_equal value, parser.env["HTTP_X_BINARY"]
+    end
+
+    def test_binary_request_target_bytes
+      value = (0x80..0xff).to_a.pack("C*")
+      parser = HttpParser.new
+      parser.buf << "GET /".b << value << "?q=" << value << " HTTP/1.1\r\n\r\n"
+
+      assert parser.parse
+      assert_equal "/".b + value, parser.env["PATH_INFO"].b
+      assert_equal "q=".b + value, parser.env["QUERY_STRING"].b
+    end
+
     def test_memsize
       require "objspace"
 
