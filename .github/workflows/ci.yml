@@ -64,7 +64,9 @@ jobs:
         run: sudo apt-get install -y ragel socat netcat-openbsd
 
       - name: Tests Rack ${{ matrix.rack }} ${{ matrix.rubyopt }}
-        run: bundle exec rake
+        run: bundle exec rake compile test
 
       - name: Ensure ragel output is up-to-date
-        run: git diff --exit-code
+        run: |
+          bundle exec rake ragel
+          git diff --exit-code
