@@ -9,7 +9,7 @@ workflows:
     '.github/workflows/release.yml':
         - 'actions/checkout@v6.1.0'
         - 'ruby/setup-ruby@v1.336.0'
-        - 'rubygems/release-gem@v1.4.1'
+        - 'rubygems/release-gem@v1.4.2'
 dependencies:
     'actions/checkout@v4.4.0':
         ref: 'v4.4.0'
@@ -31,9 +31,9 @@ dependencies:
         commit: 'sha1-dc5a8d8553e6ee01fc26761a49e99e733d17954a'
         owner_id: 208761
         repo_id: 631633510
-    'rubygems/release-gem@v1.4.1':
-        ref: 'v1.4.1'
-        commit: 'sha1-7f9650160c1a4e7989fdc9855807bdbd421d8b6b'
+    'rubygems/release-gem@v1.4.2':
+        ref: 'v1.4.2'
+        commit: 'sha1-5c53f5308233b7c0f47411f0471b3faae6fa57b2'
         owner_id: 208761
         repo_id: 731435765
         uses:
