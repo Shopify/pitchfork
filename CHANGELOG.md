@@ -1,5 +1,6 @@
 # Unreleased
 
+- Fix non-ASCII request bytes on platforms where `char` is signed.
 - [GHSA-gc8c-7rmr-hp64](https://github.com/Shopify/pitchfork/security/advisories/GHSA-gc8c-7rmr-hp64) Prevent header confusion: reject `Content_Length` and `Transfer_Encoding`, and ignore other headers with underscores in their names.
 - [GHSA-pw9g-874p-x237](https://github.com/Shopify/pitchfork/security/advisories/GHSA-pw9g-874p-x237) Store request trailers separately in `pitchfork.request_trailers`.
 - [GHSA-mr52-m5rh-frmq](https://github.com/Shopify/pitchfork/security/advisories/GHSA-mr52-m5rh-frmq) Fix CRLF injection in response trailers.

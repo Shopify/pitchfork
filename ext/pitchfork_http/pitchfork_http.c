@@ -350,7 +350,7 @@ static void write_value(VALUE self, struct http_parser *hp,
 /** Machine **/
 
 
-#line 451 "pitchfork_http.rl"
+#line 453 "pitchfork_http.rl"
 
 
 /** Data **/
@@ -366,7 +366,7 @@ static const int http_parser_en_Trailers = 114;
 static const int http_parser_en_main = 1;
 
 
-#line 455 "pitchfork_http.rl"
+#line 457 "pitchfork_http.rl"
 
 static void http_parser_init(struct http_parser *hp)
 {
@@ -384,7 +384,7 @@ static void http_parser_init(struct http_parser *hp)
 	cs = http_parser_start;
 	}
 
-#line 467 "pitchfork_http.rl"
+#line 469 "pitchfork_http.rl"
   hp->cs = cs;
 }
 
@@ -419,24 +419,24 @@ http_parser_execute(VALUE self, struct http_parser *hp, char *buffer, size_t len
 	switch ( cs )
 	{
 case 1:
-	switch( (*p) ) {
-		case 33: goto tr0;
-		case 71: goto tr2;
-		case 124: goto tr0;
-		case 126: goto tr0;
+	switch( ( (unsigned char)*p) ) {
+		case 33u: goto tr0;
+		case 71u: goto tr2;
+		case 124u: goto tr0;
+		case 126u: goto tr0;
 	}
-	if ( (*p) < 45 ) {
-		if ( (*p) > 39 ) {
-			if ( 42 <= (*p) && (*p) <= 43 )
+	if ( ( (unsigned char)*p) < 45u ) {
+		if ( ( (unsigned char)*p) > 39u ) {
+			if ( 42u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 43u )
 				goto tr0;
-		} else if ( (*p) >= 35 )
+		} else if ( ( (unsigned char)*p) >= 35u )
 			goto tr0;
-	} else if ( (*p) > 46 ) {
-		if ( (*p) < 65 ) {
-			if ( 48 <= (*p) && (*p) <= 57 )
+	} else if ( ( (unsigned char)*p) > 46u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 				goto tr0;
-		} else if ( (*p) > 90 ) {
-			if ( 94 <= (*p) && (*p) <= 122 )
+		} else if ( ( (unsigned char)*p) > 90u ) {
+			if ( 94u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 122u )
 				goto tr0;
 		} else
 			goto tr0;
@@ -447,7 +447,7 @@ st0:
 cs = 0;
 	goto _out;
 tr0:
-#line 353 "pitchfork_http.rl"
+#line 355 "pitchfork_http.rl"
 	{MARK(mark, p); }
 	goto st2;
 st2:
@@ -455,24 +455,24 @@ st2:
 		goto _test_eof2;
 case 2:
 #line 458 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 32: goto tr3;
-		case 33: goto st49;
-		case 124: goto st49;
-		case 126: goto st49;
+	switch( ( (unsigned char)*p) ) {
+		case 32u: goto tr3;
+		case 33u: goto st49;
+		case 124u: goto st49;
+		case 126u: goto st49;
 	}
-	if ( (*p) < 45 ) {
-		if ( (*p) > 39 ) {
-			if ( 42 <= (*p) && (*p) <= 43 )
+	if ( ( (unsigned char)*p) < 45u ) {
+		if ( ( (unsigned char)*p) > 39u ) {
+			if ( 42u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 43u )
 				goto st49;
-		} else if ( (*p) >= 35 )
+		} else if ( ( (unsigned char)*p) >= 35u )
 			goto st49;
-	} else if ( (*p) > 46 ) {
-		if ( (*p) < 65 ) {
-			if ( 48 <= (*p) && (*p) <= 57 )
+	} else if ( ( (unsigned char)*p) > 46u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 				goto st49;
-		} else if ( (*p) > 90 ) {
-			if ( 94 <= (*p) && (*p) <= 122 )
+		} else if ( ( (unsigned char)*p) > 90u ) {
+			if ( 94u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 122u )
 				goto st49;
 		} else
 			goto st49;
@@ -480,7 +480,7 @@ case 2:
 		goto st49;
 	goto st0;
 tr3:
-#line 362 "pitchfork_http.rl"
+#line 364 "pitchfork_http.rl"
 	{ request_method(hp, PTR_TO(mark), LEN(mark, p)); }
 	goto st3;
 st3:
@@ -488,15 +488,15 @@ st3:
 		goto _test_eof3;
 case 3:
 #line 491 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 42: goto tr5;
-		case 47: goto tr6;
-		case 72: goto tr7;
-		case 104: goto tr7;
+	switch( ( (unsigned char)*p) ) {
+		case 42u: goto tr5;
+		case 47u: goto tr6;
+		case 72u: goto tr7;
+		case 104u: goto tr7;
 	}
 	goto st0;
 tr5:
-#line 353 "pitchfork_http.rl"
+#line 355 "pitchfork_http.rl"
 	{MARK(mark, p); }
 	goto st4;
 st4:
@@ -504,13 +504,13 @@ st4:
 		goto _test_eof4;
 case 4:
 #line 507 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 32: goto tr8;
-		case 35: goto tr9;
+	switch( ( (unsigned char)*p) ) {
+		case 32u: goto tr8;
+		case 35u: goto tr9;
 	}
 	goto st0;
 tr8:
-#line 367 "pitchfork_http.rl"
+#line 369 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -522,24 +522,24 @@ tr8:
     }
   }
 	goto st5;
-tr42:
-#line 353 "pitchfork_http.rl"
+tr41:
+#line 355 "pitchfork_http.rl"
 	{MARK(mark, p); }
-#line 377 "pitchfork_http.rl"
+#line 379 "pitchfork_http.rl"
 	{
     VALIDATE_MAX_URI_LENGTH(LEN(mark, p), FRAGMENT);
     rb_hash_aset(hp->env, g_fragment, STR_NEW(mark, p));
   }
 	goto st5;
-tr45:
-#line 377 "pitchfork_http.rl"
+tr44:
+#line 379 "pitchfork_http.rl"
 	{
     VALIDATE_MAX_URI_LENGTH(LEN(mark, p), FRAGMENT);
     rb_hash_aset(hp->env, g_fragment, STR_NEW(mark, p));
   }
 	goto st5;
-tr49:
-#line 387 "pitchfork_http.rl"
+tr48:
+#line 389 "pitchfork_http.rl"
 	{
     VALUE val;
 
@@ -548,7 +548,7 @@ tr49:
 
     rb_hash_aset(hp->env, g_path_info, val);
   }
-#line 367 "pitchfork_http.rl"
+#line 369 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -560,15 +560,15 @@ tr49:
     }
   }
 	goto st5;
-tr55:
-#line 381 "pitchfork_http.rl"
+tr54:
+#line 383 "pitchfork_http.rl"
 	{MARK(start.query, p); }
-#line 382 "pitchfork_http.rl"
+#line 384 "pitchfork_http.rl"
 	{
     VALIDATE_MAX_URI_LENGTH(LEN(start.query, p), QUERY_STRING);
     rb_hash_aset(hp->env, g_query_string, STR_NEW(start.query, p));
   }
-#line 367 "pitchfork_http.rl"
+#line 369 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -580,13 +580,13 @@ tr55:
     }
   }
 	goto st5;
-tr59:
-#line 382 "pitchfork_http.rl"
+tr58:
+#line 384 "pitchfork_http.rl"
 	{
     VALIDATE_MAX_URI_LENGTH(LEN(start.query, p), QUERY_STRING);
     rb_hash_aset(hp->env, g_query_string, STR_NEW(start.query, p));
   }
-#line 367 "pitchfork_http.rl"
+#line 369 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -603,11 +603,11 @@ st5:
 		goto _test_eof5;
 case 5:
 #line 606 "pitchfork_http.c"
-	if ( (*p) == 72 )
+	if ( ( (unsigned char)*p) == 72u )
 		goto tr10;
 	goto st0;
 tr10:
-#line 353 "pitchfork_http.rl"
+#line 355 "pitchfork_http.rl"
 	{MARK(mark, p); }
 	goto st6;
 st6:
@@ -615,86 +615,86 @@ st6:
 		goto _test_eof6;
 case 6:
 #line 618 "pitchfork_http.c"
-	if ( (*p) == 84 )
+	if ( ( (unsigned char)*p) == 84u )
 		goto st7;
 	goto st0;
 st7:
 	if ( ++p == pe )
 		goto _test_eof7;
 case 7:
-	if ( (*p) == 84 )
+	if ( ( (unsigned char)*p) == 84u )
 		goto st8;
 	goto st0;
 st8:
 	if ( ++p == pe )
 		goto _test_eof8;
 case 8:
-	if ( (*p) == 80 )
+	if ( ( (unsigned char)*p) == 80u )
 		goto st9;
 	goto st0;
 st9:
 	if ( ++p == pe )
 		goto _test_eof9;
 case 9:
-	if ( (*p) == 47 )
+	if ( ( (unsigned char)*p) == 47u )
 		goto st10;
 	goto st0;
 st10:
 	if ( ++p == pe )
 		goto _test_eof10;
 case 10:
-	if ( 48 <= (*p) && (*p) <= 57 )
+	if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 		goto st11;
 	goto st0;
 st11:
 	if ( ++p == pe )
 		goto _test_eof11;
 case 11:
-	if ( (*p) == 46 )
+	if ( ( (unsigned char)*p) == 46u )
 		goto st12;
-	if ( 48 <= (*p) && (*p) <= 57 )
+	if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 		goto st11;
 	goto st0;
 st12:
 	if ( ++p == pe )
 		goto _test_eof12;
 case 12:
-	if ( 48 <= (*p) && (*p) <= 57 )
+	if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 		goto st13;
 	goto st0;
 st13:
 	if ( ++p == pe )
 		goto _test_eof13;
 case 13:
-	switch( (*p) ) {
-		case 10: goto tr18;
-		case 13: goto tr19;
+	switch( ( (unsigned char)*p) ) {
+		case 10u: goto tr18;
+		case 13u: goto tr19;
 	}
-	if ( 48 <= (*p) && (*p) <= 57 )
+	if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 		goto st13;
 	goto st0;
 tr18:
-#line 386 "pitchfork_http.rl"
+#line 388 "pitchfork_http.rl"
 	{ http_version(hp, PTR_TO(mark), LEN(mark, p)); }
 	goto st14;
-tr26:
-#line 359 "pitchfork_http.rl"
-	{ MARK(mark, p); }
+tr25:
 #line 361 "pitchfork_http.rl"
+	{ MARK(mark, p); }
+#line 363 "pitchfork_http.rl"
 	{ write_cont_value(hp, buffer, p); }
 	goto st14;
-tr29:
-#line 361 "pitchfork_http.rl"
+tr30:
+#line 363 "pitchfork_http.rl"
 	{ write_cont_value(hp, buffer, p); }
 	goto st14;
-tr36:
-#line 359 "pitchfork_http.rl"
+tr35:
+#line 361 "pitchfork_http.rl"
 	{ MARK(mark, p); }
-#line 360 "pitchfork_http.rl"
+#line 362 "pitchfork_http.rl"
 	{ write_value(self, hp, buffer, p); }
 	goto st14;
 tr39:
-#line 360 "pitchfork_http.rl"
+#line 362 "pitchfork_http.rl"
 	{ write_value(self, hp, buffer, p); }
 	goto st14;
 st14:
@@ -702,35 +702,35 @@ st14:
 		goto _test_eof14;
 case 14:
 #line 705 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 9: goto st15;
-		case 10: goto tr21;
-		case 13: goto st18;
-		case 32: goto st15;
-		case 33: goto tr23;
-		case 124: goto tr23;
-		case 126: goto tr23;
+	switch( ( (unsigned char)*p) ) {
+		case 9u: goto st15;
+		case 10u: goto tr21;
+		case 13u: goto st18;
+		case 32u: goto st15;
+		case 33u: goto tr23;
+		case 124u: goto tr23;
+		case 126u: goto tr23;
 	}
-	if ( (*p) < 45 ) {
-		if ( (*p) > 39 ) {
-			if ( 42 <= (*p) && (*p) <= 43 )
+	if ( ( (unsigned char)*p) < 45u ) {
+		if ( ( (unsigned char)*p) > 39u ) {
+			if ( 42u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 43u )
 				goto tr23;
-		} else if ( (*p) >= 35 )
+		} else if ( ( (unsigned char)*p) >= 35u )
 			goto tr23;
-	} else if ( (*p) > 46 ) {
-		if ( (*p) < 65 ) {
-			if ( 48 <= (*p) && (*p) <= 57 )
+	} else if ( ( (unsigned char)*p) > 46u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 				goto tr23;
-		} else if ( (*p) > 90 ) {
-			if ( 94 <= (*p) && (*p) <= 122 )
+		} else if ( ( (unsigned char)*p) > 90u ) {
+			if ( 94u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 122u )
 				goto tr23;
 		} else
 			goto tr23;
 	} else
 		goto tr23;
 	goto st0;
-tr25:
-#line 359 "pitchfork_http.rl"
+tr24:
+#line 361 "pitchfork_http.rl"
 	{ MARK(mark, p); }
 	goto st15;
 st15:
@@ -738,70 +738,70 @@ st15:
 		goto _test_eof15;
 case 15:
 #line 741 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 9: goto tr25;
-		case 10: goto tr26;
-		case 13: goto tr27;
-		case 32: goto tr25;
-		case 127: goto st0;
+	switch( ( (unsigned char)*p) ) {
+		case 9u: goto tr24;
+		case 10u: goto tr25;
+		case 13u: goto tr26;
+		case 32u: goto tr24;
+		case 127u: goto st0;
 	}
-	if ( 0 <= (*p) && (*p) <= 31 )
+	if ( ( (unsigned char)*p) <= 31u )
 		goto st0;
-	goto tr24;
-tr24:
-#line 359 "pitchfork_http.rl"
+	goto tr27;
+tr19:
+#line 388 "pitchfork_http.rl"
+	{ http_version(hp, PTR_TO(mark), LEN(mark, p)); }
+	goto st16;
+tr26:
+#line 361 "pitchfork_http.rl"
 	{ MARK(mark, p); }
+#line 363 "pitchfork_http.rl"
+	{ write_cont_value(hp, buffer, p); }
+	goto st16;
+tr31:
+#line 363 "pitchfork_http.rl"
+	{ write_cont_value(hp, buffer, p); }
+	goto st16;
+tr36:
+#line 361 "pitchfork_http.rl"
+	{ MARK(mark, p); }
+#line 362 "pitchfork_http.rl"
+	{ write_value(self, hp, buffer, p); }
+	goto st16;
+tr40:
+#line 362 "pitchfork_http.rl"
+	{ write_value(self, hp, buffer, p); }
 	goto st16;
 st16:
 	if ( ++p == pe )
 		goto _test_eof16;
 case 16:
-#line 760 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 10: goto tr29;
-		case 13: goto tr30;
-		case 127: goto st0;
-	}
-	if ( (*p) > 8 ) {
-		if ( 11 <= (*p) && (*p) <= 31 )
-			goto st0;
-	} else if ( (*p) >= 0 )
-		goto st0;
-	goto st16;
-tr19:
-#line 386 "pitchfork_http.rl"
-	{ http_version(hp, PTR_TO(mark), LEN(mark, p)); }
-	goto st17;
+#line 780 "pitchfork_http.c"
+	if ( ( (unsigned char)*p) == 10u )
+		goto st14;
+	goto st0;
 tr27:
-#line 359 "pitchfork_http.rl"
-	{ MARK(mark, p); }
 #line 361 "pitchfork_http.rl"
-	{ write_cont_value(hp, buffer, p); }
-	goto st17;
-tr30:
-#line 361 "pitchfork_http.rl"
-	{ write_cont_value(hp, buffer, p); }
-	goto st17;
-tr37:
-#line 359 "pitchfork_http.rl"
 	{ MARK(mark, p); }
-#line 360 "pitchfork_http.rl"
-	{ write_value(self, hp, buffer, p); }
-	goto st17;
-tr40:
-#line 360 "pitchfork_http.rl"
-	{ write_value(self, hp, buffer, p); }
 	goto st17;
 st17:
 	if ( ++p == pe )
 		goto _test_eof17;
 case 17:
-#line 800 "pitchfork_http.c"
-	if ( (*p) == 10 )
-		goto st14;
-	goto st0;
+#line 792 "pitchfork_http.c"
+	switch( ( (unsigned char)*p) ) {
+		case 10u: goto tr30;
+		case 13u: goto tr31;
+		case 127u: goto st0;
+	}
+	if ( ( (unsigned char)*p) > 8u ) {
+		if ( 11u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 31u )
+			goto st0;
+	} else
+		goto st0;
+	goto st17;
 tr21:
-#line 400 "pitchfork_http.rl"
+#line 402 "pitchfork_http.rl"
 	{
     finalize_header(hp);
 
@@ -822,7 +822,7 @@ tr21:
   }
 	goto st122;
 tr104:
-#line 367 "pitchfork_http.rl"
+#line 369 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -833,7 +833,7 @@ tr104:
       rb_hash_aset(hp->env, g_path_info, str);
     }
   }
-#line 400 "pitchfork_http.rl"
+#line 402 "pitchfork_http.rl"
 	{
     finalize_header(hp);
 
@@ -853,15 +853,15 @@ tr104:
     goto post_exec;
   }
 	goto st122;
-tr108:
-#line 353 "pitchfork_http.rl"
+tr107:
+#line 355 "pitchfork_http.rl"
 	{MARK(mark, p); }
-#line 377 "pitchfork_http.rl"
+#line 379 "pitchfork_http.rl"
 	{
     VALIDATE_MAX_URI_LENGTH(LEN(mark, p), FRAGMENT);
     rb_hash_aset(hp->env, g_fragment, STR_NEW(mark, p));
   }
-#line 400 "pitchfork_http.rl"
+#line 402 "pitchfork_http.rl"
 	{
     finalize_header(hp);
 
@@ -881,13 +881,13 @@ tr108:
     goto post_exec;
   }
 	goto st122;
-tr112:
-#line 377 "pitchfork_http.rl"
+tr111:
+#line 379 "pitchfork_http.rl"
 	{
     VALIDATE_MAX_URI_LENGTH(LEN(mark, p), FRAGMENT);
     rb_hash_aset(hp->env, g_fragment, STR_NEW(mark, p));
   }
-#line 400 "pitchfork_http.rl"
+#line 402 "pitchfork_http.rl"
 	{
     finalize_header(hp);
 
@@ -907,8 +907,8 @@ tr112:
     goto post_exec;
   }
 	goto st122;
-tr117:
-#line 387 "pitchfork_http.rl"
+tr116:
+#line 389 "pitchfork_http.rl"
 	{
     VALUE val;
 
@@ -917,7 +917,7 @@ tr117:
 
     rb_hash_aset(hp->env, g_path_info, val);
   }
-#line 367 "pitchfork_http.rl"
+#line 369 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -928,7 +928,7 @@ tr117:
       rb_hash_aset(hp->env, g_path_info, str);
     }
   }
-#line 400 "pitchfork_http.rl"
+#line 402 "pitchfork_http.rl"
 	{
     finalize_header(hp);
 
@@ -948,15 +948,15 @@ tr117:
     goto post_exec;
   }
 	goto st122;
-tr124:
-#line 381 "pitchfork_http.rl"
+tr123:
+#line 383 "pitchfork_http.rl"
 	{MARK(start.query, p); }
-#line 382 "pitchfork_http.rl"
+#line 384 "pitchfork_http.rl"
 	{
     VALIDATE_MAX_URI_LENGTH(LEN(start.query, p), QUERY_STRING);
     rb_hash_aset(hp->env, g_query_string, STR_NEW(start.query, p));
   }
-#line 367 "pitchfork_http.rl"
+#line 369 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -967,7 +967,7 @@ tr124:
       rb_hash_aset(hp->env, g_path_info, str);
     }
   }
-#line 400 "pitchfork_http.rl"
+#line 402 "pitchfork_http.rl"
 	{
     finalize_header(hp);
 
@@ -987,13 +987,13 @@ tr124:
     goto post_exec;
   }
 	goto st122;
-tr129:
-#line 382 "pitchfork_http.rl"
+tr128:
+#line 384 "pitchfork_http.rl"
 	{
     VALIDATE_MAX_URI_LENGTH(LEN(start.query, p), QUERY_STRING);
     rb_hash_aset(hp->env, g_query_string, STR_NEW(start.query, p));
   }
-#line 367 "pitchfork_http.rl"
+#line 369 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -1004,7 +1004,7 @@ tr129:
       rb_hash_aset(hp->env, g_path_info, str);
     }
   }
-#line 400 "pitchfork_http.rl"
+#line 402 "pitchfork_http.rl"
 	{
     finalize_header(hp);
 
@@ -1031,7 +1031,7 @@ case 122:
 #line 1032 "pitchfork_http.c"
 	goto st0;
 tr105:
-#line 367 "pitchfork_http.rl"
+#line 369 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -1043,24 +1043,24 @@ tr105:
     }
   }
 	goto st18;
-tr109:
-#line 353 "pitchfork_http.rl"
+tr108:
+#line 355 "pitchfork_http.rl"
 	{MARK(mark, p); }
-#line 377 "pitchfork_http.rl"
+#line 379 "pitchfork_http.rl"
 	{
     VALIDATE_MAX_URI_LENGTH(LEN(mark, p), FRAGMENT);
     rb_hash_aset(hp->env, g_fragment, STR_NEW(mark, p));
   }
 	goto st18;
-tr113:
-#line 377 "pitchfork_http.rl"
+tr112:
+#line 379 "pitchfork_http.rl"
 	{
     VALIDATE_MAX_URI_LENGTH(LEN(mark, p), FRAGMENT);
     rb_hash_aset(hp->env, g_fragment, STR_NEW(mark, p));
   }
 	goto st18;
-tr118:
-#line 387 "pitchfork_http.rl"
+tr117:
+#line 389 "pitchfork_http.rl"
 	{
     VALUE val;
 
@@ -1069,7 +1069,7 @@ tr118:
 
     rb_hash_aset(hp->env, g_path_info, val);
   }
-#line 367 "pitchfork_http.rl"
+#line 369 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -1081,15 +1081,15 @@ tr118:
     }
   }
 	goto st18;
-tr125:
-#line 381 "pitchfork_http.rl"
+tr124:
+#line 383 "pitchfork_http.rl"
 	{MARK(start.query, p); }
-#line 382 "pitchfork_http.rl"
+#line 384 "pitchfork_http.rl"
 	{
     VALIDATE_MAX_URI_LENGTH(LEN(start.query, p), QUERY_STRING);
     rb_hash_aset(hp->env, g_query_string, STR_NEW(start.query, p));
   }
-#line 367 "pitchfork_http.rl"
+#line 369 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -1101,13 +1101,13 @@ tr125:
     }
   }
 	goto st18;
-tr130:
-#line 382 "pitchfork_http.rl"
+tr129:
+#line 384 "pitchfork_http.rl"
 	{
     VALIDATE_MAX_URI_LENGTH(LEN(start.query, p), QUERY_STRING);
     rb_hash_aset(hp->env, g_query_string, STR_NEW(start.query, p));
   }
-#line 367 "pitchfork_http.rl"
+#line 369 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -1124,17 +1124,17 @@ st18:
 		goto _test_eof18;
 case 18:
 #line 1127 "pitchfork_http.c"
-	if ( (*p) == 10 )
+	if ( ( (unsigned char)*p) == 10u )
 		goto tr21;
 	goto st0;
 tr23:
-#line 355 "pitchfork_http.rl"
+#line 357 "pitchfork_http.rl"
 	{ MARK(start.field, p); }
-#line 356 "pitchfork_http.rl"
+#line 358 "pitchfork_http.rl"
 	{ upcase_char(deconst(p)); }
 	goto st19;
 tr32:
-#line 356 "pitchfork_http.rl"
+#line 358 "pitchfork_http.rl"
 	{ upcase_char(deconst(p)); }
 	goto st19;
 st19:
@@ -1142,36 +1142,36 @@ st19:
 		goto _test_eof19;
 case 19:
 #line 1145 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 33: goto tr32;
-		case 58: goto tr33;
-		case 124: goto tr32;
-		case 126: goto tr32;
+	switch( ( (unsigned char)*p) ) {
+		case 33u: goto tr32;
+		case 58u: goto tr33;
+		case 124u: goto tr32;
+		case 126u: goto tr32;
 	}
-	if ( (*p) < 45 ) {
-		if ( (*p) > 39 ) {
-			if ( 42 <= (*p) && (*p) <= 43 )
+	if ( ( (unsigned char)*p) < 45u ) {
+		if ( ( (unsigned char)*p) > 39u ) {
+			if ( 42u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 43u )
 				goto tr32;
-		} else if ( (*p) >= 35 )
+		} else if ( ( (unsigned char)*p) >= 35u )
 			goto tr32;
-	} else if ( (*p) > 46 ) {
-		if ( (*p) < 65 ) {
-			if ( 48 <= (*p) && (*p) <= 57 )
+	} else if ( ( (unsigned char)*p) > 46u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 				goto tr32;
-		} else if ( (*p) > 90 ) {
-			if ( 94 <= (*p) && (*p) <= 122 )
+		} else if ( ( (unsigned char)*p) > 90u ) {
+			if ( 94u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 122u )
 				goto tr32;
 		} else
 			goto tr32;
 	} else
 		goto tr32;
 	goto st0;
-tr35:
-#line 359 "pitchfork_http.rl"
+tr34:
+#line 361 "pitchfork_http.rl"
 	{ MARK(mark, p); }
 	goto st20;
 tr33:
-#line 358 "pitchfork_http.rl"
+#line 360 "pitchfork_http.rl"
 	{ hp->s.field_len = LEN(start.field, p); }
 	goto st20;
 st20:
@@ -1179,18 +1179,18 @@ st20:
 		goto _test_eof20;
 case 20:
 #line 1182 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 9: goto tr35;
-		case 10: goto tr36;
-		case 13: goto tr37;
-		case 32: goto tr35;
-		case 127: goto st0;
+	switch( ( (unsigned char)*p) ) {
+		case 9u: goto tr34;
+		case 10u: goto tr35;
+		case 13u: goto tr36;
+		case 32u: goto tr34;
+		case 127u: goto st0;
 	}
-	if ( 0 <= (*p) && (*p) <= 31 )
+	if ( ( (unsigned char)*p) <= 31u )
 		goto st0;
-	goto tr34;
-tr34:
-#line 359 "pitchfork_http.rl"
+	goto tr37;
+tr37:
+#line 361 "pitchfork_http.rl"
 	{ MARK(mark, p); }
 	goto st21;
 st21:
@@ -1198,19 +1198,19 @@ st21:
 		goto _test_eof21;
 case 21:
 #line 1201 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 10: goto tr39;
-		case 13: goto tr40;
-		case 127: goto st0;
+	switch( ( (unsigned char)*p) ) {
+		case 10u: goto tr39;
+		case 13u: goto tr40;
+		case 127u: goto st0;
 	}
-	if ( (*p) > 8 ) {
-		if ( 11 <= (*p) && (*p) <= 31 )
+	if ( ( (unsigned char)*p) > 8u ) {
+		if ( 11u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 31u )
 			goto st0;
-	} else if ( (*p) >= 0 )
+	} else
 		goto st0;
 	goto st21;
 tr9:
-#line 367 "pitchfork_http.rl"
+#line 369 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -1223,7 +1223,7 @@ tr9:
   }
 	goto st22;
 tr50:
-#line 387 "pitchfork_http.rl"
+#line 389 "pitchfork_http.rl"
 	{
     VALUE val;
 
@@ -1232,7 +1232,7 @@ tr50:
 
     rb_hash_aset(hp->env, g_path_info, val);
   }
-#line 367 "pitchfork_http.rl"
+#line 369 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -1245,14 +1245,14 @@ tr50:
   }
 	goto st22;
 tr56:
-#line 381 "pitchfork_http.rl"
+#line 383 "pitchfork_http.rl"
 	{MARK(start.query, p); }
-#line 382 "pitchfork_http.rl"
+#line 384 "pitchfork_http.rl"
 	{
     VALIDATE_MAX_URI_LENGTH(LEN(start.query, p), QUERY_STRING);
     rb_hash_aset(hp->env, g_query_string, STR_NEW(start.query, p));
   }
-#line 367 "pitchfork_http.rl"
+#line 369 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -1265,12 +1265,12 @@ tr56:
   }
 	goto st22;
 tr60:
-#line 382 "pitchfork_http.rl"
+#line 384 "pitchfork_http.rl"
 	{
     VALIDATE_MAX_URI_LENGTH(LEN(start.query, p), QUERY_STRING);
     rb_hash_aset(hp->env, g_query_string, STR_NEW(start.query, p));
   }
-#line 367 "pitchfork_http.rl"
+#line 369 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -1287,17 +1287,17 @@ st22:
 		goto _test_eof22;
 case 22:
 #line 1290 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 32: goto tr42;
-		case 35: goto st0;
-		case 37: goto tr43;
-		case 127: goto st0;
+	switch( ( (unsigned char)*p) ) {
+		case 32u: goto tr41;
+		case 35u: goto st0;
+		case 37u: goto tr43;
+		case 127u: goto st0;
 	}
-	if ( 0 <= (*p) && (*p) <= 31 )
+	if ( ( (unsigned char)*p) <= 31u )
 		goto st0;
-	goto tr41;
-tr41:
-#line 353 "pitchfork_http.rl"
+	goto tr42;
+tr42:
+#line 355 "pitchfork_http.rl"
 	{MARK(mark, p); }
 	goto st23;
 st23:
@@ -1305,17 +1305,17 @@ st23:
 		goto _test_eof23;
 case 23:
 #line 1308 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 32: goto tr45;
-		case 35: goto st0;
-		case 37: goto st24;
-		case 127: goto st0;
+	switch( ( (unsigned char)*p) ) {
+		case 32u: goto tr44;
+		case 35u: goto st0;
+		case 37u: goto st24;
+		case 127u: goto st0;
 	}
-	if ( 0 <= (*p) && (*p) <= 31 )
+	if ( ( (unsigned char)*p) <= 31u )
 		goto st0;
 	goto st23;
 tr43:
-#line 353 "pitchfork_http.rl"
+#line 355 "pitchfork_http.rl"
 	{MARK(mark, p); }
 	goto st24;
 st24:
@@ -1323,11 +1323,11 @@ st24:
 		goto _test_eof24;
 case 24:
 #line 1326 "pitchfork_http.c"
-	if ( (*p) < 65 ) {
-		if ( 48 <= (*p) && (*p) <= 57 )
+	if ( ( (unsigned char)*p) < 65u ) {
+		if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 			goto st25;
-	} else if ( (*p) > 70 ) {
-		if ( 97 <= (*p) && (*p) <= 102 )
+	} else if ( ( (unsigned char)*p) > 70u ) {
+		if ( 97u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 102u )
 			goto st25;
 	} else
 		goto st25;
@@ -1336,23 +1336,23 @@ st25:
 	if ( ++p == pe )
 		goto _test_eof25;
 case 25:
-	if ( (*p) < 65 ) {
-		if ( 48 <= (*p) && (*p) <= 57 )
+	if ( ( (unsigned char)*p) < 65u ) {
+		if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 			goto st23;
-	} else if ( (*p) > 70 ) {
-		if ( 97 <= (*p) && (*p) <= 102 )
+	} else if ( ( (unsigned char)*p) > 70u ) {
+		if ( 97u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 102u )
 			goto st23;
 	} else
 		goto st23;
 	goto st0;
 tr6:
-#line 353 "pitchfork_http.rl"
+#line 355 "pitchfork_http.rl"
 	{MARK(mark, p); }
 	goto st26;
 tr76:
-#line 366 "pitchfork_http.rl"
+#line 368 "pitchfork_http.rl"
 	{ rb_hash_aset(hp->env, g_http_host, STR_NEW(mark, p)); }
-#line 353 "pitchfork_http.rl"
+#line 355 "pitchfork_http.rl"
 	{MARK(mark, p); }
 	goto st26;
 st26:
@@ -1360,25 +1360,25 @@ st26:
 		goto _test_eof26;
 case 26:
 #line 1363 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 32: goto tr49;
-		case 35: goto tr50;
-		case 37: goto st27;
-		case 63: goto tr52;
-		case 127: goto st0;
+	switch( ( (unsigned char)*p) ) {
+		case 32u: goto tr48;
+		case 35u: goto tr50;
+		case 37u: goto st27;
+		case 63u: goto tr52;
+		case 127u: goto st0;
 	}
-	if ( 0 <= (*p) && (*p) <= 31 )
+	if ( ( (unsigned char)*p) <= 31u )
 		goto st0;
 	goto st26;
 st27:
 	if ( ++p == pe )
 		goto _test_eof27;
 case 27:
-	if ( (*p) < 65 ) {
-		if ( 48 <= (*p) && (*p) <= 57 )
+	if ( ( (unsigned char)*p) < 65u ) {
+		if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 			goto st28;
-	} else if ( (*p) > 70 ) {
-		if ( 97 <= (*p) && (*p) <= 102 )
+	} else if ( ( (unsigned char)*p) > 70u ) {
+		if ( 97u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 102u )
 			goto st28;
 	} else
 		goto st28;
@@ -1387,17 +1387,17 @@ st28:
 	if ( ++p == pe )
 		goto _test_eof28;
 case 28:
-	if ( (*p) < 65 ) {
-		if ( 48 <= (*p) && (*p) <= 57 )
+	if ( ( (unsigned char)*p) < 65u ) {
+		if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 			goto st26;
-	} else if ( (*p) > 70 ) {
-		if ( 97 <= (*p) && (*p) <= 102 )
+	} else if ( ( (unsigned char)*p) > 70u ) {
+		if ( 97u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 102u )
 			goto st26;
 	} else
 		goto st26;
 	goto st0;
 tr52:
-#line 387 "pitchfork_http.rl"
+#line 389 "pitchfork_http.rl"
 	{
     VALUE val;
 
@@ -1412,17 +1412,17 @@ st29:
 		goto _test_eof29;
 case 29:
 #line 1415 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 32: goto tr55;
-		case 35: goto tr56;
-		case 37: goto tr57;
-		case 127: goto st0;
+	switch( ( (unsigned char)*p) ) {
+		case 32u: goto tr54;
+		case 35u: goto tr56;
+		case 37u: goto tr57;
+		case 127u: goto st0;
 	}
-	if ( 0 <= (*p) && (*p) <= 31 )
+	if ( ( (unsigned char)*p) <= 31u )
 		goto st0;
-	goto tr54;
-tr54:
-#line 381 "pitchfork_http.rl"
+	goto tr55;
+tr55:
+#line 383 "pitchfork_http.rl"
 	{MARK(start.query, p); }
 	goto st30;
 st30:
@@ -1430,17 +1430,17 @@ st30:
 		goto _test_eof30;
 case 30:
 #line 1433 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 32: goto tr59;
-		case 35: goto tr60;
-		case 37: goto st31;
-		case 127: goto st0;
+	switch( ( (unsigned char)*p) ) {
+		case 32u: goto tr58;
+		case 35u: goto tr60;
+		case 37u: goto st31;
+		case 127u: goto st0;
 	}
-	if ( 0 <= (*p) && (*p) <= 31 )
+	if ( ( (unsigned char)*p) <= 31u )
 		goto st0;
 	goto st30;
 tr57:
-#line 381 "pitchfork_http.rl"
+#line 383 "pitchfork_http.rl"
 	{MARK(start.query, p); }
 	goto st31;
 st31:
@@ -1448,11 +1448,11 @@ st31:
 		goto _test_eof31;
 case 31:
 #line 1451 "pitchfork_http.c"
-	if ( (*p) < 65 ) {
-		if ( 48 <= (*p) && (*p) <= 57 )
+	if ( ( (unsigned char)*p) < 65u ) {
+		if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 			goto st32;
-	} else if ( (*p) > 70 ) {
-		if ( 97 <= (*p) && (*p) <= 102 )
+	} else if ( ( (unsigned char)*p) > 70u ) {
+		if ( 97u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 102u )
 			goto st32;
 	} else
 		goto st32;
@@ -1461,19 +1461,19 @@ st32:
 	if ( ++p == pe )
 		goto _test_eof32;
 case 32:
-	if ( (*p) < 65 ) {
-		if ( 48 <= (*p) && (*p) <= 57 )
+	if ( ( (unsigned char)*p) < 65u ) {
+		if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 			goto st30;
-	} else if ( (*p) > 70 ) {
-		if ( 97 <= (*p) && (*p) <= 102 )
+	} else if ( ( (unsigned char)*p) > 70u ) {
+		if ( 97u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 102u )
 			goto st30;
 	} else
 		goto st30;
 	goto st0;
 tr7:
-#line 353 "pitchfork_http.rl"
+#line 355 "pitchfork_http.rl"
 	{MARK(mark, p); }
-#line 357 "pitchfork_http.rl"
+#line 359 "pitchfork_http.rl"
 	{ downcase_char(deconst(p)); }
 	goto st33;
 st33:
@@ -1481,13 +1481,13 @@ st33:
 		goto _test_eof33;
 case 33:
 #line 1484 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 84: goto tr63;
-		case 116: goto tr63;
+	switch( ( (unsigned char)*p) ) {
+		case 84u: goto tr63;
+		case 116u: goto tr63;
 	}
 	goto st0;
 tr63:
-#line 357 "pitchfork_http.rl"
+#line 359 "pitchfork_http.rl"
 	{ downcase_char(deconst(p)); }
 	goto st34;
 st34:
@@ -1495,13 +1495,13 @@ st34:
 		goto _test_eof34;
 case 34:
 #line 1498 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 84: goto tr64;
-		case 116: goto tr64;
+	switch( ( (unsigned char)*p) ) {
+		case 84u: goto tr64;
+		case 116u: goto tr64;
 	}
 	goto st0;
 tr64:
-#line 357 "pitchfork_http.rl"
+#line 359 "pitchfork_http.rl"
 	{ downcase_char(deconst(p)); }
 	goto st35;
 st35:
@@ -1509,13 +1509,13 @@ st35:
 		goto _test_eof35;
 case 35:
 #line 1512 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 80: goto tr65;
-		case 112: goto tr65;
+	switch( ( (unsigned char)*p) ) {
+		case 80u: goto tr65;
+		case 112u: goto tr65;
 	}
 	goto st0;
 tr65:
-#line 357 "pitchfork_http.rl"
+#line 359 "pitchfork_http.rl"
 	{ downcase_char(deconst(p)); }
 	goto st36;
 st36:
@@ -1523,14 +1523,14 @@ st36:
 		goto _test_eof36;
 case 36:
 #line 1526 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 58: goto tr66;
-		case 83: goto tr67;
-		case 115: goto tr67;
+	switch( ( (unsigned char)*p) ) {
+		case 58u: goto tr66;
+		case 83u: goto tr67;
+		case 115u: goto tr67;
 	}
 	goto st0;
 tr66:
-#line 363 "pitchfork_http.rl"
+#line 365 "pitchfork_http.rl"
 	{
     rb_hash_aset(hp->env, g_rack_url_scheme, STR_NEW(mark, p));
   }
@@ -1540,40 +1540,40 @@ st37:
 		goto _test_eof37;
 case 37:
 #line 1543 "pitchfork_http.c"
-	if ( (*p) == 47 )
+	if ( ( (unsigned char)*p) == 47u )
 		goto st38;
 	goto st0;
 st38:
 	if ( ++p == pe )
 		goto _test_eof38;
 case 38:
-	if ( (*p) == 47 )
+	if ( ( (unsigned char)*p) == 47u )
 		goto st39;
 	goto st0;
 st39:
 	if ( ++p == pe )
 		goto _test_eof39;
 case 39:
-	switch( (*p) ) {
-		case 37: goto st41;
-		case 47: goto st0;
-		case 60: goto st0;
-		case 91: goto tr73;
-		case 95: goto tr72;
-		case 127: goto st0;
+	switch( ( (unsigned char)*p) ) {
+		case 37u: goto st41;
+		case 47u: goto st0;
+		case 60u: goto st0;
+		case 91u: goto tr73;
+		case 95u: goto tr72;
+		case 127u: goto st0;
 	}
-	if ( (*p) < 45 ) {
-		if ( (*p) > 32 ) {
-			if ( 34 <= (*p) && (*p) <= 35 )
+	if ( ( (unsigned char)*p) < 45u ) {
+		if ( ( (unsigned char)*p) > 32u ) {
+			if ( 34u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 35u )
 				goto st0;
-		} else if ( (*p) >= 0 )
+		} else
 			goto st0;
-	} else if ( (*p) > 57 ) {
-		if ( (*p) < 65 ) {
-			if ( 62 <= (*p) && (*p) <= 64 )
+	} else if ( ( (unsigned char)*p) > 57u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 62u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 64u )
 				goto st0;
-		} else if ( (*p) > 90 ) {
-			if ( 97 <= (*p) && (*p) <= 122 )
+		} else if ( ( (unsigned char)*p) > 90u ) {
+			if ( 97u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 122u )
 				goto tr72;
 		} else
 			goto tr72;
@@ -1584,18 +1584,18 @@ st40:
 	if ( ++p == pe )
 		goto _test_eof40;
 case 40:
-	switch( (*p) ) {
-		case 37: goto st41;
-		case 47: goto st0;
-		case 60: goto st0;
-		case 64: goto st39;
-		case 127: goto st0;
+	switch( ( (unsigned char)*p) ) {
+		case 37u: goto st41;
+		case 47u: goto st0;
+		case 60u: goto st0;
+		case 64u: goto st39;
+		case 127u: goto st0;
 	}
-	if ( (*p) < 34 ) {
-		if ( 0 <= (*p) && (*p) <= 32 )
+	if ( ( (unsigned char)*p) < 34u ) {
+		if ( ( (unsigned char)*p) <= 32u )
 			goto st0;
-	} else if ( (*p) > 35 ) {
-		if ( 62 <= (*p) && (*p) <= 63 )
+	} else if ( ( (unsigned char)*p) > 35u ) {
+		if ( 62u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 63u )
 			goto st0;
 	} else
 		goto st0;
@@ -1604,11 +1604,11 @@ st41:
 	if ( ++p == pe )
 		goto _test_eof41;
 case 41:
-	if ( (*p) < 65 ) {
-		if ( 48 <= (*p) && (*p) <= 57 )
+	if ( ( (unsigned char)*p) < 65u ) {
+		if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 			goto st42;
-	} else if ( (*p) > 70 ) {
-		if ( 97 <= (*p) && (*p) <= 102 )
+	} else if ( ( (unsigned char)*p) > 70u ) {
+		if ( 97u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 102u )
 			goto st42;
 	} else
 		goto st42;
@@ -1617,17 +1617,17 @@ st42:
 	if ( ++p == pe )
 		goto _test_eof42;
 case 42:
-	if ( (*p) < 65 ) {
-		if ( 48 <= (*p) && (*p) <= 57 )
+	if ( ( (unsigned char)*p) < 65u ) {
+		if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 			goto st40;
-	} else if ( (*p) > 70 ) {
-		if ( 97 <= (*p) && (*p) <= 102 )
+	} else if ( ( (unsigned char)*p) > 70u ) {
+		if ( 97u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 102u )
 			goto st40;
 	} else
 		goto st40;
 	goto st0;
 tr72:
-#line 353 "pitchfork_http.rl"
+#line 355 "pitchfork_http.rl"
 	{MARK(mark, p); }
 	goto st43;
 st43:
@@ -1635,27 +1635,27 @@ st43:
 		goto _test_eof43;
 case 43:
 #line 1638 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 37: goto st41;
-		case 47: goto tr76;
-		case 58: goto st44;
-		case 60: goto st0;
-		case 64: goto st39;
-		case 95: goto st43;
-		case 127: goto st0;
+	switch( ( (unsigned char)*p) ) {
+		case 37u: goto st41;
+		case 47u: goto tr76;
+		case 58u: goto st44;
+		case 60u: goto st0;
+		case 64u: goto st39;
+		case 95u: goto st43;
+		case 127u: goto st0;
 	}
-	if ( (*p) < 45 ) {
-		if ( (*p) > 32 ) {
-			if ( 34 <= (*p) && (*p) <= 35 )
+	if ( ( (unsigned char)*p) < 45u ) {
+		if ( ( (unsigned char)*p) > 32u ) {
+			if ( 34u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 35u )
 				goto st0;
-		} else if ( (*p) >= 0 )
+		} else
 			goto st0;
-	} else if ( (*p) > 57 ) {
-		if ( (*p) < 65 ) {
-			if ( 62 <= (*p) && (*p) <= 63 )
+	} else if ( ( (unsigned char)*p) > 57u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 62u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 63u )
 				goto st0;
-		} else if ( (*p) > 90 ) {
-			if ( 97 <= (*p) && (*p) <= 122 )
+		} else if ( ( (unsigned char)*p) > 90u ) {
+			if ( 97u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 122u )
 				goto st43;
 		} else
 			goto st43;
@@ -1666,27 +1666,27 @@ st44:
 	if ( ++p == pe )
 		goto _test_eof44;
 case 44:
-	switch( (*p) ) {
-		case 37: goto st41;
-		case 47: goto tr76;
-		case 60: goto st0;
-		case 64: goto st39;
-		case 127: goto st0;
+	switch( ( (unsigned char)*p) ) {
+		case 37u: goto st41;
+		case 47u: goto tr76;
+		case 60u: goto st0;
+		case 64u: goto st39;
+		case 127u: goto st0;
 	}
-	if ( (*p) < 34 ) {
-		if ( 0 <= (*p) && (*p) <= 32 )
+	if ( ( (unsigned char)*p) < 34u ) {
+		if ( ( (unsigned char)*p) <= 32u )
 			goto st0;
-	} else if ( (*p) > 35 ) {
-		if ( (*p) > 57 ) {
-			if ( 62 <= (*p) && (*p) <= 63 )
+	} else if ( ( (unsigned char)*p) > 35u ) {
+		if ( ( (unsigned char)*p) > 57u ) {
+			if ( 62u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 63u )
 				goto st0;
-		} else if ( (*p) >= 48 )
+		} else if ( ( (unsigned char)*p) >= 48u )
 			goto st44;
 	} else
 		goto st0;
 	goto st40;
 tr73:
-#line 353 "pitchfork_http.rl"
+#line 355 "pitchfork_http.rl"
 	{MARK(mark, p); }
 	goto st45;
 st45:
@@ -1694,25 +1694,25 @@ st45:
 		goto _test_eof45;
 case 45:
 #line 1697 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 37: goto st41;
-		case 47: goto st0;
-		case 60: goto st0;
-		case 64: goto st39;
-		case 127: goto st0;
+	switch( ( (unsigned char)*p) ) {
+		case 37u: goto st41;
+		case 47u: goto st0;
+		case 60u: goto st0;
+		case 64u: goto st39;
+		case 127u: goto st0;
 	}
-	if ( (*p) < 48 ) {
-		if ( (*p) > 32 ) {
-			if ( 34 <= (*p) && (*p) <= 35 )
+	if ( ( (unsigned char)*p) < 48u ) {
+		if ( ( (unsigned char)*p) > 32u ) {
+			if ( 34u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 35u )
 				goto st0;
-		} else if ( (*p) >= 0 )
+		} else
 			goto st0;
-	} else if ( (*p) > 58 ) {
-		if ( (*p) < 65 ) {
-			if ( 62 <= (*p) && (*p) <= 63 )
+	} else if ( ( (unsigned char)*p) > 58u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 62u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 63u )
 				goto st0;
-		} else if ( (*p) > 70 ) {
-			if ( 97 <= (*p) && (*p) <= 102 )
+		} else if ( ( (unsigned char)*p) > 70u ) {
+			if ( 97u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 102u )
 				goto st46;
 		} else
 			goto st46;
@@ -1723,26 +1723,26 @@ st46:
 	if ( ++p == pe )
 		goto _test_eof46;
 case 46:
-	switch( (*p) ) {
-		case 37: goto st41;
-		case 47: goto st0;
-		case 60: goto st0;
-		case 64: goto st39;
-		case 93: goto st47;
-		case 127: goto st0;
+	switch( ( (unsigned char)*p) ) {
+		case 37u: goto st41;
+		case 47u: goto st0;
+		case 60u: goto st0;
+		case 64u: goto st39;
+		case 93u: goto st47;
+		case 127u: goto st0;
 	}
-	if ( (*p) < 48 ) {
-		if ( (*p) > 32 ) {
-			if ( 34 <= (*p) && (*p) <= 35 )
+	if ( ( (unsigned char)*p) < 48u ) {
+		if ( ( (unsigned char)*p) > 32u ) {
+			if ( 34u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 35u )
 				goto st0;
-		} else if ( (*p) >= 0 )
+		} else
 			goto st0;
-	} else if ( (*p) > 58 ) {
-		if ( (*p) < 65 ) {
-			if ( 62 <= (*p) && (*p) <= 63 )
+	} else if ( ( (unsigned char)*p) > 58u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 62u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 63u )
 				goto st0;
-		} else if ( (*p) > 70 ) {
-			if ( 97 <= (*p) && (*p) <= 102 )
+		} else if ( ( (unsigned char)*p) > 70u ) {
+			if ( 97u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 102u )
 				goto st46;
 		} else
 			goto st46;
@@ -1753,25 +1753,25 @@ st47:
 	if ( ++p == pe )
 		goto _test_eof47;
 case 47:
-	switch( (*p) ) {
-		case 37: goto st41;
-		case 47: goto tr76;
-		case 58: goto st44;
-		case 60: goto st0;
-		case 64: goto st39;
-		case 127: goto st0;
+	switch( ( (unsigned char)*p) ) {
+		case 37u: goto st41;
+		case 47u: goto tr76;
+		case 58u: goto st44;
+		case 60u: goto st0;
+		case 64u: goto st39;
+		case 127u: goto st0;
 	}
-	if ( (*p) < 34 ) {
-		if ( 0 <= (*p) && (*p) <= 32 )
+	if ( ( (unsigned char)*p) < 34u ) {
+		if ( ( (unsigned char)*p) <= 32u )
 			goto st0;
-	} else if ( (*p) > 35 ) {
-		if ( 62 <= (*p) && (*p) <= 63 )
+	} else if ( ( (unsigned char)*p) > 35u ) {
+		if ( 62u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 63u )
 			goto st0;
 	} else
 		goto st0;
 	goto st40;
 tr67:
-#line 357 "pitchfork_http.rl"
+#line 359 "pitchfork_http.rl"
 	{ downcase_char(deconst(p)); }
 	goto st48;
 st48:
@@ -1779,31 +1779,31 @@ st48:
 		goto _test_eof48;
 case 48:
 #line 1782 "pitchfork_http.c"
-	if ( (*p) == 58 )
+	if ( ( (unsigned char)*p) == 58u )
 		goto tr66;
 	goto st0;
 st49:
 	if ( ++p == pe )
 		goto _test_eof49;
 case 49:
-	switch( (*p) ) {
-		case 32: goto tr3;
-		case 33: goto st50;
-		case 124: goto st50;
-		case 126: goto st50;
+	switch( ( (unsigned char)*p) ) {
+		case 32u: goto tr3;
+		case 33u: goto st50;
+		case 124u: goto st50;
+		case 126u: goto st50;
 	}
-	if ( (*p) < 45 ) {
-		if ( (*p) > 39 ) {
-			if ( 42 <= (*p) && (*p) <= 43 )
+	if ( ( (unsigned char)*p) < 45u ) {
+		if ( ( (unsigned char)*p) > 39u ) {
+			if ( 42u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 43u )
 				goto st50;
-		} else if ( (*p) >= 35 )
+		} else if ( ( (unsigned char)*p) >= 35u )
 			goto st50;
-	} else if ( (*p) > 46 ) {
-		if ( (*p) < 65 ) {
-			if ( 48 <= (*p) && (*p) <= 57 )
+	} else if ( ( (unsigned char)*p) > 46u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 				goto st50;
-		} else if ( (*p) > 90 ) {
-			if ( 94 <= (*p) && (*p) <= 122 )
+		} else if ( ( (unsigned char)*p) > 90u ) {
+			if ( 94u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 122u )
 				goto st50;
 		} else
 			goto st50;
@@ -1814,24 +1814,24 @@ st50:
 	if ( ++p == pe )
 		goto _test_eof50;
 case 50:
-	switch( (*p) ) {
-		case 32: goto tr3;
-		case 33: goto st51;
-		case 124: goto st51;
-		case 126: goto st51;
+	switch( ( (unsigned char)*p) ) {
+		case 32u: goto tr3;
+		case 33u: goto st51;
+		case 124u: goto st51;
+		case 126u: goto st51;
 	}
-	if ( (*p) < 45 ) {
-		if ( (*p) > 39 ) {
-			if ( 42 <= (*p) && (*p) <= 43 )
+	if ( ( (unsigned char)*p) < 45u ) {
+		if ( ( (unsigned char)*p) > 39u ) {
+			if ( 42u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 43u )
 				goto st51;
-		} else if ( (*p) >= 35 )
+		} else if ( ( (unsigned char)*p) >= 35u )
 			goto st51;
-	} else if ( (*p) > 46 ) {
-		if ( (*p) < 65 ) {
-			if ( 48 <= (*p) && (*p) <= 57 )
+	} else if ( ( (unsigned char)*p) > 46u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 				goto st51;
-		} else if ( (*p) > 90 ) {
-			if ( 94 <= (*p) && (*p) <= 122 )
+		} else if ( ( (unsigned char)*p) > 90u ) {
+			if ( 94u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 122u )
 				goto st51;
 		} else
 			goto st51;
@@ -1842,24 +1842,24 @@ st51:
 	if ( ++p == pe )
 		goto _test_eof51;
 case 51:
-	switch( (*p) ) {
-		case 32: goto tr3;
-		case 33: goto st52;
-		case 124: goto st52;
-		case 126: goto st52;
+	switch( ( (unsigned char)*p) ) {
+		case 32u: goto tr3;
+		case 33u: goto st52;
+		case 124u: goto st52;
+		case 126u: goto st52;
 	}
-	if ( (*p) < 45 ) {
-		if ( (*p) > 39 ) {
-			if ( 42 <= (*p) && (*p) <= 43 )
+	if ( ( (unsigned char)*p) < 45u ) {
+		if ( ( (unsigned char)*p) > 39u ) {
+			if ( 42u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 43u )
 				goto st52;
-		} else if ( (*p) >= 35 )
+		} else if ( ( (unsigned char)*p) >= 35u )
 			goto st52;
-	} else if ( (*p) > 46 ) {
-		if ( (*p) < 65 ) {
-			if ( 48 <= (*p) && (*p) <= 57 )
+	} else if ( ( (unsigned char)*p) > 46u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 				goto st52;
-		} else if ( (*p) > 90 ) {
-			if ( 94 <= (*p) && (*p) <= 122 )
+		} else if ( ( (unsigned char)*p) > 90u ) {
+			if ( 94u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 122u )
 				goto st52;
 		} else
 			goto st52;
@@ -1870,24 +1870,24 @@ st52:
 	if ( ++p == pe )
 		goto _test_eof52;
 case 52:
-	switch( (*p) ) {
-		case 32: goto tr3;
-		case 33: goto st53;
-		case 124: goto st53;
-		case 126: goto st53;
+	switch( ( (unsigned char)*p) ) {
+		case 32u: goto tr3;
+		case 33u: goto st53;
+		case 124u: goto st53;
+		case 126u: goto st53;
 	}
-	if ( (*p) < 45 ) {
-		if ( (*p) > 39 ) {
-			if ( 42 <= (*p) && (*p) <= 43 )
+	if ( ( (unsigned char)*p) < 45u ) {
+		if ( ( (unsigned char)*p) > 39u ) {
+			if ( 42u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 43u )
 				goto st53;
-		} else if ( (*p) >= 35 )
+		} else if ( ( (unsigned char)*p) >= 35u )
 			goto st53;
-	} else if ( (*p) > 46 ) {
-		if ( (*p) < 65 ) {
-			if ( 48 <= (*p) && (*p) <= 57 )
+	} else if ( ( (unsigned char)*p) > 46u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 				goto st53;
-		} else if ( (*p) > 90 ) {
-			if ( 94 <= (*p) && (*p) <= 122 )
+		} else if ( ( (unsigned char)*p) > 90u ) {
+			if ( 94u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 122u )
 				goto st53;
 		} else
 			goto st53;
@@ -1898,24 +1898,24 @@ st53:
 	if ( ++p == pe )
 		goto _test_eof53;
 case 53:
-	switch( (*p) ) {
-		case 32: goto tr3;
-		case 33: goto st54;
-		case 124: goto st54;
-		case 126: goto st54;
+	switch( ( (unsigned char)*p) ) {
+		case 32u: goto tr3;
+		case 33u: goto st54;
+		case 124u: goto st54;
+		case 126u: goto st54;
 	}
-	if ( (*p) < 45 ) {
-		if ( (*p) > 39 ) {
-			if ( 42 <= (*p) && (*p) <= 43 )
+	if ( ( (unsigned char)*p) < 45u ) {
+		if ( ( (unsigned char)*p) > 39u ) {
+			if ( 42u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 43u )
 				goto st54;
-		} else if ( (*p) >= 35 )
+		} else if ( ( (unsigned char)*p) >= 35u )
 			goto st54;
-	} else if ( (*p) > 46 ) {
-		if ( (*p) < 65 ) {
-			if ( 48 <= (*p) && (*p) <= 57 )
+	} else if ( ( (unsigned char)*p) > 46u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 				goto st54;
-		} else if ( (*p) > 90 ) {
-			if ( 94 <= (*p) && (*p) <= 122 )
+		} else if ( ( (unsigned char)*p) > 90u ) {
+			if ( 94u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 122u )
 				goto st54;
 		} else
 			goto st54;
@@ -1926,24 +1926,24 @@ st54:
 	if ( ++p == pe )
 		goto _test_eof54;
 case 54:
-	switch( (*p) ) {
-		case 32: goto tr3;
-		case 33: goto st55;
-		case 124: goto st55;
-		case 126: goto st55;
+	switch( ( (unsigned char)*p) ) {
+		case 32u: goto tr3;
+		case 33u: goto st55;
+		case 124u: goto st55;
+		case 126u: goto st55;
 	}
-	if ( (*p) < 45 ) {
-		if ( (*p) > 39 ) {
-			if ( 42 <= (*p) && (*p) <= 43 )
+	if ( ( (unsigned char)*p) < 45u ) {
+		if ( ( (unsigned char)*p) > 39u ) {
+			if ( 42u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 43u )
 				goto st55;
-		} else if ( (*p) >= 35 )
+		} else if ( ( (unsigned char)*p) >= 35u )
 			goto st55;
-	} else if ( (*p) > 46 ) {
-		if ( (*p) < 65 ) {
-			if ( 48 <= (*p) && (*p) <= 57 )
+	} else if ( ( (unsigned char)*p) > 46u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 				goto st55;
-		} else if ( (*p) > 90 ) {
-			if ( 94 <= (*p) && (*p) <= 122 )
+		} else if ( ( (unsigned char)*p) > 90u ) {
+			if ( 94u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 122u )
 				goto st55;
 		} else
 			goto st55;
@@ -1954,24 +1954,24 @@ st55:
 	if ( ++p == pe )
 		goto _test_eof55;
 case 55:
-	switch( (*p) ) {
-		case 32: goto tr3;
-		case 33: goto st56;
-		case 124: goto st56;
-		case 126: goto st56;
+	switch( ( (unsigned char)*p) ) {
+		case 32u: goto tr3;
+		case 33u: goto st56;
+		case 124u: goto st56;
+		case 126u: goto st56;
 	}
-	if ( (*p) < 45 ) {
-		if ( (*p) > 39 ) {
-			if ( 42 <= (*p) && (*p) <= 43 )
+	if ( ( (unsigned char)*p) < 45u ) {
+		if ( ( (unsigned char)*p) > 39u ) {
+			if ( 42u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 43u )
 				goto st56;
-		} else if ( (*p) >= 35 )
+		} else if ( ( (unsigned char)*p) >= 35u )
 			goto st56;
-	} else if ( (*p) > 46 ) {
-		if ( (*p) < 65 ) {
-			if ( 48 <= (*p) && (*p) <= 57 )
+	} else if ( ( (unsigned char)*p) > 46u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 				goto st56;
-		} else if ( (*p) > 90 ) {
-			if ( 94 <= (*p) && (*p) <= 122 )
+		} else if ( ( (unsigned char)*p) > 90u ) {
+			if ( 94u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 122u )
 				goto st56;
 		} else
 			goto st56;
@@ -1982,24 +1982,24 @@ st56:
 	if ( ++p == pe )
 		goto _test_eof56;
 case 56:
-	switch( (*p) ) {
-		case 32: goto tr3;
-		case 33: goto st57;
-		case 124: goto st57;
-		case 126: goto st57;
+	switch( ( (unsigned char)*p) ) {
+		case 32u: goto tr3;
+		case 33u: goto st57;
+		case 124u: goto st57;
+		case 126u: goto st57;
 	}
-	if ( (*p) < 45 ) {
-		if ( (*p) > 39 ) {
-			if ( 42 <= (*p) && (*p) <= 43 )
+	if ( ( (unsigned char)*p) < 45u ) {
+		if ( ( (unsigned char)*p) > 39u ) {
+			if ( 42u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 43u )
 				goto st57;
-		} else if ( (*p) >= 35 )
+		} else if ( ( (unsigned char)*p) >= 35u )
 			goto st57;
-	} else if ( (*p) > 46 ) {
-		if ( (*p) < 65 ) {
-			if ( 48 <= (*p) && (*p) <= 57 )
+	} else if ( ( (unsigned char)*p) > 46u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 				goto st57;
-		} else if ( (*p) > 90 ) {
-			if ( 94 <= (*p) && (*p) <= 122 )
+		} else if ( ( (unsigned char)*p) > 90u ) {
+			if ( 94u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 122u )
 				goto st57;
 		} else
 			goto st57;
@@ -2010,24 +2010,24 @@ st57:
 	if ( ++p == pe )
 		goto _test_eof57;
 case 57:
-	switch( (*p) ) {
-		case 32: goto tr3;
-		case 33: goto st58;
-		case 124: goto st58;
-		case 126: goto st58;
+	switch( ( (unsigned char)*p) ) {
+		case 32u: goto tr3;
+		case 33u: goto st58;
+		case 124u: goto st58;
+		case 126u: goto st58;
 	}
-	if ( (*p) < 45 ) {
-		if ( (*p) > 39 ) {
-			if ( 42 <= (*p) && (*p) <= 43 )
+	if ( ( (unsigned char)*p) < 45u ) {
+		if ( ( (unsigned char)*p) > 39u ) {
+			if ( 42u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 43u )
 				goto st58;
-		} else if ( (*p) >= 35 )
+		} else if ( ( (unsigned char)*p) >= 35u )
 			goto st58;
-	} else if ( (*p) > 46 ) {
-		if ( (*p) < 65 ) {
-			if ( 48 <= (*p) && (*p) <= 57 )
+	} else if ( ( (unsigned char)*p) > 46u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 				goto st58;
-		} else if ( (*p) > 90 ) {
-			if ( 94 <= (*p) && (*p) <= 122 )
+		} else if ( ( (unsigned char)*p) > 90u ) {
+			if ( 94u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 122u )
 				goto st58;
 		} else
 			goto st58;
@@ -2038,24 +2038,24 @@ st58:
 	if ( ++p == pe )
 		goto _test_eof58;
 case 58:
-	switch( (*p) ) {
-		case 32: goto tr3;
-		case 33: goto st59;
-		case 124: goto st59;
-		case 126: goto st59;
+	switch( ( (unsigned char)*p) ) {
+		case 32u: goto tr3;
+		case 33u: goto st59;
+		case 124u: goto st59;
+		case 126u: goto st59;
 	}
-	if ( (*p) < 45 ) {
-		if ( (*p) > 39 ) {
-			if ( 42 <= (*p) && (*p) <= 43 )
+	if ( ( (unsigned char)*p) < 45u ) {
+		if ( ( (unsigned char)*p) > 39u ) {
+			if ( 42u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 43u )
 				goto st59;
-		} else if ( (*p) >= 35 )
+		} else if ( ( (unsigned char)*p) >= 35u )
 			goto st59;
-	} else if ( (*p) > 46 ) {
-		if ( (*p) < 65 ) {
-			if ( 48 <= (*p) && (*p) <= 57 )
+	} else if ( ( (unsigned char)*p) > 46u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 				goto st59;
-		} else if ( (*p) > 90 ) {
-			if ( 94 <= (*p) && (*p) <= 122 )
+		} else if ( ( (unsigned char)*p) > 90u ) {
+			if ( 94u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 122u )
 				goto st59;
 		} else
 			goto st59;
@@ -2066,24 +2066,24 @@ st59:
 	if ( ++p == pe )
 		goto _test_eof59;
 case 59:
-	switch( (*p) ) {
-		case 32: goto tr3;
-		case 33: goto st60;
-		case 124: goto st60;
-		case 126: goto st60;
+	switch( ( (unsigned char)*p) ) {
+		case 32u: goto tr3;
+		case 33u: goto st60;
+		case 124u: goto st60;
+		case 126u: goto st60;
 	}
-	if ( (*p) < 45 ) {
-		if ( (*p) > 39 ) {
-			if ( 42 <= (*p) && (*p) <= 43 )
+	if ( ( (unsigned char)*p) < 45u ) {
+		if ( ( (unsigned char)*p) > 39u ) {
+			if ( 42u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 43u )
 				goto st60;
-		} else if ( (*p) >= 35 )
+		} else if ( ( (unsigned char)*p) >= 35u )
 			goto st60;
-	} else if ( (*p) > 46 ) {
-		if ( (*p) < 65 ) {
-			if ( 48 <= (*p) && (*p) <= 57 )
+	} else if ( ( (unsigned char)*p) > 46u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 				goto st60;
-		} else if ( (*p) > 90 ) {
-			if ( 94 <= (*p) && (*p) <= 122 )
+		} else if ( ( (unsigned char)*p) > 90u ) {
+			if ( 94u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 122u )
 				goto st60;
 		} else
 			goto st60;
@@ -2094,24 +2094,24 @@ st60:
 	if ( ++p == pe )
 		goto _test_eof60;
 case 60:
-	switch( (*p) ) {
-		case 32: goto tr3;
-		case 33: goto st61;
-		case 124: goto st61;
-		case 126: goto st61;
+	switch( ( (unsigned char)*p) ) {
+		case 32u: goto tr3;
+		case 33u: goto st61;
+		case 124u: goto st61;
+		case 126u: goto st61;
 	}
-	if ( (*p) < 45 ) {
-		if ( (*p) > 39 ) {
-			if ( 42 <= (*p) && (*p) <= 43 )
+	if ( ( (unsigned char)*p) < 45u ) {
+		if ( ( (unsigned char)*p) > 39u ) {
+			if ( 42u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 43u )
 				goto st61;
-		} else if ( (*p) >= 35 )
+		} else if ( ( (unsigned char)*p) >= 35u )
 			goto st61;
-	} else if ( (*p) > 46 ) {
-		if ( (*p) < 65 ) {
-			if ( 48 <= (*p) && (*p) <= 57 )
+	} else if ( ( (unsigned char)*p) > 46u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 				goto st61;
-		} else if ( (*p) > 90 ) {
-			if ( 94 <= (*p) && (*p) <= 122 )
+		} else if ( ( (unsigned char)*p) > 90u ) {
+			if ( 94u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 122u )
 				goto st61;
 		} else
 			goto st61;
@@ -2122,24 +2122,24 @@ st61:
 	if ( ++p == pe )
 		goto _test_eof61;
 case 61:
-	switch( (*p) ) {
-		case 32: goto tr3;
-		case 33: goto st62;
-		case 124: goto st62;
-		case 126: goto st62;
+	switch( ( (unsigned char)*p) ) {
+		case 32u: goto tr3;
+		case 33u: goto st62;
+		case 124u: goto st62;
+		case 126u: goto st62;
 	}
-	if ( (*p) < 45 ) {
-		if ( (*p) > 39 ) {
-			if ( 42 <= (*p) && (*p) <= 43 )
+	if ( ( (unsigned char)*p) < 45u ) {
+		if ( ( (unsigned char)*p) > 39u ) {
+			if ( 42u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 43u )
 				goto st62;
-		} else if ( (*p) >= 35 )
+		} else if ( ( (unsigned char)*p) >= 35u )
 			goto st62;
-	} else if ( (*p) > 46 ) {
-		if ( (*p) < 65 ) {
-			if ( 48 <= (*p) && (*p) <= 57 )
+	} else if ( ( (unsigned char)*p) > 46u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 				goto st62;
-		} else if ( (*p) > 90 ) {
-			if ( 94 <= (*p) && (*p) <= 122 )
+		} else if ( ( (unsigned char)*p) > 90u ) {
+			if ( 94u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 122u )
 				goto st62;
 		} else
 			goto st62;
@@ -2150,24 +2150,24 @@ st62:
 	if ( ++p == pe )
 		goto _test_eof62;
 case 62:
-	switch( (*p) ) {
-		case 32: goto tr3;
-		case 33: goto st63;
-		case 124: goto st63;
-		case 126: goto st63;
+	switch( ( (unsigned char)*p) ) {
+		case 32u: goto tr3;
+		case 33u: goto st63;
+		case 124u: goto st63;
+		case 126u: goto st63;
 	}
-	if ( (*p) < 45 ) {
-		if ( (*p) > 39 ) {
-			if ( 42 <= (*p) && (*p) <= 43 )
+	if ( ( (unsigned char)*p) < 45u ) {
+		if ( ( (unsigned char)*p) > 39u ) {
+			if ( 42u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 43u )
 				goto st63;
-		} else if ( (*p) >= 35 )
+		} else if ( ( (unsigned char)*p) >= 35u )
 			goto st63;
-	} else if ( (*p) > 46 ) {
-		if ( (*p) < 65 ) {
-			if ( 48 <= (*p) && (*p) <= 57 )
+	} else if ( ( (unsigned char)*p) > 46u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 				goto st63;
-		} else if ( (*p) > 90 ) {
-			if ( 94 <= (*p) && (*p) <= 122 )
+		} else if ( ( (unsigned char)*p) > 90u ) {
+			if ( 94u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 122u )
 				goto st63;
 		} else
 			goto st63;
@@ -2178,24 +2178,24 @@ st63:
 	if ( ++p == pe )
 		goto _test_eof63;
 case 63:
-	switch( (*p) ) {
-		case 32: goto tr3;
-		case 33: goto st64;
-		case 124: goto st64;
-		case 126: goto st64;
+	switch( ( (unsigned char)*p) ) {
+		case 32u: goto tr3;
+		case 33u: goto st64;
+		case 124u: goto st64;
+		case 126u: goto st64;
 	}
-	if ( (*p) < 45 ) {
-		if ( (*p) > 39 ) {
-			if ( 42 <= (*p) && (*p) <= 43 )
+	if ( ( (unsigned char)*p) < 45u ) {
+		if ( ( (unsigned char)*p) > 39u ) {
+			if ( 42u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 43u )
 				goto st64;
-		} else if ( (*p) >= 35 )
+		} else if ( ( (unsigned char)*p) >= 35u )
 			goto st64;
-	} else if ( (*p) > 46 ) {
-		if ( (*p) < 65 ) {
-			if ( 48 <= (*p) && (*p) <= 57 )
+	} else if ( ( (unsigned char)*p) > 46u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 				goto st64;
-		} else if ( (*p) > 90 ) {
-			if ( 94 <= (*p) && (*p) <= 122 )
+		} else if ( ( (unsigned char)*p) > 90u ) {
+			if ( 94u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 122u )
 				goto st64;
 		} else
 			goto st64;
@@ -2206,24 +2206,24 @@ st64:
 	if ( ++p == pe )
 		goto _test_eof64;
 case 64:
-	switch( (*p) ) {
-		case 32: goto tr3;
-		case 33: goto st65;
-		case 124: goto st65;
-		case 126: goto st65;
+	switch( ( (unsigned char)*p) ) {
+		case 32u: goto tr3;
+		case 33u: goto st65;
+		case 124u: goto st65;
+		case 126u: goto st65;
 	}
-	if ( (*p) < 45 ) {
-		if ( (*p) > 39 ) {
-			if ( 42 <= (*p) && (*p) <= 43 )
+	if ( ( (unsigned char)*p) < 45u ) {
+		if ( ( (unsigned char)*p) > 39u ) {
+			if ( 42u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 43u )
 				goto st65;
-		} else if ( (*p) >= 35 )
+		} else if ( ( (unsigned char)*p) >= 35u )
 			goto st65;
-	} else if ( (*p) > 46 ) {
-		if ( (*p) < 65 ) {
-			if ( 48 <= (*p) && (*p) <= 57 )
+	} else if ( ( (unsigned char)*p) > 46u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 				goto st65;
-		} else if ( (*p) > 90 ) {
-			if ( 94 <= (*p) && (*p) <= 122 )
+		} else if ( ( (unsigned char)*p) > 90u ) {
+			if ( 94u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 122u )
 				goto st65;
 		} else
 			goto st65;
@@ -2234,24 +2234,24 @@ st65:
 	if ( ++p == pe )
 		goto _test_eof65;
 case 65:
-	switch( (*p) ) {
-		case 32: goto tr3;
-		case 33: goto st66;
-		case 124: goto st66;
-		case 126: goto st66;
+	switch( ( (unsigned char)*p) ) {
+		case 32u: goto tr3;
+		case 33u: goto st66;
+		case 124u: goto st66;
+		case 126u: goto st66;
 	}
-	if ( (*p) < 45 ) {
-		if ( (*p) > 39 ) {
-			if ( 42 <= (*p) && (*p) <= 43 )
+	if ( ( (unsigned char)*p) < 45u ) {
+		if ( ( (unsigned char)*p) > 39u ) {
+			if ( 42u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 43u )
 				goto st66;
-		} else if ( (*p) >= 35 )
+		} else if ( ( (unsigned char)*p) >= 35u )
 			goto st66;
-	} else if ( (*p) > 46 ) {
-		if ( (*p) < 65 ) {
-			if ( 48 <= (*p) && (*p) <= 57 )
+	} else if ( ( (unsigned char)*p) > 46u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 				goto st66;
-		} else if ( (*p) > 90 ) {
-			if ( 94 <= (*p) && (*p) <= 122 )
+		} else if ( ( (unsigned char)*p) > 90u ) {
+			if ( 94u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 122u )
 				goto st66;
 		} else
 			goto st66;
@@ -2262,24 +2262,24 @@ st66:
 	if ( ++p == pe )
 		goto _test_eof66;
 case 66:
-	switch( (*p) ) {
-		case 32: goto tr3;
-		case 33: goto st67;
-		case 124: goto st67;
-		case 126: goto st67;
+	switch( ( (unsigned char)*p) ) {
+		case 32u: goto tr3;
+		case 33u: goto st67;
+		case 124u: goto st67;
+		case 126u: goto st67;
 	}
-	if ( (*p) < 45 ) {
-		if ( (*p) > 39 ) {
-			if ( 42 <= (*p) && (*p) <= 43 )
+	if ( ( (unsigned char)*p) < 45u ) {
+		if ( ( (unsigned char)*p) > 39u ) {
+			if ( 42u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 43u )
 				goto st67;
-		} else if ( (*p) >= 35 )
+		} else if ( ( (unsigned char)*p) >= 35u )
 			goto st67;
-	} else if ( (*p) > 46 ) {
-		if ( (*p) < 65 ) {
-			if ( 48 <= (*p) && (*p) <= 57 )
+	} else if ( ( (unsigned char)*p) > 46u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 				goto st67;
-		} else if ( (*p) > 90 ) {
-			if ( 94 <= (*p) && (*p) <= 122 )
+		} else if ( ( (unsigned char)*p) > 90u ) {
+			if ( 94u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 122u )
 				goto st67;
 		} else
 			goto st67;
@@ -2290,11 +2290,11 @@ st67:
 	if ( ++p == pe )
 		goto _test_eof67;
 case 67:
-	if ( (*p) == 32 )
+	if ( ( (unsigned char)*p) == 32u )
 		goto tr3;
 	goto st0;
 tr2:
-#line 353 "pitchfork_http.rl"
+#line 355 "pitchfork_http.rl"
 	{MARK(mark, p); }
 	goto st68;
 st68:
@@ -2302,25 +2302,25 @@ st68:
 		goto _test_eof68;
 case 68:
 #line 2305 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 32: goto tr3;
-		case 33: goto st49;
-		case 69: goto st69;
-		case 124: goto st49;
-		case 126: goto st49;
+	switch( ( (unsigned char)*p) ) {
+		case 32u: goto tr3;
+		case 33u: goto st49;
+		case 69u: goto st69;
+		case 124u: goto st49;
+		case 126u: goto st49;
 	}
-	if ( (*p) < 45 ) {
-		if ( (*p) > 39 ) {
-			if ( 42 <= (*p) && (*p) <= 43 )
+	if ( ( (unsigned char)*p) < 45u ) {
+		if ( ( (unsigned char)*p) > 39u ) {
+			if ( 42u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 43u )
 				goto st49;
-		} else if ( (*p) >= 35 )
+		} else if ( ( (unsigned char)*p) >= 35u )
 			goto st49;
-	} else if ( (*p) > 46 ) {
-		if ( (*p) < 65 ) {
-			if ( 48 <= (*p) && (*p) <= 57 )
+	} else if ( ( (unsigned char)*p) > 46u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 				goto st49;
-		} else if ( (*p) > 90 ) {
-			if ( 94 <= (*p) && (*p) <= 122 )
+		} else if ( ( (unsigned char)*p) > 90u ) {
+			if ( 94u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 122u )
 				goto st49;
 		} else
 			goto st49;
@@ -2331,25 +2331,25 @@ st69:
 	if ( ++p == pe )
 		goto _test_eof69;
 case 69:
-	switch( (*p) ) {
-		case 32: goto tr3;
-		case 33: goto st50;
-		case 84: goto st70;
-		case 124: goto st50;
-		case 126: goto st50;
+	switch( ( (unsigned char)*p) ) {
+		case 32u: goto tr3;
+		case 33u: goto st50;
+		case 84u: goto st70;
+		case 124u: goto st50;
+		case 126u: goto st50;
 	}
-	if ( (*p) < 45 ) {
-		if ( (*p) > 39 ) {
-			if ( 42 <= (*p) && (*p) <= 43 )
+	if ( ( (unsigned char)*p) < 45u ) {
+		if ( ( (unsigned char)*p) > 39u ) {
+			if ( 42u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 43u )
 				goto st50;
-		} else if ( (*p) >= 35 )
+		} else if ( ( (unsigned char)*p) >= 35u )
 			goto st50;
-	} else if ( (*p) > 46 ) {
-		if ( (*p) < 65 ) {
-			if ( 48 <= (*p) && (*p) <= 57 )
+	} else if ( ( (unsigned char)*p) > 46u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 				goto st50;
-		} else if ( (*p) > 90 ) {
-			if ( 94 <= (*p) && (*p) <= 122 )
+		} else if ( ( (unsigned char)*p) > 90u ) {
+			if ( 94u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 122u )
 				goto st50;
 		} else
 			goto st50;
@@ -2360,24 +2360,24 @@ st70:
 	if ( ++p == pe )
 		goto _test_eof70;
 case 70:
-	switch( (*p) ) {
-		case 32: goto tr100;
-		case 33: goto st51;
-		case 124: goto st51;
-		case 126: goto st51;
+	switch( ( (unsigned char)*p) ) {
+		case 32u: goto tr100;
+		case 33u: goto st51;
+		case 124u: goto st51;
+		case 126u: goto st51;
 	}
-	if ( (*p) < 45 ) {
-		if ( (*p) > 39 ) {
-			if ( 42 <= (*p) && (*p) <= 43 )
+	if ( ( (unsigned char)*p) < 45u ) {
+		if ( ( (unsigned char)*p) > 39u ) {
+			if ( 42u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 43u )
 				goto st51;
-		} else if ( (*p) >= 35 )
+		} else if ( ( (unsigned char)*p) >= 35u )
 			goto st51;
-	} else if ( (*p) > 46 ) {
-		if ( (*p) < 65 ) {
-			if ( 48 <= (*p) && (*p) <= 57 )
+	} else if ( ( (unsigned char)*p) > 46u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 				goto st51;
-		} else if ( (*p) > 90 ) {
-			if ( 94 <= (*p) && (*p) <= 122 )
+		} else if ( ( (unsigned char)*p) > 90u ) {
+			if ( 94u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 122u )
 				goto st51;
 		} else
 			goto st51;
@@ -2385,7 +2385,7 @@ case 70:
 		goto st51;
 	goto st0;
 tr100:
-#line 362 "pitchfork_http.rl"
+#line 364 "pitchfork_http.rl"
 	{ request_method(hp, PTR_TO(mark), LEN(mark, p)); }
 	goto st71;
 st71:
@@ -2393,15 +2393,15 @@ st71:
 		goto _test_eof71;
 case 71:
 #line 2396 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 42: goto tr101;
-		case 47: goto tr102;
-		case 72: goto tr103;
-		case 104: goto tr103;
+	switch( ( (unsigned char)*p) ) {
+		case 42u: goto tr101;
+		case 47u: goto tr102;
+		case 72u: goto tr103;
+		case 104u: goto tr103;
 	}
 	goto st0;
 tr101:
-#line 353 "pitchfork_http.rl"
+#line 355 "pitchfork_http.rl"
 	{MARK(mark, p); }
 	goto st72;
 st72:
@@ -2409,15 +2409,15 @@ st72:
 		goto _test_eof72;
 case 72:
 #line 2412 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 10: goto tr104;
-		case 13: goto tr105;
-		case 32: goto tr8;
-		case 35: goto tr106;
+	switch( ( (unsigned char)*p) ) {
+		case 10u: goto tr104;
+		case 13u: goto tr105;
+		case 32u: goto tr8;
+		case 35u: goto tr106;
 	}
 	goto st0;
 tr106:
-#line 367 "pitchfork_http.rl"
+#line 369 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -2430,7 +2430,7 @@ tr106:
   }
 	goto st73;
 tr119:
-#line 387 "pitchfork_http.rl"
+#line 389 "pitchfork_http.rl"
 	{
     VALUE val;
 
@@ -2439,7 +2439,7 @@ tr119:
 
     rb_hash_aset(hp->env, g_path_info, val);
   }
-#line 367 "pitchfork_http.rl"
+#line 369 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -2452,14 +2452,14 @@ tr119:
   }
 	goto st73;
 tr126:
-#line 381 "pitchfork_http.rl"
+#line 383 "pitchfork_http.rl"
 	{MARK(start.query, p); }
-#line 382 "pitchfork_http.rl"
+#line 384 "pitchfork_http.rl"
 	{
     VALIDATE_MAX_URI_LENGTH(LEN(start.query, p), QUERY_STRING);
     rb_hash_aset(hp->env, g_query_string, STR_NEW(start.query, p));
   }
-#line 367 "pitchfork_http.rl"
+#line 369 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -2472,12 +2472,12 @@ tr126:
   }
 	goto st73;
 tr131:
-#line 382 "pitchfork_http.rl"
+#line 384 "pitchfork_http.rl"
 	{
     VALIDATE_MAX_URI_LENGTH(LEN(start.query, p), QUERY_STRING);
     rb_hash_aset(hp->env, g_query_string, STR_NEW(start.query, p));
   }
-#line 367 "pitchfork_http.rl"
+#line 369 "pitchfork_http.rl"
 	{
     VALUE str;
 
@@ -2494,19 +2494,19 @@ st73:
 		goto _test_eof73;
 case 73:
 #line 2497 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 10: goto tr108;
-		case 13: goto tr109;
-		case 32: goto tr42;
-		case 35: goto st0;
-		case 37: goto tr110;
-		case 127: goto st0;
+	switch( ( (unsigned char)*p) ) {
+		case 10u: goto tr107;
+		case 13u: goto tr108;
+		case 32u: goto tr41;
+		case 35u: goto st0;
+		case 37u: goto tr110;
+		case 127u: goto st0;
 	}
-	if ( 0 <= (*p) && (*p) <= 31 )
+	if ( ( (unsigned char)*p) <= 31u )
 		goto st0;
-	goto tr107;
-tr107:
-#line 353 "pitchfork_http.rl"
+	goto tr109;
+tr109:
+#line 355 "pitchfork_http.rl"
 	{MARK(mark, p); }
 	goto st74;
 st74:
@@ -2514,19 +2514,19 @@ st74:
 		goto _test_eof74;
 case 74:
 #line 2517 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 10: goto tr112;
-		case 13: goto tr113;
-		case 32: goto tr45;
-		case 35: goto st0;
-		case 37: goto st75;
-		case 127: goto st0;
+	switch( ( (unsigned char)*p) ) {
+		case 10u: goto tr111;
+		case 13u: goto tr112;
+		case 32u: goto tr44;
+		case 35u: goto st0;
+		case 37u: goto st75;
+		case 127u: goto st0;
 	}
-	if ( 0 <= (*p) && (*p) <= 31 )
+	if ( ( (unsigned char)*p) <= 31u )
 		goto st0;
 	goto st74;
 tr110:
-#line 353 "pitchfork_http.rl"
+#line 355 "pitchfork_http.rl"
 	{MARK(mark, p); }
 	goto st75;
 st75:
@@ -2534,11 +2534,11 @@ st75:
 		goto _test_eof75;
 case 75:
 #line 2537 "pitchfork_http.c"
-	if ( (*p) < 65 ) {
-		if ( 48 <= (*p) && (*p) <= 57 )
+	if ( ( (unsigned char)*p) < 65u ) {
+		if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 			goto st76;
-	} else if ( (*p) > 70 ) {
-		if ( 97 <= (*p) && (*p) <= 102 )
+	} else if ( ( (unsigned char)*p) > 70u ) {
+		if ( 97u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 102u )
 			goto st76;
 	} else
 		goto st76;
@@ -2547,23 +2547,23 @@ st76:
 	if ( ++p == pe )
 		goto _test_eof76;
 case 76:
-	if ( (*p) < 65 ) {
-		if ( 48 <= (*p) && (*p) <= 57 )
+	if ( ( (unsigned char)*p) < 65u ) {
+		if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 			goto st74;
-	} else if ( (*p) > 70 ) {
-		if ( 97 <= (*p) && (*p) <= 102 )
+	} else if ( ( (unsigned char)*p) > 70u ) {
+		if ( 97u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 102u )
 			goto st74;
 	} else
 		goto st74;
 	goto st0;
 tr102:
-#line 353 "pitchfork_http.rl"
+#line 355 "pitchfork_http.rl"
 	{MARK(mark, p); }
 	goto st77;
 tr147:
-#line 366 "pitchfork_http.rl"
+#line 368 "pitchfork_http.rl"
 	{ rb_hash_aset(hp->env, g_http_host, STR_NEW(mark, p)); }
-#line 353 "pitchfork_http.rl"
+#line 355 "pitchfork_http.rl"
 	{MARK(mark, p); }
 	goto st77;
 st77:
@@ -2571,27 +2571,27 @@ st77:
 		goto _test_eof77;
 case 77:
 #line 2574 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 10: goto tr117;
-		case 13: goto tr118;
-		case 32: goto tr49;
-		case 35: goto tr119;
-		case 37: goto st78;
-		case 63: goto tr121;
-		case 127: goto st0;
+	switch( ( (unsigned char)*p) ) {
+		case 10u: goto tr116;
+		case 13u: goto tr117;
+		case 32u: goto tr48;
+		case 35u: goto tr119;
+		case 37u: goto st78;
+		case 63u: goto tr121;
+		case 127u: goto st0;
 	}
-	if ( 0 <= (*p) && (*p) <= 31 )
+	if ( ( (unsigned char)*p) <= 31u )
 		goto st0;
 	goto st77;
 st78:
 	if ( ++p == pe )
 		goto _test_eof78;
 case 78:
-	if ( (*p) < 65 ) {
-		if ( 48 <= (*p) && (*p) <= 57 )
+	if ( ( (unsigned char)*p) < 65u ) {
+		if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 			goto st79;
-	} else if ( (*p) > 70 ) {
-		if ( 97 <= (*p) && (*p) <= 102 )
+	} else if ( ( (unsigned char)*p) > 70u ) {
+		if ( 97u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 102u )
 			goto st79;
 	} else
 		goto st79;
@@ -2600,17 +2600,17 @@ st79:
 	if ( ++p == pe )
 		goto _test_eof79;
 case 79:
-	if ( (*p) < 65 ) {
-		if ( 48 <= (*p) && (*p) <= 57 )
+	if ( ( (unsigned char)*p) < 65u ) {
+		if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 			goto st77;
-	} else if ( (*p) > 70 ) {
-		if ( 97 <= (*p) && (*p) <= 102 )
+	} else if ( ( (unsigned char)*p) > 70u ) {
+		if ( 97u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 102u )
 			goto st77;
 	} else
 		goto st77;
 	goto st0;
 tr121:
-#line 387 "pitchfork_http.rl"
+#line 389 "pitchfork_http.rl"
 	{
     VALUE val;
 
@@ -2625,19 +2625,19 @@ st80:
 		goto _test_eof80;
 case 80:
 #line 2628 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 10: goto tr124;
-		case 13: goto tr125;
-		case 32: goto tr55;
-		case 35: goto tr126;
-		case 37: goto tr127;
-		case 127: goto st0;
+	switch( ( (unsigned char)*p) ) {
+		case 10u: goto tr123;
+		case 13u: goto tr124;
+		case 32u: goto tr54;
+		case 35u: goto tr126;
+		case 37u: goto tr127;
+		case 127u: goto st0;
 	}
-	if ( 0 <= (*p) && (*p) <= 31 )
+	if ( ( (unsigned char)*p) <= 31u )
 		goto st0;
-	goto tr123;
-tr123:
-#line 381 "pitchfork_http.rl"
+	goto tr125;
+tr125:
+#line 383 "pitchfork_http.rl"
 	{MARK(start.query, p); }
 	goto st81;
 st81:
@@ -2645,19 +2645,19 @@ st81:
 		goto _test_eof81;
 case 81:
 #line 2648 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 10: goto tr129;
-		case 13: goto tr130;
-		case 32: goto tr59;
-		case 35: goto tr131;
-		case 37: goto st82;
-		case 127: goto st0;
+	switch( ( (unsigned char)*p) ) {
+		case 10u: goto tr128;
+		case 13u: goto tr129;
+		case 32u: goto tr58;
+		case 35u: goto tr131;
+		case 37u: goto st82;
+		case 127u: goto st0;
 	}
-	if ( 0 <= (*p) && (*p) <= 31 )
+	if ( ( (unsigned char)*p) <= 31u )
 		goto st0;
 	goto st81;
 tr127:
-#line 381 "pitchfork_http.rl"
+#line 383 "pitchfork_http.rl"
 	{MARK(start.query, p); }
 	goto st82;
 st82:
@@ -2665,11 +2665,11 @@ st82:
 		goto _test_eof82;
 case 82:
 #line 2668 "pitchfork_http.c"
-	if ( (*p) < 65 ) {
-		if ( 48 <= (*p) && (*p) <= 57 )
+	if ( ( (unsigned char)*p) < 65u ) {
+		if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 			goto st83;
-	} else if ( (*p) > 70 ) {
-		if ( 97 <= (*p) && (*p) <= 102 )
+	} else if ( ( (unsigned char)*p) > 70u ) {
+		if ( 97u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 102u )
 			goto st83;
 	} else
 		goto st83;
@@ -2678,19 +2678,19 @@ st83:
 	if ( ++p == pe )
 		goto _test_eof83;
 case 83:
-	if ( (*p) < 65 ) {
-		if ( 48 <= (*p) && (*p) <= 57 )
+	if ( ( (unsigned char)*p) < 65u ) {
+		if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 			goto st81;
-	} else if ( (*p) > 70 ) {
-		if ( 97 <= (*p) && (*p) <= 102 )
+	} else if ( ( (unsigned char)*p) > 70u ) {
+		if ( 97u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 102u )
 			goto st81;
 	} else
 		goto st81;
 	goto st0;
 tr103:
-#line 353 "pitchfork_http.rl"
+#line 355 "pitchfork_http.rl"
 	{MARK(mark, p); }
-#line 357 "pitchfork_http.rl"
+#line 359 "pitchfork_http.rl"
 	{ downcase_char(deconst(p)); }
 	goto st84;
 st84:
@@ -2698,13 +2698,13 @@ st84:
 		goto _test_eof84;
 case 84:
 #line 2701 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 84: goto tr134;
-		case 116: goto tr134;
+	switch( ( (unsigned char)*p) ) {
+		case 84u: goto tr134;
+		case 116u: goto tr134;
 	}
 	goto st0;
 tr134:
-#line 357 "pitchfork_http.rl"
+#line 359 "pitchfork_http.rl"
 	{ downcase_char(deconst(p)); }
 	goto st85;
 st85:
@@ -2712,13 +2712,13 @@ st85:
 		goto _test_eof85;
 case 85:
 #line 2715 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 84: goto tr135;
-		case 116: goto tr135;
+	switch( ( (unsigned char)*p) ) {
+		case 84u: goto tr135;
+		case 116u: goto tr135;
 	}
 	goto st0;
 tr135:
-#line 357 "pitchfork_http.rl"
+#line 359 "pitchfork_http.rl"
 	{ downcase_char(deconst(p)); }
 	goto st86;
 st86:
@@ -2726,13 +2726,13 @@ st86:
 		goto _test_eof86;
 case 86:
 #line 2729 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 80: goto tr136;
-		case 112: goto tr136;
+	switch( ( (unsigned char)*p) ) {
+		case 80u: goto tr136;
+		case 112u: goto tr136;
 	}
 	goto st0;
 tr136:
-#line 357 "pitchfork_http.rl"
+#line 359 "pitchfork_http.rl"
 	{ downcase_char(deconst(p)); }
 	goto st87;
 st87:
@@ -2740,14 +2740,14 @@ st87:
 		goto _test_eof87;
 case 87:
 #line 2743 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 58: goto tr137;
-		case 83: goto tr138;
-		case 115: goto tr138;
+	switch( ( (unsigned char)*p) ) {
+		case 58u: goto tr137;
+		case 83u: goto tr138;
+		case 115u: goto tr138;
 	}
 	goto st0;
 tr137:
-#line 363 "pitchfork_http.rl"
+#line 365 "pitchfork_http.rl"
 	{
     rb_hash_aset(hp->env, g_rack_url_scheme, STR_NEW(mark, p));
   }
@@ -2757,40 +2757,40 @@ st88:
 		goto _test_eof88;
 case 88:
 #line 2760 "pitchfork_http.c"
-	if ( (*p) == 47 )
+	if ( ( (unsigned char)*p) == 47u )
 		goto st89;
 	goto st0;
 st89:
 	if ( ++p == pe )
 		goto _test_eof89;
 case 89:
-	if ( (*p) == 47 )
+	if ( ( (unsigned char)*p) == 47u )
 		goto st90;
 	goto st0;
 st90:
 	if ( ++p == pe )
 		goto _test_eof90;
 case 90:
-	switch( (*p) ) {
-		case 37: goto st92;
-		case 47: goto st0;
-		case 60: goto st0;
-		case 91: goto tr144;
-		case 95: goto tr143;
-		case 127: goto st0;
+	switch( ( (unsigned char)*p) ) {
+		case 37u: goto st92;
+		case 47u: goto st0;
+		case 60u: goto st0;
+		case 91u: goto tr144;
+		case 95u: goto tr143;
+		case 127u: goto st0;
 	}
-	if ( (*p) < 45 ) {
-		if ( (*p) > 32 ) {
-			if ( 34 <= (*p) && (*p) <= 35 )
+	if ( ( (unsigned char)*p) < 45u ) {
+		if ( ( (unsigned char)*p) > 32u ) {
+			if ( 34u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 35u )
 				goto st0;
-		} else if ( (*p) >= 0 )
+		} else
 			goto st0;
-	} else if ( (*p) > 57 ) {
-		if ( (*p) < 65 ) {
-			if ( 62 <= (*p) && (*p) <= 64 )
+	} else if ( ( (unsigned char)*p) > 57u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 62u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 64u )
 				goto st0;
-		} else if ( (*p) > 90 ) {
-			if ( 97 <= (*p) && (*p) <= 122 )
+		} else if ( ( (unsigned char)*p) > 90u ) {
+			if ( 97u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 122u )
 				goto tr143;
 		} else
 			goto tr143;
@@ -2801,18 +2801,18 @@ st91:
 	if ( ++p == pe )
 		goto _test_eof91;
 case 91:
-	switch( (*p) ) {
-		case 37: goto st92;
-		case 47: goto st0;
-		case 60: goto st0;
-		case 64: goto st90;
-		case 127: goto st0;
+	switch( ( (unsigned char)*p) ) {
+		case 37u: goto st92;
+		case 47u: goto st0;
+		case 60u: goto st0;
+		case 64u: goto st90;
+		case 127u: goto st0;
 	}
-	if ( (*p) < 34 ) {
-		if ( 0 <= (*p) && (*p) <= 32 )
+	if ( ( (unsigned char)*p) < 34u ) {
+		if ( ( (unsigned char)*p) <= 32u )
 			goto st0;
-	} else if ( (*p) > 35 ) {
-		if ( 62 <= (*p) && (*p) <= 63 )
+	} else if ( ( (unsigned char)*p) > 35u ) {
+		if ( 62u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 63u )
 			goto st0;
 	} else
 		goto st0;
@@ -2821,11 +2821,11 @@ st92:
 	if ( ++p == pe )
 		goto _test_eof92;
 case 92:
-	if ( (*p) < 65 ) {
-		if ( 48 <= (*p) && (*p) <= 57 )
+	if ( ( (unsigned char)*p) < 65u ) {
+		if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 			goto st93;
-	} else if ( (*p) > 70 ) {
-		if ( 97 <= (*p) && (*p) <= 102 )
+	} else if ( ( (unsigned char)*p) > 70u ) {
+		if ( 97u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 102u )
 			goto st93;
 	} else
 		goto st93;
@@ -2834,17 +2834,17 @@ st93:
 	if ( ++p == pe )
 		goto _test_eof93;
 case 93:
-	if ( (*p) < 65 ) {
-		if ( 48 <= (*p) && (*p) <= 57 )
+	if ( ( (unsigned char)*p) < 65u ) {
+		if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 			goto st91;
-	} else if ( (*p) > 70 ) {
-		if ( 97 <= (*p) && (*p) <= 102 )
+	} else if ( ( (unsigned char)*p) > 70u ) {
+		if ( 97u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 102u )
 			goto st91;
 	} else
 		goto st91;
 	goto st0;
 tr143:
-#line 353 "pitchfork_http.rl"
+#line 355 "pitchfork_http.rl"
 	{MARK(mark, p); }
 	goto st94;
 st94:
@@ -2852,27 +2852,27 @@ st94:
 		goto _test_eof94;
 case 94:
 #line 2855 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 37: goto st92;
-		case 47: goto tr147;
-		case 58: goto st95;
-		case 60: goto st0;
-		case 64: goto st90;
-		case 95: goto st94;
-		case 127: goto st0;
+	switch( ( (unsigned char)*p) ) {
+		case 37u: goto st92;
+		case 47u: goto tr147;
+		case 58u: goto st95;
+		case 60u: goto st0;
+		case 64u: goto st90;
+		case 95u: goto st94;
+		case 127u: goto st0;
 	}
-	if ( (*p) < 45 ) {
-		if ( (*p) > 32 ) {
-			if ( 34 <= (*p) && (*p) <= 35 )
+	if ( ( (unsigned char)*p) < 45u ) {
+		if ( ( (unsigned char)*p) > 32u ) {
+			if ( 34u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 35u )
 				goto st0;
-		} else if ( (*p) >= 0 )
+		} else
 			goto st0;
-	} else if ( (*p) > 57 ) {
-		if ( (*p) < 65 ) {
-			if ( 62 <= (*p) && (*p) <= 63 )
+	} else if ( ( (unsigned char)*p) > 57u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 62u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 63u )
 				goto st0;
-		} else if ( (*p) > 90 ) {
-			if ( 97 <= (*p) && (*p) <= 122 )
+		} else if ( ( (unsigned char)*p) > 90u ) {
+			if ( 97u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 122u )
 				goto st94;
 		} else
 			goto st94;
@@ -2883,27 +2883,27 @@ st95:
 	if ( ++p == pe )
 		goto _test_eof95;
 case 95:
-	switch( (*p) ) {
-		case 37: goto st92;
-		case 47: goto tr147;
-		case 60: goto st0;
-		case 64: goto st90;
-		case 127: goto st0;
+	switch( ( (unsigned char)*p) ) {
+		case 37u: goto st92;
+		case 47u: goto tr147;
+		case 60u: goto st0;
+		case 64u: goto st90;
+		case 127u: goto st0;
 	}
-	if ( (*p) < 34 ) {
-		if ( 0 <= (*p) && (*p) <= 32 )
+	if ( ( (unsigned char)*p) < 34u ) {
+		if ( ( (unsigned char)*p) <= 32u )
 			goto st0;
-	} else if ( (*p) > 35 ) {
-		if ( (*p) > 57 ) {
-			if ( 62 <= (*p) && (*p) <= 63 )
+	} else if ( ( (unsigned char)*p) > 35u ) {
+		if ( ( (unsigned char)*p) > 57u ) {
+			if ( 62u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 63u )
 				goto st0;
-		} else if ( (*p) >= 48 )
+		} else if ( ( (unsigned char)*p) >= 48u )
 			goto st95;
 	} else
 		goto st0;
 	goto st91;
 tr144:
-#line 353 "pitchfork_http.rl"
+#line 355 "pitchfork_http.rl"
 	{MARK(mark, p); }
 	goto st96;
 st96:
@@ -2911,25 +2911,25 @@ st96:
 		goto _test_eof96;
 case 96:
 #line 2914 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 37: goto st92;
-		case 47: goto st0;
-		case 60: goto st0;
-		case 64: goto st90;
-		case 127: goto st0;
+	switch( ( (unsigned char)*p) ) {
+		case 37u: goto st92;
+		case 47u: goto st0;
+		case 60u: goto st0;
+		case 64u: goto st90;
+		case 127u: goto st0;
 	}
-	if ( (*p) < 48 ) {
-		if ( (*p) > 32 ) {
-			if ( 34 <= (*p) && (*p) <= 35 )
+	if ( ( (unsigned char)*p) < 48u ) {
+		if ( ( (unsigned char)*p) > 32u ) {
+			if ( 34u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 35u )
 				goto st0;
-		} else if ( (*p) >= 0 )
+		} else
 			goto st0;
-	} else if ( (*p) > 58 ) {
-		if ( (*p) < 65 ) {
-			if ( 62 <= (*p) && (*p) <= 63 )
+	} else if ( ( (unsigned char)*p) > 58u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 62u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 63u )
 				goto st0;
-		} else if ( (*p) > 70 ) {
-			if ( 97 <= (*p) && (*p) <= 102 )
+		} else if ( ( (unsigned char)*p) > 70u ) {
+			if ( 97u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 102u )
 				goto st97;
 		} else
 			goto st97;
@@ -2940,26 +2940,26 @@ st97:
 	if ( ++p == pe )
 		goto _test_eof97;
 case 97:
-	switch( (*p) ) {
-		case 37: goto st92;
-		case 47: goto st0;
-		case 60: goto st0;
-		case 64: goto st90;
-		case 93: goto st98;
-		case 127: goto st0;
+	switch( ( (unsigned char)*p) ) {
+		case 37u: goto st92;
+		case 47u: goto st0;
+		case 60u: goto st0;
+		case 64u: goto st90;
+		case 93u: goto st98;
+		case 127u: goto st0;
 	}
-	if ( (*p) < 48 ) {
-		if ( (*p) > 32 ) {
-			if ( 34 <= (*p) && (*p) <= 35 )
+	if ( ( (unsigned char)*p) < 48u ) {
+		if ( ( (unsigned char)*p) > 32u ) {
+			if ( 34u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 35u )
 				goto st0;
-		} else if ( (*p) >= 0 )
+		} else
 			goto st0;
-	} else if ( (*p) > 58 ) {
-		if ( (*p) < 65 ) {
-			if ( 62 <= (*p) && (*p) <= 63 )
+	} else if ( ( (unsigned char)*p) > 58u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 62u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 63u )
 				goto st0;
-		} else if ( (*p) > 70 ) {
-			if ( 97 <= (*p) && (*p) <= 102 )
+		} else if ( ( (unsigned char)*p) > 70u ) {
+			if ( 97u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 102u )
 				goto st97;
 		} else
 			goto st97;
@@ -2970,25 +2970,25 @@ st98:
 	if ( ++p == pe )
 		goto _test_eof98;
 case 98:
-	switch( (*p) ) {
-		case 37: goto st92;
-		case 47: goto tr147;
-		case 58: goto st95;
-		case 60: goto st0;
-		case 64: goto st90;
-		case 127: goto st0;
+	switch( ( (unsigned char)*p) ) {
+		case 37u: goto st92;
+		case 47u: goto tr147;
+		case 58u: goto st95;
+		case 60u: goto st0;
+		case 64u: goto st90;
+		case 127u: goto st0;
 	}
-	if ( (*p) < 34 ) {
-		if ( 0 <= (*p) && (*p) <= 32 )
+	if ( ( (unsigned char)*p) < 34u ) {
+		if ( ( (unsigned char)*p) <= 32u )
 			goto st0;
-	} else if ( (*p) > 35 ) {
-		if ( 62 <= (*p) && (*p) <= 63 )
+	} else if ( ( (unsigned char)*p) > 35u ) {
+		if ( 62u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 63u )
 			goto st0;
 	} else
 		goto st0;
 	goto st91;
 tr138:
-#line 357 "pitchfork_http.rl"
+#line 359 "pitchfork_http.rl"
 	{ downcase_char(deconst(p)); }
 	goto st99;
 st99:
@@ -2996,28 +2996,28 @@ st99:
 		goto _test_eof99;
 case 99:
 #line 2999 "pitchfork_http.c"
-	if ( (*p) == 58 )
+	if ( ( (unsigned char)*p) == 58u )
 		goto tr137;
 	goto st0;
 st100:
 	if ( ++p == pe )
 		goto _test_eof100;
 case 100:
-	if ( (*p) == 48 )
+	if ( ( (unsigned char)*p) == 48u )
 		goto tr151;
-	if ( (*p) < 65 ) {
-		if ( 49 <= (*p) && (*p) <= 57 )
+	if ( ( (unsigned char)*p) < 65u ) {
+		if ( 49u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 			goto tr152;
-	} else if ( (*p) > 70 ) {
-		if ( 97 <= (*p) && (*p) <= 102 )
+	} else if ( ( (unsigned char)*p) > 70u ) {
+		if ( 97u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 102u )
 			goto tr152;
 	} else
 		goto tr152;
 	goto st0;
 tr151:
-#line 395 "pitchfork_http.rl"
+#line 397 "pitchfork_http.rl"
 	{
-    hp->len.chunk = step_incr(hp->len.chunk, (*p), 16);
+    hp->len.chunk = step_incr(hp->len.chunk, ( (unsigned char)*p), 16);
     if (hp->len.chunk < 0)
       parser_raise(eHttpParserError, "invalid chunk size");
   }
@@ -3027,23 +3027,23 @@ st101:
 		goto _test_eof101;
 case 101:
 #line 3030 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 10: goto tr153;
-		case 13: goto st102;
-		case 48: goto tr151;
-		case 59: goto st111;
+	switch( ( (unsigned char)*p) ) {
+		case 10u: goto tr153;
+		case 13u: goto st102;
+		case 48u: goto tr151;
+		case 59u: goto st111;
 	}
-	if ( (*p) < 65 ) {
-		if ( 49 <= (*p) && (*p) <= 57 )
+	if ( ( (unsigned char)*p) < 65u ) {
+		if ( 49u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 			goto tr152;
-	} else if ( (*p) > 70 ) {
-		if ( 97 <= (*p) && (*p) <= 102 )
+	} else if ( ( (unsigned char)*p) > 70u ) {
+		if ( 97u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 102u )
 			goto tr152;
 	} else
 		goto tr152;
 	goto st0;
 tr153:
-#line 424 "pitchfork_http.rl"
+#line 426 "pitchfork_http.rl"
 	{
     HP_FL_SET(hp, INTRAILER);
     RB_OBJ_WRITE(self, &hp->cont, Qfalse);
@@ -3063,13 +3063,13 @@ st102:
 	if ( ++p == pe )
 		goto _test_eof102;
 case 102:
-	if ( (*p) == 10 )
+	if ( ( (unsigned char)*p) == 10u )
 		goto tr153;
 	goto st0;
 tr152:
-#line 395 "pitchfork_http.rl"
+#line 397 "pitchfork_http.rl"
 	{
-    hp->len.chunk = step_incr(hp->len.chunk, (*p), 16);
+    hp->len.chunk = step_incr(hp->len.chunk, ( (unsigned char)*p), 16);
     if (hp->len.chunk < 0)
       parser_raise(eHttpParserError, "invalid chunk size");
   }
@@ -3079,16 +3079,16 @@ st103:
 		goto _test_eof103;
 case 103:
 #line 3082 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 10: goto st104;
-		case 13: goto st107;
-		case 59: goto st108;
+	switch( ( (unsigned char)*p) ) {
+		case 10u: goto st104;
+		case 13u: goto st107;
+		case 59u: goto st108;
 	}
-	if ( (*p) < 65 ) {
-		if ( 48 <= (*p) && (*p) <= 57 )
+	if ( ( (unsigned char)*p) < 65u ) {
+		if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 			goto tr152;
-	} else if ( (*p) > 70 ) {
-		if ( 97 <= (*p) && (*p) <= 102 )
+	} else if ( ( (unsigned char)*p) > 70u ) {
+		if ( 97u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 102u )
 			goto tr152;
 	} else
 		goto tr152;
@@ -3099,7 +3099,7 @@ st104:
 case 104:
 	goto tr159;
 tr159:
-#line 433 "pitchfork_http.rl"
+#line 435 "pitchfork_http.rl"
 	{
   skip_chunk_data_hack: {
     size_t nr = MIN((size_t)hp->len.chunk, REMAINING);
@@ -3122,51 +3122,51 @@ st105:
 		goto _test_eof105;
 case 105:
 #line 3125 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 10: goto st100;
-		case 13: goto st106;
+	switch( ( (unsigned char)*p) ) {
+		case 10u: goto st100;
+		case 13u: goto st106;
 	}
 	goto st0;
 st106:
 	if ( ++p == pe )
 		goto _test_eof106;
 case 106:
-	if ( (*p) == 10 )
+	if ( ( (unsigned char)*p) == 10u )
 		goto st100;
 	goto st0;
 st107:
 	if ( ++p == pe )
 		goto _test_eof107;
 case 107:
-	if ( (*p) == 10 )
+	if ( ( (unsigned char)*p) == 10u )
 		goto st104;
 	goto st0;
 st108:
 	if ( ++p == pe )
 		goto _test_eof108;
 case 108:
-	switch( (*p) ) {
-		case 10: goto st104;
-		case 13: goto st107;
-		case 32: goto st108;
-		case 33: goto st109;
-		case 59: goto st108;
-		case 61: goto st110;
-		case 124: goto st109;
-		case 126: goto st109;
+	switch( ( (unsigned char)*p) ) {
+		case 10u: goto st104;
+		case 13u: goto st107;
+		case 32u: goto st108;
+		case 33u: goto st109;
+		case 59u: goto st108;
+		case 61u: goto st110;
+		case 124u: goto st109;
+		case 126u: goto st109;
 	}
-	if ( (*p) < 45 ) {
-		if ( (*p) > 39 ) {
-			if ( 42 <= (*p) && (*p) <= 43 )
+	if ( ( (unsigned char)*p) < 45u ) {
+		if ( ( (unsigned char)*p) > 39u ) {
+			if ( 42u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 43u )
 				goto st109;
-		} else if ( (*p) >= 35 )
+		} else if ( ( (unsigned char)*p) >= 35u )
 			goto st109;
-	} else if ( (*p) > 46 ) {
-		if ( (*p) < 65 ) {
-			if ( 48 <= (*p) && (*p) <= 57 )
+	} else if ( ( (unsigned char)*p) > 46u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 				goto st109;
-		} else if ( (*p) > 90 ) {
-			if ( 94 <= (*p) && (*p) <= 122 )
+		} else if ( ( (unsigned char)*p) > 90u ) {
+			if ( 94u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 122u )
 				goto st109;
 		} else
 			goto st109;
@@ -3177,27 +3177,27 @@ st109:
 	if ( ++p == pe )
 		goto _test_eof109;
 case 109:
-	switch( (*p) ) {
-		case 10: goto st104;
-		case 13: goto st107;
-		case 33: goto st109;
-		case 59: goto st108;
-		case 61: goto st110;
-		case 124: goto st109;
-		case 126: goto st109;
+	switch( ( (unsigned char)*p) ) {
+		case 10u: goto st104;
+		case 13u: goto st107;
+		case 33u: goto st109;
+		case 59u: goto st108;
+		case 61u: goto st110;
+		case 124u: goto st109;
+		case 126u: goto st109;
 	}
-	if ( (*p) < 45 ) {
-		if ( (*p) > 39 ) {
-			if ( 42 <= (*p) && (*p) <= 43 )
+	if ( ( (unsigned char)*p) < 45u ) {
+		if ( ( (unsigned char)*p) > 39u ) {
+			if ( 42u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 43u )
 				goto st109;
-		} else if ( (*p) >= 35 )
+		} else if ( ( (unsigned char)*p) >= 35u )
 			goto st109;
-	} else if ( (*p) > 46 ) {
-		if ( (*p) < 65 ) {
-			if ( 48 <= (*p) && (*p) <= 57 )
+	} else if ( ( (unsigned char)*p) > 46u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 				goto st109;
-		} else if ( (*p) > 90 ) {
-			if ( 94 <= (*p) && (*p) <= 122 )
+		} else if ( ( (unsigned char)*p) > 90u ) {
+			if ( 94u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 122u )
 				goto st109;
 		} else
 			goto st109;
@@ -3208,26 +3208,26 @@ st110:
 	if ( ++p == pe )
 		goto _test_eof110;
 case 110:
-	switch( (*p) ) {
-		case 10: goto st104;
-		case 13: goto st107;
-		case 33: goto st110;
-		case 59: goto st108;
-		case 124: goto st110;
-		case 126: goto st110;
+	switch( ( (unsigned char)*p) ) {
+		case 10u: goto st104;
+		case 13u: goto st107;
+		case 33u: goto st110;
+		case 59u: goto st108;
+		case 124u: goto st110;
+		case 126u: goto st110;
 	}
-	if ( (*p) < 45 ) {
-		if ( (*p) > 39 ) {
-			if ( 42 <= (*p) && (*p) <= 43 )
+	if ( ( (unsigned char)*p) < 45u ) {
+		if ( ( (unsigned char)*p) > 39u ) {
+			if ( 42u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 43u )
 				goto st110;
-		} else if ( (*p) >= 35 )
+		} else if ( ( (unsigned char)*p) >= 35u )
 			goto st110;
-	} else if ( (*p) > 46 ) {
-		if ( (*p) < 65 ) {
-			if ( 48 <= (*p) && (*p) <= 57 )
+	} else if ( ( (unsigned char)*p) > 46u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 				goto st110;
-		} else if ( (*p) > 90 ) {
-			if ( 94 <= (*p) && (*p) <= 122 )
+		} else if ( ( (unsigned char)*p) > 90u ) {
+			if ( 94u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 122u )
 				goto st110;
 		} else
 			goto st110;
@@ -3238,28 +3238,28 @@ st111:
 	if ( ++p == pe )
 		goto _test_eof111;
 case 111:
-	switch( (*p) ) {
-		case 10: goto tr153;
-		case 13: goto st102;
-		case 32: goto st111;
-		case 33: goto st112;
-		case 59: goto st111;
-		case 61: goto st113;
-		case 124: goto st112;
-		case 126: goto st112;
+	switch( ( (unsigned char)*p) ) {
+		case 10u: goto tr153;
+		case 13u: goto st102;
+		case 32u: goto st111;
+		case 33u: goto st112;
+		case 59u: goto st111;
+		case 61u: goto st113;
+		case 124u: goto st112;
+		case 126u: goto st112;
 	}
-	if ( (*p) < 45 ) {
-		if ( (*p) > 39 ) {
-			if ( 42 <= (*p) && (*p) <= 43 )
+	if ( ( (unsigned char)*p) < 45u ) {
+		if ( ( (unsigned char)*p) > 39u ) {
+			if ( 42u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 43u )
 				goto st112;
-		} else if ( (*p) >= 35 )
+		} else if ( ( (unsigned char)*p) >= 35u )
 			goto st112;
-	} else if ( (*p) > 46 ) {
-		if ( (*p) < 65 ) {
-			if ( 48 <= (*p) && (*p) <= 57 )
+	} else if ( ( (unsigned char)*p) > 46u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 				goto st112;
-		} else if ( (*p) > 90 ) {
-			if ( 94 <= (*p) && (*p) <= 122 )
+		} else if ( ( (unsigned char)*p) > 90u ) {
+			if ( 94u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 122u )
 				goto st112;
 		} else
 			goto st112;
@@ -3270,27 +3270,27 @@ st112:
 	if ( ++p == pe )
 		goto _test_eof112;
 case 112:
-	switch( (*p) ) {
-		case 10: goto tr153;
-		case 13: goto st102;
-		case 33: goto st112;
-		case 59: goto st111;
-		case 61: goto st113;
-		case 124: goto st112;
-		case 126: goto st112;
+	switch( ( (unsigned char)*p) ) {
+		case 10u: goto tr153;
+		case 13u: goto st102;
+		case 33u: goto st112;
+		case 59u: goto st111;
+		case 61u: goto st113;
+		case 124u: goto st112;
+		case 126u: goto st112;
 	}
-	if ( (*p) < 45 ) {
-		if ( (*p) > 39 ) {
-			if ( 42 <= (*p) && (*p) <= 43 )
+	if ( ( (unsigned char)*p) < 45u ) {
+		if ( ( (unsigned char)*p) > 39u ) {
+			if ( 42u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 43u )
 				goto st112;
-		} else if ( (*p) >= 35 )
+		} else if ( ( (unsigned char)*p) >= 35u )
 			goto st112;
-	} else if ( (*p) > 46 ) {
-		if ( (*p) < 65 ) {
-			if ( 48 <= (*p) && (*p) <= 57 )
+	} else if ( ( (unsigned char)*p) > 46u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 				goto st112;
-		} else if ( (*p) > 90 ) {
-			if ( 94 <= (*p) && (*p) <= 122 )
+		} else if ( ( (unsigned char)*p) > 90u ) {
+			if ( 94u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 122u )
 				goto st112;
 		} else
 			goto st112;
@@ -3301,50 +3301,50 @@ st113:
 	if ( ++p == pe )
 		goto _test_eof113;
 case 113:
-	switch( (*p) ) {
-		case 10: goto tr153;
-		case 13: goto st102;
-		case 33: goto st113;
-		case 59: goto st111;
-		case 124: goto st113;
-		case 126: goto st113;
+	switch( ( (unsigned char)*p) ) {
+		case 10u: goto tr153;
+		case 13u: goto st102;
+		case 33u: goto st113;
+		case 59u: goto st111;
+		case 124u: goto st113;
+		case 126u: goto st113;
 	}
-	if ( (*p) < 45 ) {
-		if ( (*p) > 39 ) {
-			if ( 42 <= (*p) && (*p) <= 43 )
+	if ( ( (unsigned char)*p) < 45u ) {
+		if ( ( (unsigned char)*p) > 39u ) {
+			if ( 42u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 43u )
 				goto st113;
-		} else if ( (*p) >= 35 )
+		} else if ( ( (unsigned char)*p) >= 35u )
 			goto st113;
-	} else if ( (*p) > 46 ) {
-		if ( (*p) < 65 ) {
-			if ( 48 <= (*p) && (*p) <= 57 )
+	} else if ( ( (unsigned char)*p) > 46u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 				goto st113;
-		} else if ( (*p) > 90 ) {
-			if ( 94 <= (*p) && (*p) <= 122 )
+		} else if ( ( (unsigned char)*p) > 90u ) {
+			if ( 94u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 122u )
 				goto st113;
 		} else
 			goto st113;
 	} else
 		goto st113;
 	goto st0;
-tr172:
-#line 359 "pitchfork_http.rl"
-	{ MARK(mark, p); }
+tr171:
 #line 361 "pitchfork_http.rl"
+	{ MARK(mark, p); }
+#line 363 "pitchfork_http.rl"
 	{ write_cont_value(hp, buffer, p); }
 	goto st114;
-tr175:
-#line 361 "pitchfork_http.rl"
+tr176:
+#line 363 "pitchfork_http.rl"
 	{ write_cont_value(hp, buffer, p); }
 	goto st114;
-tr182:
-#line 359 "pitchfork_http.rl"
+tr181:
+#line 361 "pitchfork_http.rl"
 	{ MARK(mark, p); }
-#line 360 "pitchfork_http.rl"
+#line 362 "pitchfork_http.rl"
 	{ write_value(self, hp, buffer, p); }
 	goto st114;
 tr185:
-#line 360 "pitchfork_http.rl"
+#line 362 "pitchfork_http.rl"
 	{ write_value(self, hp, buffer, p); }
 	goto st114;
 st114:
@@ -3352,35 +3352,35 @@ st114:
 		goto _test_eof114;
 case 114:
 #line 3355 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 9: goto st115;
-		case 10: goto tr167;
-		case 13: goto st118;
-		case 32: goto st115;
-		case 33: goto tr169;
-		case 124: goto tr169;
-		case 126: goto tr169;
+	switch( ( (unsigned char)*p) ) {
+		case 9u: goto st115;
+		case 10u: goto tr167;
+		case 13u: goto st118;
+		case 32u: goto st115;
+		case 33u: goto tr169;
+		case 124u: goto tr169;
+		case 126u: goto tr169;
 	}
-	if ( (*p) < 45 ) {
-		if ( (*p) > 39 ) {
-			if ( 42 <= (*p) && (*p) <= 43 )
+	if ( ( (unsigned char)*p) < 45u ) {
+		if ( ( (unsigned char)*p) > 39u ) {
+			if ( 42u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 43u )
 				goto tr169;
-		} else if ( (*p) >= 35 )
+		} else if ( ( (unsigned char)*p) >= 35u )
 			goto tr169;
-	} else if ( (*p) > 46 ) {
-		if ( (*p) < 65 ) {
-			if ( 48 <= (*p) && (*p) <= 57 )
+	} else if ( ( (unsigned char)*p) > 46u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 				goto tr169;
-		} else if ( (*p) > 90 ) {
-			if ( 94 <= (*p) && (*p) <= 122 )
+		} else if ( ( (unsigned char)*p) > 90u ) {
+			if ( 94u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 122u )
 				goto tr169;
 		} else
 			goto tr169;
 	} else
 		goto tr169;
 	goto st0;
-tr171:
-#line 359 "pitchfork_http.rl"
+tr170:
+#line 361 "pitchfork_http.rl"
 	{ MARK(mark, p); }
 	goto st115;
 st115:
@@ -3388,66 +3388,66 @@ st115:
 		goto _test_eof115;
 case 115:
 #line 3391 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 9: goto tr171;
-		case 10: goto tr172;
-		case 13: goto tr173;
-		case 32: goto tr171;
-		case 127: goto st0;
+	switch( ( (unsigned char)*p) ) {
+		case 9u: goto tr170;
+		case 10u: goto tr171;
+		case 13u: goto tr172;
+		case 32u: goto tr170;
+		case 127u: goto st0;
 	}
-	if ( 0 <= (*p) && (*p) <= 31 )
+	if ( ( (unsigned char)*p) <= 31u )
 		goto st0;
-	goto tr170;
-tr170:
-#line 359 "pitchfork_http.rl"
+	goto tr173;
+tr172:
+#line 361 "pitchfork_http.rl"
 	{ MARK(mark, p); }
+#line 363 "pitchfork_http.rl"
+	{ write_cont_value(hp, buffer, p); }
+	goto st116;
+tr177:
+#line 363 "pitchfork_http.rl"
+	{ write_cont_value(hp, buffer, p); }
+	goto st116;
+tr182:
+#line 361 "pitchfork_http.rl"
+	{ MARK(mark, p); }
+#line 362 "pitchfork_http.rl"
+	{ write_value(self, hp, buffer, p); }
+	goto st116;
+tr186:
+#line 362 "pitchfork_http.rl"
+	{ write_value(self, hp, buffer, p); }
 	goto st116;
 st116:
 	if ( ++p == pe )
 		goto _test_eof116;
 case 116:
-#line 3410 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 10: goto tr175;
-		case 13: goto tr176;
-		case 127: goto st0;
-	}
-	if ( (*p) > 8 ) {
-		if ( 11 <= (*p) && (*p) <= 31 )
-			goto st0;
-	} else if ( (*p) >= 0 )
-		goto st0;
-	goto st116;
+#line 3426 "pitchfork_http.c"
+	if ( ( (unsigned char)*p) == 10u )
+		goto st114;
+	goto st0;
 tr173:
-#line 359 "pitchfork_http.rl"
-	{ MARK(mark, p); }
 #line 361 "pitchfork_http.rl"
-	{ write_cont_value(hp, buffer, p); }
-	goto st117;
-tr176:
-#line 361 "pitchfork_http.rl"
-	{ write_cont_value(hp, buffer, p); }
-	goto st117;
-tr183:
-#line 359 "pitchfork_http.rl"
 	{ MARK(mark, p); }
-#line 360 "pitchfork_http.rl"
-	{ write_value(self, hp, buffer, p); }
-	goto st117;
-tr186:
-#line 360 "pitchfork_http.rl"
-	{ write_value(self, hp, buffer, p); }
 	goto st117;
 st117:
 	if ( ++p == pe )
 		goto _test_eof117;
 case 117:
-#line 3446 "pitchfork_http.c"
-	if ( (*p) == 10 )
-		goto st114;
-	goto st0;
+#line 3438 "pitchfork_http.c"
+	switch( ( (unsigned char)*p) ) {
+		case 10u: goto tr176;
+		case 13u: goto tr177;
+		case 127u: goto st0;
+	}
+	if ( ( (unsigned char)*p) > 8u ) {
+		if ( 11u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 31u )
+			goto st0;
+	} else
+		goto st0;
+	goto st117;
 tr167:
-#line 419 "pitchfork_http.rl"
+#line 421 "pitchfork_http.rl"
 	{
     cs = http_parser_first_final;
     goto post_exec;
@@ -3463,17 +3463,17 @@ st118:
 	if ( ++p == pe )
 		goto _test_eof118;
 case 118:
-	if ( (*p) == 10 )
+	if ( ( (unsigned char)*p) == 10u )
 		goto tr167;
 	goto st0;
 tr169:
-#line 355 "pitchfork_http.rl"
+#line 357 "pitchfork_http.rl"
 	{ MARK(start.field, p); }
-#line 356 "pitchfork_http.rl"
+#line 358 "pitchfork_http.rl"
 	{ upcase_char(deconst(p)); }
 	goto st119;
 tr178:
-#line 356 "pitchfork_http.rl"
+#line 358 "pitchfork_http.rl"
 	{ upcase_char(deconst(p)); }
 	goto st119;
 st119:
@@ -3481,36 +3481,36 @@ st119:
 		goto _test_eof119;
 case 119:
 #line 3484 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 33: goto tr178;
-		case 58: goto tr179;
-		case 124: goto tr178;
-		case 126: goto tr178;
+	switch( ( (unsigned char)*p) ) {
+		case 33u: goto tr178;
+		case 58u: goto tr179;
+		case 124u: goto tr178;
+		case 126u: goto tr178;
 	}
-	if ( (*p) < 45 ) {
-		if ( (*p) > 39 ) {
-			if ( 42 <= (*p) && (*p) <= 43 )
+	if ( ( (unsigned char)*p) < 45u ) {
+		if ( ( (unsigned char)*p) > 39u ) {
+			if ( 42u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 43u )
 				goto tr178;
-		} else if ( (*p) >= 35 )
+		} else if ( ( (unsigned char)*p) >= 35u )
 			goto tr178;
-	} else if ( (*p) > 46 ) {
-		if ( (*p) < 65 ) {
-			if ( 48 <= (*p) && (*p) <= 57 )
+	} else if ( ( (unsigned char)*p) > 46u ) {
+		if ( ( (unsigned char)*p) < 65u ) {
+			if ( 48u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 57u )
 				goto tr178;
-		} else if ( (*p) > 90 ) {
-			if ( 94 <= (*p) && (*p) <= 122 )
+		} else if ( ( (unsigned char)*p) > 90u ) {
+			if ( 94u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 122u )
 				goto tr178;
 		} else
 			goto tr178;
 	} else
 		goto tr178;
 	goto st0;
-tr181:
-#line 359 "pitchfork_http.rl"
+tr180:
+#line 361 "pitchfork_http.rl"
 	{ MARK(mark, p); }
 	goto st120;
 tr179:
-#line 358 "pitchfork_http.rl"
+#line 360 "pitchfork_http.rl"
 	{ hp->s.field_len = LEN(start.field, p); }
 	goto st120;
 st120:
@@ -3518,18 +3518,18 @@ st120:
 		goto _test_eof120;
 case 120:
 #line 3521 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 9: goto tr181;
-		case 10: goto tr182;
-		case 13: goto tr183;
-		case 32: goto tr181;
-		case 127: goto st0;
+	switch( ( (unsigned char)*p) ) {
+		case 9u: goto tr180;
+		case 10u: goto tr181;
+		case 13u: goto tr182;
+		case 32u: goto tr180;
+		case 127u: goto st0;
 	}
-	if ( 0 <= (*p) && (*p) <= 31 )
+	if ( ( (unsigned char)*p) <= 31u )
 		goto st0;
-	goto tr180;
-tr180:
-#line 359 "pitchfork_http.rl"
+	goto tr183;
+tr183:
+#line 361 "pitchfork_http.rl"
 	{ MARK(mark, p); }
 	goto st121;
 st121:
@@ -3537,15 +3537,15 @@ st121:
 		goto _test_eof121;
 case 121:
 #line 3540 "pitchfork_http.c"
-	switch( (*p) ) {
-		case 10: goto tr185;
-		case 13: goto tr186;
-		case 127: goto st0;
+	switch( ( (unsigned char)*p) ) {
+		case 10u: goto tr185;
+		case 13u: goto tr186;
+		case 127u: goto st0;
 	}
-	if ( (*p) > 8 ) {
-		if ( 11 <= (*p) && (*p) <= 31 )
+	if ( ( (unsigned char)*p) > 8u ) {
+		if ( 11u <= ( (unsigned char)*p) && ( (unsigned char)*p) <= 31u )
 			goto st0;
-	} else if ( (*p) >= 0 )
+	} else
 		goto st0;
 	goto st121;
 	}
@@ -3677,7 +3677,7 @@ case 121:
 	_out: {}
 	}
 
-#line 494 "pitchfork_http.rl"
+#line 496 "pitchfork_http.rl"
 post_exec: /* "_out:" also goes here */
   if (hp->cs != http_parser_error)
     hp->cs = cs;
