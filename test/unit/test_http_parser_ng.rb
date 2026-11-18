@@ -471,6 +471,29 @@ module Pitchfork
       end
     end
 
+    def test_filter_body_reloads_source_after_destination_coercion
+      length = 2048
+      expected = "B" * length
+      [
+        ["Transfer-Encoding: chunked", "1\r\nA\r\n", "800\r\n#{expected}\r\n"],
+        ["Content-Length: #{length}", "A", expected],
+      ].each do |header, original, replacement|
+        parser = HttpParser.new
+        parser.buf << "POST / HTTP/1.1\r\n#{header}\r\n\r\n"
+        parser.parse
+        src = original.dup
+        dst = +""
+        coercible = Object.new
+        coercible.define_singleton_method(:to_str) do
+          src.replace(replacement)
+          dst
+        end
+
+        parser.filter_body(coercible, src)
+        assert_equal expected, dst
+      end
+    end
+
     # The decoded length must be set before anything can allocate: GC
     # compaction re-embeds Strings and only copies their logical length.
     # Runs in a subprocess so GC.stress and GC.auto_compact can't leak.
