@@ -1,12 +1,15 @@
 # Unreleased
 
+- Avoid stale body source pointers when Ruby compacts strings.
 - Fix non-ASCII request bytes on platforms where `char` is signed.
+
+# 0.18.3
+
 - [GHSA-gc8c-7rmr-hp64](https://github.com/Shopify/pitchfork/security/advisories/GHSA-gc8c-7rmr-hp64) Prevent header confusion: reject `Content_Length` and `Transfer_Encoding`, and ignore other headers with underscores in their names.
 - [GHSA-pw9g-874p-x237](https://github.com/Shopify/pitchfork/security/advisories/GHSA-pw9g-874p-x237) Store request trailers separately in `pitchfork.request_trailers`.
 - [GHSA-mr52-m5rh-frmq](https://github.com/Shopify/pitchfork/security/advisories/GHSA-mr52-m5rh-frmq) Fix CRLF injection in response trailers.
 - Fix response headers with non-ASCII bytes raising `ArgumentError` (invalid UTF-8) or `Encoding::CompatibilityError` (values in different encodings). Header values are now checked and written as bytes.
 - [GHSA-p9r3-wjcg-rwv5](https://github.com/Shopify/pitchfork/security/advisories/GHSA-p9r3-wjcg-rwv5) Fix chunked body parse errors that could disclose unread data.
-- Avoid stale body source pointers when Ruby compacts strings.
 - `RACK_ENV` now default to `"production"` instead of `"development"`.
 - Fix workers surviving a soft timeout when the application swallows the `SystemExit` (e.g. Rails' `ActionDispatch::ShowExceptions`). The worker now exits once the response is written, and `after_request_complete` isn't called for that request.
 
