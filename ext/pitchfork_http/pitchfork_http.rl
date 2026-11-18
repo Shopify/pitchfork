@@ -913,13 +913,10 @@ static VALUE HttpParser_hijacked_bang(VALUE self)
 static VALUE HttpParser_filter_body(VALUE self, VALUE dst, VALUE src)
 {
   struct http_parser *hp = data_get(self);
-  char *srcptr;
   long srclen;
 
-  srcptr = RSTRING_PTR(src);
-  srclen = RSTRING_LEN(src);
-
   StringValue(dst);
+  srclen = RSTRING_LEN(src);
 
   if (HP_FL_TEST(hp, CHUNKED)) {
     if (!chunked_eof(hp)) {
@@ -930,7 +927,7 @@ static VALUE HttpParser_filter_body(VALUE self, VALUE dst, VALUE src)
       hp->s.dest_offset = 0;
       RB_OBJ_WRITE(self, &hp->cont, dst);
       RB_OBJ_WRITE(self, &hp->buf, src);
-      http_parser_execute(self, hp, srcptr, srclen);
+      http_parser_execute(self, hp, RSTRING_PTR(src), srclen);
       if (hp->cs == http_parser_error)
         parser_raise(eHttpParserError, "Invalid HTTP format, parsing fails.");
 
@@ -965,7 +962,7 @@ static VALUE HttpParser_filter_body(VALUE self, VALUE dst, VALUE src)
        * when the +src+ buffer is modified (when reading off the socket).
        */
       RB_OBJ_WRITE(self, &hp->buf, src);
-      memcpy(RSTRING_PTR(dst), srcptr, nr);
+      memcpy(RSTRING_PTR(dst), RSTRING_PTR(src), nr);
       hp->len.content -= nr;
       if (hp->len.content == 0) {
         HP_FL_SET(hp, REQEOF);
