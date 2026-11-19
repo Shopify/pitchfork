@@ -268,6 +268,7 @@ module Pitchfork
       @children = assert_roundtrip(@children)
 
       pipe = Pitchfork.socketpair.last
+      GC.start
       service = Worker.new(nil, service: true)
       @children.register_service(service)
       @children.update(Message::ServiceSpawned.new(48, 1, 0, pipe))
@@ -281,6 +282,14 @@ module Pitchfork
 
     def assert_roundtrip(children)
       data = children.dump
+      # The loaded children need their own descriptors in this process.
+      data.each do |worker|
+        next unless worker[:monitor_fd]
+
+        socket = IO.for_fd(worker[:monitor_fd], autoclose: false).dup
+        socket.autoclose = false
+        worker[:monitor_fd] = socket.fileno
+      end
       cloned_children = Children.load(data)
       assert_equal(data.to_set, cloned_children.dump.to_set)
       cloned_children

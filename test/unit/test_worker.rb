@@ -99,6 +99,8 @@ module Pitchfork
       state = worker.dump
       assert_equal(expected, state)
 
+      # A restart replaces the process image before reloading the descriptor.
+      worker.monitor.to_io.autoclose = false
       cloned_worker = Worker.load(state)
       assert_equal worker.monitor.class, cloned_worker.monitor.class
       assert_equal worker.monitor.fileno, cloned_worker.monitor.fileno
