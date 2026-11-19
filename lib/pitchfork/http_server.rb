@@ -618,7 +618,7 @@ module Pitchfork
 
     def hard_timeout(child)
       if child.pid.nil? # Not yet registered, likely never spawned
-        @consecutive_spawn_errors += 1 unless child.ready?
+        @consecutive_spawn_errors += 1
         logger.error "#{child.to_log} timed out during spawn, abandoning"
         @children.abandon(child)
         return
