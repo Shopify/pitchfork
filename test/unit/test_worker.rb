@@ -91,6 +91,7 @@ module Pitchfork
         mold: false,
         mold_ready: false,
         service: false,
+        spawned_at: worker.spawned_at,
         nr: 2,
         pid: 1234,
         requests_count: 0,

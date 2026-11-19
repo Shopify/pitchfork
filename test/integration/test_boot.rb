@@ -254,6 +254,7 @@ class TestBoot < Pitchfork::IntegrationTest
 
     abandoned_worker_pid = read_stderr.match(/worker=0 gen=0.0 pid=(\d+) spawned but slot is taken/)[1]
     assert_stderr(/reaped unknown subprocess .* pid #{abandoned_worker_pid} exit 0/)
+    refute_stderr(/monitor loop error/)
 
     assert_clean_shutdown(pid)
   end
