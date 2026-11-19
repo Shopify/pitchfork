@@ -63,6 +63,81 @@ class TestShutdown < Pitchfork::IntegrationTest
     Process.kill(:KILL, worker_pid) rescue nil
   end
 
+  test "repeated QUIT waits for a pending worker" do
+    addr, port = unused_port
+    pid = spawn_pending_worker(addr, port, spawn_timeout: 10)
+    assert_healthy("http://#{addr}:#{port}")
+    Process.kill(:TTIN, pid)
+    assert_stderr(/pending worker pid=\d+/, timeout: 5)
+    worker_pid = Integer(read_stderr[/pending worker pid=(\d+)/, 1])
+
+    Process.kill(:QUIT, pid)
+    assert_stderr("QUIT received, starting graceful shutdown")
+    Process.kill(:QUIT, pid)
+    assert_stderr(/QUIT received, starting graceful shutdown.*QUIT received, starting graceful shutdown/m, timeout: 5)
+    sleep 0.2
+    assert_nil Process.waitpid(pid, Process::WNOHANG)
+
+    File.write("continue-worker", "")
+    assert_exited(pid, 0, timeout: 5)
+    assert_raises(Errno::ESRCH) { Process.kill(0, worker_pid) }
+  ensure
+    Process.kill(:KILL, worker_pid) rescue nil
+  end
+
+  test "a worker that exceeds its spawn timeout exits after shutdown" do
+    addr, port = unused_port
+    pid = spawn_pending_worker(addr, port, spawn_timeout: 1)
+    assert_healthy("http://#{addr}:#{port}")
+    Process.kill(:TTIN, pid)
+    assert_stderr(/pending worker pid=\d+/, timeout: 5)
+    worker_pid = Integer(read_stderr[/pending worker pid=(\d+)/, 1])
+
+    Process.kill(:QUIT, pid)
+    assert_stderr("QUIT received, starting graceful shutdown")
+    Process.kill(:QUIT, pid)
+    assert_exited(pid, 0, timeout: 6)
+
+    File.write("continue-worker", "")
+    assert_stderr("pending worker continuing", timeout: 5)
+    assert_process_exits(worker_pid)
+    worker_pid = nil
+  ensure
+    Process.kill(:KILL, worker_pid) rescue nil
+  end
+
+  test "a pending service worker exits after shutdown" do
+    addr, port = unused_port
+    pid = spawn_server(app: write_app, config: <<~RUBY)
+      listen "#{addr}:#{port}"
+      worker_processes 1
+
+      module SlowPendingService
+        def init_service_process(service)
+          $stderr.puts "pending service pid=\#{Process.pid}"
+          sleep 0.01 until File.exist?("continue-service")
+          $stderr.puts "pending service continuing"
+          super
+        end
+      end
+
+      after_mold_fork { |server, _mold| server.extend(SlowPendingService) }
+      before_service_worker_ready { |_server, _service| }
+    RUBY
+    assert_healthy("http://#{addr}:#{port}")
+    assert_stderr(/pending service pid=\d+/, timeout: 5)
+    service_pid = Integer(read_stderr[/pending service pid=(\d+)/, 1])
+
+    Process.kill(:QUIT, pid)
+    assert_exited(pid, 0, timeout: 5)
+    File.write("continue-service", "")
+    assert_stderr("pending service continuing", timeout: 5)
+    assert_process_exits(service_pid)
+    service_pid = nil
+  ensure
+    Process.kill(:KILL, service_pid) rescue nil
+  end
+
   test "INT during a graceful shutdown kills workers immediately" do
     addr, port = unused_port
     pid = spawn_server(app: write_app, config: <<~RUBY)
@@ -82,6 +157,37 @@ class TestShutdown < Pitchfork::IntegrationTest
   end
 
   private
+
+  def assert_process_exits(pid)
+    50.times do
+      Process.kill(0, pid)
+      sleep 0.1
+    rescue Errno::ESRCH
+      return
+    end
+    flunk "process pid=#{pid} did not exit"
+  end
+
+  def spawn_pending_worker(addr, port, spawn_timeout:)
+    spawn_server(app: write_app, config: <<~RUBY)
+      listen "#{addr}:#{port}"
+      worker_processes 1
+      spawn_timeout #{spawn_timeout}
+
+      module SlowPendingWorker
+        def init_worker_process(worker)
+          if worker.nr == 1
+            $stderr.puts "pending worker pid=\#{Process.pid}"
+            sleep 0.01 until File.exist?("continue-worker")
+            $stderr.puts "pending worker continuing"
+          end
+          super
+        end
+      end
+
+      after_mold_fork { |server, _mold| server.extend(SlowPendingWorker) }
+    RUBY
+  end
 
   def write_app
     File.write("slow.ru", SLOW_APP)

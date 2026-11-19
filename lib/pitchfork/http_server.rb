@@ -461,7 +461,7 @@ module Pitchfork
       proc_name role: 'monitor', status: 'shutting down'
       @respawn = false
       SharedMemory.shutting_down!
-      wait_for_pending_workers
+      wait_for_pending_workers(stop_on_signal: false)
       Pitchfork.close_listeners
 
       limit = Pitchfork.time_now + timeout
@@ -874,10 +874,10 @@ module Pitchfork
       exit!
     end
 
-    def wait_for_pending_workers
+    def wait_for_pending_workers(stop_on_signal: true)
       while @children.pending_workers?
         monitor_sleep(0.5)
-        if monitor_loop(false) == StopIteration
+        if monitor_loop(false) == StopIteration && stop_on_signal
           return StopIteration
         end
       end
@@ -1079,6 +1079,7 @@ module Pitchfork
       proc_name role: "(#{worker.version}.#{worker.generation}) worker[#{worker.nr}]", status: "init"
       worker.reset
       worker.register_to_monitor(@control_socket[1])
+      exit!(0) if SharedMemory.shutting_down?
       # we'll re-trap :QUIT and :TERM later for graceful shutdown iff we accept clients
       exit_sigs = [ :QUIT, :TERM, :INT ]
       exit_sigs.each { |sig| trap(sig) { exit!(0) } }
@@ -1105,6 +1106,7 @@ module Pitchfork
       proc_name role: "(#{service.version}.#{service.generation}) service", status: "init"
       Pitchfork.close_listeners # Don't appear as listening to incoming requests
       service.register_to_monitor(@control_socket[1])
+      exit!(0) if SharedMemory.shutting_down?
       readers = [service]
       trap(:QUIT) { nuke_listeners!(readers) }
       trap(:TERM) { nuke_listeners!(readers) }
