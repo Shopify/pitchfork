@@ -847,8 +847,10 @@ module Pitchfork
         generation = 0
       end
 
+      # Only the monitor resets shared state; the mold attaches to the same slots.
       if @before_service_worker_ready && !@children.service
         service = Worker.new(nil, service: true, version: version, generation: generation)
+        service.reset_state!
         spawn_service_from_mold(service)
       end
 
@@ -861,7 +863,9 @@ module Pitchfork
           next
         end
 
-        missing_workers << Worker.new(worker_nr, version: version, generation: generation)
+        worker = Worker.new(worker_nr, version: version, generation: generation)
+        worker.reset_state!
+        missing_workers << worker
       end
 
       unless missing_workers.empty?
