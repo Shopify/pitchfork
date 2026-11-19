@@ -472,9 +472,7 @@ module Pitchfork
           @children.hard_kill_all(:INT)
         end
         monitor_sleep(0.1)
-        if monitor_loop(false) == StopIteration
-          return StopIteration
-        end
+        monitor_loop(false)
       end
 
       @children.each do |child|

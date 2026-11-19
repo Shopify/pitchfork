@@ -1,6 +1,7 @@
 # Unreleased
 
 - Fix the monitor using a full CPU core while it waits for workers during a graceful shutdown.
+- Fix a second `QUIT` or `TERM` during a graceful shutdown making the monitor exit before its workers.
 - Fix `TTIN` during a graceful shutdown spawning new workers.
 - Preserve worker spawn deadlines when the mold starts workers.
 

@@ -44,6 +44,43 @@ class TestShutdown < Pitchfork::IntegrationTest
     assert_exited(pid, 0, timeout: 4)
   end
 
+  test "repeated QUIT still waits for workers to exit" do
+    addr, port = unused_port
+    pid = spawn_server(app: write_app, config: <<~RUBY)
+      listen "#{addr}:#{port}"
+      worker_processes 1
+      timeout 3
+    RUBY
+    worker_pid = start_slow_request(addr, port, 30)
+
+    Process.kill(:QUIT, pid)
+    assert_stderr("QUIT received, starting graceful shutdown")
+    Process.kill(:QUIT, pid)
+
+    assert_exited(pid, 0, timeout: 8)
+    assert_raises(Errno::ESRCH) { Process.kill(0, worker_pid) }
+  ensure
+    Process.kill(:KILL, worker_pid) rescue nil
+  end
+
+  test "INT during a graceful shutdown kills workers immediately" do
+    addr, port = unused_port
+    pid = spawn_server(app: write_app, config: <<~RUBY)
+      listen "#{addr}:#{port}"
+      worker_processes 1
+    RUBY
+    worker_pid = start_slow_request(addr, port, 30)
+
+    Process.kill(:QUIT, pid)
+    assert_stderr("QUIT received, starting graceful shutdown")
+    Process.kill(:INT, pid)
+
+    assert_exited(pid, 0, timeout: 2)
+    assert_raises(Errno::ESRCH) { Process.kill(0, worker_pid) }
+  ensure
+    Process.kill(:KILL, worker_pid) rescue nil
+  end
+
   private
 
   def write_app
