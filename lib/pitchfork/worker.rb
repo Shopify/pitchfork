@@ -22,7 +22,7 @@ module Pitchfork
       end
     end
 
-    def initialize(nr, pid: nil, generation: 0, version: 0, service: false, reset_state: true)
+    def initialize(nr, pid: nil, generation: 0, version: 0, service: false)
       @nr = nr
       @pid = pid
       @generation = generation
@@ -34,7 +34,13 @@ module Pitchfork
       @monitor = nil
       @exiting = false
       @requests_count = 0
-      init_state(reset_state)
+      if nr
+        @state_drop = SharedMemory.worker_state(@nr)
+      elsif service?
+        @state_drop = SharedMemory.service_state
+      else
+        promoted!(nil)
+      end
     end
 
     def init_with(data)
@@ -306,6 +312,10 @@ module Pitchfork
       @to_io = nil
     end
 
+    def reset_state!
+      @state_drop.reset!
+    end
+
     def reaped!
       close
       # Not ideal: All molds share two state_drops, so when reaping a mold
@@ -314,7 +324,7 @@ module Pitchfork
       # unix sockets, we could consider assigning a unique page for each mold to solve
       # this problem.
       unless mold?
-        @state_drop.reset!
+        reset_state!
       end
     end
 
@@ -341,18 +351,6 @@ module Pitchfork
     end
 
     private
-
-    def init_state(reset_state)
-      if nr
-        @state_drop = SharedMemory.worker_state(@nr)
-        @state_drop.reset! if reset_state
-      elsif service?
-        @state_drop = SharedMemory.service_state
-        @state_drop.reset! if reset_state
-      else
-        promoted!(nil)
-      end
-    end
 
     def pipe=(socket)
       raise ArgumentError, "pipe can't be nil" unless socket

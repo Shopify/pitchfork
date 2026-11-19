@@ -18,6 +18,25 @@ module Pitchfork
       end
     end
 
+    def test_new_worker_keeps_shared_state_until_reset
+      [[0, false], [nil, true]].each do |nr, service|
+        existing = Worker.new(nr, service: service)
+        existing.deadline = 123
+        existing.ready = true
+        existing.busy = true
+
+        worker = Worker.new(nr, service: service)
+        assert_equal 123, worker.deadline
+        assert worker.ready?
+        assert worker.busy?
+
+        worker.reset_state!
+        assert_equal 0, existing.deadline
+        refute existing.ready?
+        refute existing.busy?
+      end
+    end
+
     def test_shared_process
       worker = Worker.new(0)
       _, status = Process.waitpid2(fork { worker.deadline += 1; exit!(0) })
