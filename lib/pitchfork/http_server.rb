@@ -403,7 +403,11 @@ module Pitchfork
         stop(false)
         return StopIteration
       when :USR1 # trigger a hot restart
-        trigger_restart
+        if SharedMemory.shutting_down?
+          logger.error "Can't trigger a restart as the server is shutting down"
+        else
+          trigger_restart
+        end
       when :USR2 # trigger a promotion
         if @respawn
           trigger_refork

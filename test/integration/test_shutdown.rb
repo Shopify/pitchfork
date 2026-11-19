@@ -138,6 +138,24 @@ class TestShutdown < Pitchfork::IntegrationTest
     Process.kill(:KILL, service_pid) rescue nil
   end
 
+  test "USR1 during a graceful shutdown does not restart the monitor" do
+    addr, port = unused_port
+    pid = spawn_server(app: write_app, config: <<~RUBY)
+      listen "#{addr}:#{port}"
+      worker_processes 1
+    RUBY
+    start_slow_request(addr, port, 3)
+
+    Process.kill(:QUIT, pid)
+    assert_stderr("QUIT received, starting graceful shutdown")
+    Process.kill(:QUIT, pid)
+    assert_stderr(/QUIT received, starting graceful shutdown.*QUIT received, starting graceful shutdown/m, timeout: 5)
+    Process.kill(:USR1, pid)
+
+    assert_stderr("Can't trigger a restart as the server is shutting down", timeout: 3)
+    assert_exited(pid, 0, timeout: 6)
+  end
+
   test "INT during a graceful shutdown kills workers immediately" do
     addr, port = unused_port
     pid = spawn_server(app: write_app, config: <<~RUBY)
