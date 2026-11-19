@@ -5,6 +5,7 @@
 - Fix `TTIN` during a graceful shutdown spawning new workers.
 - Prevent `USR1` from restarting the monitor during a graceful shutdown.
 - Honor shutdown signals while the server is starting.
+- Fix `max_consecutive_spawn_errors` counting a timed out spawn twice.
 - Preserve worker spawn deadlines when the mold starts workers.
 
 # 0.18.4

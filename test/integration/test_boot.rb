@@ -117,7 +117,7 @@ class TestBoot < Pitchfork::IntegrationTest
     pid = spawn_server(app: APP, config: <<~RUBY)
       listen "#{addr}:#{port}"
       worker_processes 3
-      max_consecutive_spawn_errors 4
+      max_consecutive_spawn_errors 2
       spawn_timeout 1
       after_worker_fork do |_server, worker|
         sleep 20 # simulate a stuck worker
@@ -126,6 +126,25 @@ class TestBoot < Pitchfork::IntegrationTest
 
     assert_stderr(/consecutive failures to spawn children, aborting/, timeout: 4)
     assert_exited(pid, 1)
+  end
+
+  def test_max_consecutive_spawn_timeout_counts_each_timeout_once
+    addr, port = unused_port
+
+    pid = spawn_server(app: APP, config: <<~RUBY)
+      listen "#{addr}:#{port}"
+      worker_processes 1
+      max_consecutive_spawn_errors 1
+      spawn_timeout 1
+      after_worker_fork do |_server, worker|
+        sleep 20
+      end
+    RUBY
+
+    assert_stderr(/consecutive failures to spawn children, aborting/, timeout: 6)
+    assert_exited(pid, 1)
+    before_abort = read_stderr.split("consecutive failures to spawn children, aborting").first
+    assert_equal 2, before_abort.scan(/worker=0 gen=0.0 pid=\d+ timed out, killing/).size
   end
 
   def test_max_consecutive_spawn_errors
