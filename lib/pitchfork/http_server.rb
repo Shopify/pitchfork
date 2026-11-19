@@ -112,6 +112,7 @@ module Pitchfork
       @exit_status = 0
       @app = app
       @respawn = false
+      @graceful_shutdown = true
       @refork_max_unavailable = nil
       @consecutive_spawn_errors = 0
       @max_consecutive_spawn_errors = nil
@@ -226,7 +227,7 @@ module Pitchfork
 
       if REFORKING_AVAILABLE
         spawn_initial_mold
-        wait_for_pending_workers
+        return self if wait_for_pending_workers == StopIteration
         unless @children.mold
           raise BootFailure, "The initial mold failed to boot"
         end
@@ -241,7 +242,7 @@ module Pitchfork
         # We could just return here as we'd register them later in #join.
         # However a good part of the test suite assumes #start only return
         # once all initial workers are spawned.
-        wait_for_pending_workers
+        return self if wait_for_pending_workers == StopIteration
       end
 
       @after_monitor_ready&.call(self)
@@ -324,7 +325,7 @@ module Pitchfork
     # one-at-a-time time and we'll happily drop signals in case somebody
     # is signalling us too often.
     def join
-      @respawn = true
+      @respawn = !SharedMemory.shutting_down?
 
       proc_name role: 'monitor', status: ARGV.join(' ')
 
@@ -336,7 +337,7 @@ module Pitchfork
         end
         @ready_pipe = @ready_pipe.close rescue nil
       end
-      while true
+      until SharedMemory.shutting_down?
         begin
           if monitor_loop == StopIteration
             break
@@ -345,7 +346,7 @@ module Pitchfork
           Pitchfork.log_error(@logger, "monitor loop error", e)
         end
       end
-      stop # gracefully shutdown all workers on our way out
+      stop
       logger.info "monitor complete status=#{@exit_status}"
       @exit_status
     end
@@ -376,8 +377,7 @@ module Pitchfork
           if @max_consecutive_spawn_errors && @consecutive_spawn_errors > @max_consecutive_spawn_errors && !SharedMemory.shutting_down?
             logger.fatal("#{@consecutive_spawn_errors} consecutive failures to spawn children, aborting - broken after_worker_fork callback?")
             @exit_status = 1
-            SharedMemory.shutting_down!
-            stop(false)
+            request_shutdown(false)
             return StopIteration
           end
         else
@@ -393,17 +393,17 @@ module Pitchfork
 
     def monitor_handle_message(message)
       case message
-      when :QUIT, :TERM # graceful shutdown
-        SharedMemory.shutting_down!
-        logger.info "#{message} received, starting graceful shutdown"
-        return StopIteration
-      when :INT # immediate shutdown
-        SharedMemory.shutting_down!
-        logger.info "#{message} received, starting immediate shutdown"
-        stop(false)
+      when :QUIT, :TERM, :INT
+        graceful = message != :INT
+        request_shutdown(graceful)
+        logger.info "#{message} received, starting #{graceful ? 'graceful' : 'immediate'} shutdown"
         return StopIteration
       when :USR1 # trigger a hot restart
-        trigger_restart
+        if SharedMemory.shutting_down?
+          logger.error "Can't trigger a restart as the server is shutting down"
+        else
+          trigger_restart
+        end
       when :USR2 # trigger a promotion
         if @respawn
           trigger_refork
@@ -411,7 +411,6 @@ module Pitchfork
           logger.error "Can't trigger a refork as the server is shutting down"
         end
       when :TTIN
-        @respawn = true
         self.worker_processes += 1
       when :TTOU
         self.worker_processes -= 1 if self.worker_processes > 0
@@ -461,20 +460,19 @@ module Pitchfork
     def stop(graceful = true)
       proc_name role: 'monitor', status: 'shutting down'
       @respawn = false
-      SharedMemory.shutting_down!
-      wait_for_pending_workers
+      request_shutdown(graceful)
+      wait_for_pending_workers(stop_on_signal: false)
       Pitchfork.close_listeners
 
       limit = Pitchfork.time_now + timeout
       until @children.empty? || Pitchfork.time_now > limit
-        if graceful
+        if @graceful_shutdown
           @children.soft_kill_all(:TERM)
         else
           @children.hard_kill_all(:INT)
         end
-        if monitor_loop(false) == StopIteration
-          return StopIteration
-        end
+        monitor_sleep(0.1)
+        monitor_loop(false)
       end
 
       @children.each do |child|
@@ -527,6 +525,11 @@ module Pitchfork
     end
 
     private
+
+    def request_shutdown(graceful)
+      @graceful_shutdown = false unless graceful
+      SharedMemory.shutting_down!
+    end
 
     def refork_max_unavailable
       @refork_max_unavailable ||= (worker_processes * 0.1).ceil
@@ -876,10 +879,10 @@ module Pitchfork
       exit!
     end
 
-    def wait_for_pending_workers
+    def wait_for_pending_workers(stop_on_signal: true)
       while @children.pending_workers?
         monitor_sleep(0.5)
-        if monitor_loop(false) == StopIteration
+        if monitor_loop(false) == StopIteration && stop_on_signal
           return StopIteration
         end
       end
@@ -1073,6 +1076,12 @@ module Pitchfork
       [:QUIT, :TERM, :INT].each { |sig| trap(sig) { exit!(0) } }
     end
 
+    def register_child_and_exit_if_shutting_down(child)
+      # Register first so the monitor can account for the child during shutdown.
+      child.register_to_monitor(@control_socket[1])
+      exit!(0) if SharedMemory.shutting_down?
+    end
+
     # gets rid of stuff the worker has no business keeping track of
     # to free some resources and drops all sig handlers.
     # traps for USR2, and HUP may be set in the after_worker_fork/after_mold_fork Procs
@@ -1080,7 +1089,7 @@ module Pitchfork
     def init_worker_process(worker)
       proc_name role: "(#{worker.version}.#{worker.generation}) worker[#{worker.nr}]", status: "init"
       worker.reset
-      worker.register_to_monitor(@control_socket[1])
+      register_child_and_exit_if_shutting_down(worker)
       # we'll re-trap :QUIT and :TERM later for graceful shutdown iff we accept clients
       exit_sigs = [ :QUIT, :TERM, :INT ]
       exit_sigs.each { |sig| trap(sig) { exit!(0) } }
@@ -1106,7 +1115,7 @@ module Pitchfork
     def init_service_process(service)
       proc_name role: "(#{service.version}.#{service.generation}) service", status: "init"
       Pitchfork.close_listeners # Don't appear as listening to incoming requests
-      service.register_to_monitor(@control_socket[1])
+      register_child_and_exit_if_shutting_down(service)
       readers = [service]
       trap(:QUIT) { nuke_listeners!(readers) }
       trap(:TERM) { nuke_listeners!(readers) }
