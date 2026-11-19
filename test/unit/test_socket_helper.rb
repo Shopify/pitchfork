@@ -80,7 +80,9 @@ module Pitchfork
       test_bind_listen_unix
       a = bind_listen(@unix_listener)
       assert_equal a.fileno, @unix_listener.fileno
+      # The listener owns the descriptor; the cast is a borrowed view.
       unix_server = server_cast(@unix_listener)
+      unix_server.autoclose = false
       assert UNIXServer === unix_server
       a = bind_listen(unix_server)
       assert_equal a.fileno, unix_server.fileno
@@ -92,6 +94,7 @@ module Pitchfork
       a = bind_listen(@tcp_listener)
       assert_equal a.fileno, @tcp_listener.fileno
       tcp_server = server_cast(@tcp_listener)
+      tcp_server.autoclose = false
       assert TCPServer === tcp_server
       a = bind_listen(tcp_server)
       assert_equal a.fileno, tcp_server.fileno
@@ -127,9 +130,12 @@ module Pitchfork
     def test_server_cast
       test_bind_listen_unix
       test_bind_listen_tcp
+      # Both temporary views borrow the listener's descriptor.
       unix_listener_socket = Socket.for_fd(@unix_listener.fileno)
+      unix_listener_socket.autoclose = false
       assert Socket === unix_listener_socket
       @unix_server = server_cast(unix_listener_socket)
+      @unix_server.autoclose = false
       assert_equal @unix_listener.fileno, @unix_server.fileno
       assert UNIXServer === @unix_server
       assert_equal(@unix_server.path, @unix_listener.path,
@@ -138,8 +144,10 @@ module Pitchfork
       assert_equal @unix_listener_path, sock_name(@unix_server)
 
       tcp_listener_socket = Socket.for_fd(@tcp_listener.fileno)
+      tcp_listener_socket.autoclose = false
       assert Socket === tcp_listener_socket
       @tcp_server = server_cast(tcp_listener_socket)
+      @tcp_server.autoclose = false
       assert_equal @tcp_listener.fileno, @tcp_server.fileno
       assert TCPServer === @tcp_server
       assert_equal @tcp_listener_name, sock_name(@tcp_server)
