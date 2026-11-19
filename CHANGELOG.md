@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.18.4
+
 - Avoid stale body source pointers when Ruby compacts strings.
 - Fix non-ASCII request bytes on platforms where `char` is signed.
 
