@@ -156,6 +156,40 @@ class TestShutdown < Pitchfork::IntegrationTest
     assert_exited(pid, 0, timeout: 6)
   end
 
+  test "QUIT during startup shuts down the server" do
+    assert_shutdown_during_startup(:QUIT)
+  end
+
+  test "INT during startup shuts down the server" do
+    assert_shutdown_during_startup(:INT)
+  end
+
+  test "INT during shutdown stays immediate while a worker is pending" do
+    addr, port = unused_port
+    pid = spawn_pending_worker(addr, port, spawn_timeout: 10)
+    active_worker_pid = start_slow_request(addr, port, 30)
+    Process.kill(:TTIN, pid)
+    assert_stderr(/pending worker pid=\d+/, timeout: 5)
+    pending_worker_pid = Integer(read_stderr[/pending worker pid=(\d+)/, 1])
+
+    Process.kill(:QUIT, pid)
+    assert_stderr("QUIT received, starting graceful shutdown")
+    Process.kill(:INT, pid)
+    assert_stderr("INT received, starting immediate shutdown")
+    Process.kill(:QUIT, pid)
+    assert_stderr(/QUIT received, starting graceful shutdown.*QUIT received, starting graceful shutdown/m, timeout: 5)
+    File.write("continue-worker", "")
+
+    assert_exited(pid, 0, timeout: 4)
+    assert_process_exits(active_worker_pid)
+    active_worker_pid = nil
+    assert_process_exits(pending_worker_pid)
+    pending_worker_pid = nil
+  ensure
+    Process.kill(:KILL, active_worker_pid) rescue nil
+    Process.kill(:KILL, pending_worker_pid) rescue nil
+  end
+
   test "INT during a graceful shutdown kills workers immediately" do
     addr, port = unused_port
     pid = spawn_server(app: write_app, config: <<~RUBY)
@@ -175,6 +209,43 @@ class TestShutdown < Pitchfork::IntegrationTest
   end
 
   private
+
+  def assert_shutdown_during_startup(signal)
+    addr, port = unused_port
+    pid = spawn_server(app: write_app, config: <<~RUBY)
+      listen "#{addr}:#{port}"
+      worker_processes 1
+
+      module SynchronousStartup
+        def start(_sync = true)
+          super(true)
+        end
+      end
+      Pitchfork::HttpServer.prepend(SynchronousStartup)
+
+      module SlowInitialWorker
+        def init_worker_process(worker)
+          $stderr.puts "initial worker pid=\#{Process.pid}"
+          sleep 0.01 until File.exist?("continue-initial-worker")
+          super
+        end
+      end
+      after_mold_fork { |server, _mold| server.extend(SlowInitialWorker) }
+    RUBY
+    assert_stderr(/initial worker pid=\d+/, timeout: 5)
+    worker_pid = Integer(read_stderr[/initial worker pid=(\d+)/, 1])
+
+    Process.kill(signal, pid)
+    mode = signal == :INT ? "immediate" : "graceful"
+    assert_stderr("#{signal} received, starting #{mode} shutdown", timeout: 5)
+    File.write("continue-initial-worker", "")
+
+    assert_exited(pid, 0, timeout: 5)
+    assert_process_exits(worker_pid)
+    worker_pid = nil
+  ensure
+    Process.kill(:KILL, worker_pid) rescue nil
+  end
 
   def assert_process_exits(pid)
     50.times do

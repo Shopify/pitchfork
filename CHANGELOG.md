@@ -4,6 +4,7 @@
 - Fix a second `QUIT` or `TERM` during a graceful shutdown making the monitor exit before pending or running workers.
 - Fix `TTIN` during a graceful shutdown spawning new workers.
 - Prevent `USR1` from restarting the monitor during a graceful shutdown.
+- Honor shutdown signals while the server is starting.
 - Preserve worker spawn deadlines when the mold starts workers.
 
 # 0.18.4
