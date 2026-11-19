@@ -471,6 +471,7 @@ module Pitchfork
         else
           @children.hard_kill_all(:INT)
         end
+        monitor_sleep(0.1)
         if monitor_loop(false) == StopIteration
           return StopIteration
         end
