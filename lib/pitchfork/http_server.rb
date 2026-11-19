@@ -411,7 +411,6 @@ module Pitchfork
           logger.error "Can't trigger a refork as the server is shutting down"
         end
       when :TTIN
-        @respawn = true
         self.worker_processes += 1
       when :TTOU
         self.worker_processes -= 1 if self.worker_processes > 0

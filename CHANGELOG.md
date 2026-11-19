@@ -1,5 +1,6 @@
 # Unreleased
 
+- Fix `TTIN` during a graceful shutdown spawning new workers.
 - Preserve worker spawn deadlines when the mold starts workers.
 
 # 0.18.4
