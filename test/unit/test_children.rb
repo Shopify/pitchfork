@@ -214,6 +214,17 @@ module Pitchfork
       assert_nil @children.reap(mold.pid)
     end
 
+    def test_mold_ready_after_reap
+      pipe = IO.pipe.last
+      @children.update(Message::MoldSpawned.new(nil, 42, 1, 0, pipe))
+      @children.reap(42)
+
+      assert_nil @children.update(Message::MoldReady.new(42))
+      assert_nil @children.mold
+      assert_equal [], @children.molds
+      refute_predicate @children, :pending_promotion?
+    end
+
     def test_dump_load_pending_service
       @children.register_service(Worker.new(nil, service: true, version: 2, generation: 3))
       @children = assert_roundtrip(@children)

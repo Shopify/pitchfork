@@ -1,6 +1,7 @@
 # Unreleased
 
 - Preserve worker spawn deadlines when the mold starts workers.
+- Fix the monitor raising `NoMethodError` when a mold exits before its `MoldReady` message is handled.
 
 # 0.18.4
 
