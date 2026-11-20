@@ -161,12 +161,28 @@ class ReforkingTest < Pitchfork::IntegrationTest
         worker_processes 2
         refork_after [5, 5]
 
+        module DelayMoldReady
+          def monitor_handle_message(message)
+            if message.is_a?(Pitchfork::Message::MoldReady) && File.exist?("exited-once.txt") && !@delayed_mold_ready
+              @delayed_mold_ready = true
+              @sig_queue << message
+              return
+            end
+            super
+          end
+        end
+        Pitchfork::HttpServer.prepend(DelayMoldReady)
+
         monitor_pid = Process.pid
         after_mold_fork do |_server, mold|
           if mold.generation > 0 && !File.exist?("exited-once.txt")
             File.write("exited-once.txt", "1")
-            sleep 0.01 until File.read("stderr.log").include?("pid=\#{Process.pid} spawned")
-            # Pause the monitor so it reaps this mold before reading its MoldReady message.
+            deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 5
+            until File.read("stderr.log").include?("pid=\#{Process.pid} spawned")
+              raise "mold spawn was not registered" if Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
+              sleep 0.01
+            end
+            # Queue the ready message and exit while the monitor is paused.
             Process.kill(:STOP, monitor_pid)
             def mold.finish_promotion(control_socket)
               super
@@ -186,13 +202,88 @@ class ReforkingTest < Pitchfork::IntegrationTest
 
       assert_stderr("[mold exiting]", timeout: 3)
       mold_pid = Integer(read_stderr[/mold gen=0\.1 pid=(\d+) spawned/, 1])
-      sleep 0.01 until File.read("/proc/#{mold_pid}/stat").rpartition(")").last.split.first == "Z"
+      deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 5
+      until File.read("/proc/#{mold_pid}/stat").rpartition(")").last.split.first == "Z"
+        raise "mold did not exit" if Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
+        sleep 0.01
+      end
       Process.kill(:CONT, pid)
+      resumed = true
 
       assert_stderr("mold pid=#{mold_pid} ready but already reaped, ignoring")
       refute_stderr(/monitor loop error/)
 
       assert_clean_shutdown(pid)
+    ensure
+      if pid && !resumed
+        begin
+          Process.kill(:CONT, pid)
+        rescue Errno::ESRCH
+        end
+      end
+    end
+
+    def test_mold_ready_callback_before_exit
+      addr, port = unused_port
+
+      pid = spawn_server(app: File.join(ROOT, "test/integration/env.ru"), config: <<~CONFIG)
+        listen "#{addr}:#{port}"
+        worker_processes 2
+        refork_after [5, 5]
+
+        monitor_pid = Process.pid
+        after_mold_fork do |_server, mold|
+          if mold.generation > 0 && !File.exist?("exited-once.txt")
+            File.write("exited-once.txt", "1")
+            deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 5
+            until File.read("stderr.log").include?("pid=\#{Process.pid} spawned")
+              raise "mold spawn was not registered" if Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
+              sleep 0.01
+            end
+            Process.kill(:STOP, monitor_pid)
+            def mold.finish_promotion(control_socket)
+              super
+              $stderr.puts "[mold exiting]"
+              exit!(0)
+            end
+          end
+        end
+
+        after_child_ready do |_server, child|
+          $stderr.puts "[ready callback] mold pid=\#{child.pid}" if child.mold?
+        end
+      CONFIG
+
+      assert_healthy("http://#{addr}:#{port}")
+      assert_stderr(/worker=1 gen=0.0 pid=\d+ ready/, timeout: 5)
+      7.times { assert_equal true, healthy?("http://#{addr}:#{port}") }
+
+      assert_stderr("[mold exiting]", timeout: 3)
+      mold_pid = Integer(read_stderr[/mold gen=0\.1 pid=(\d+) spawned/, 1])
+      deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 5
+      until File.read("/proc/#{mold_pid}/stat").rpartition(")").last.split.first == "Z"
+        raise "mold did not exit" if Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
+        sleep 0.01
+      end
+      Process.kill(:CONT, pid)
+      resumed = true
+
+      ready_message = "[ready callback] mold pid=#{mold_pid}"
+      exit_pattern = /mold gen=0\.1 pid=#{mold_pid} reaped/
+      assert_stderr(ready_message, timeout: 5)
+      assert_stderr(exit_pattern, timeout: 5)
+      assert_exited(pid, 1, timeout: 10)
+      output = read_stderr
+      assert_equal 1, output.scan(ready_message).size
+      assert_operator output.index(ready_message), :<, output.index(exit_pattern)
+      refute_stderr(/monitor loop error/)
+    ensure
+      if pid && !resumed
+        begin
+          Process.kill(:CONT, pid)
+        rescue Errno::ESRCH
+        end
+      end
     end
 
     def test_stuck_mold

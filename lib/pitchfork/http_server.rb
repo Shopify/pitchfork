@@ -474,6 +474,10 @@ module Pitchfork
 
       limit = Pitchfork.time_now + timeout
       until @children.empty? || Pitchfork.time_now > limit
+        # A child with a queued exit status is no longer signalable.
+        handle_queued_messages
+        break if @children.empty?
+
         if @graceful_shutdown
           @children.soft_kill_all(:TERM)
         else
@@ -565,14 +569,17 @@ module Pitchfork
         wpid, status = Process.waitpid2(-1, Process::WNOHANG)
         wpid or return
 
-        unless try_reaping_worker(status)
-          # We may not have yet processed the WorkerSpawned message, so let's queue that event.
-          message = Message::ProcessReaped.new(status)
-          case @control_socket[1].sendmsg_nonblock(message, exception: false)
-          when :wait_writable
-            @sig_queue << message # fallback
+        # Messages sent before the child exited must be handled before its exit.
+        loop do
+          case message = @control_socket[0].recvmsg_nonblock(exception: false)
+          when :wait_readable, nil
+            break
+          when NOOP
+          else
+            @sig_queue << message
           end
         end
+        @sig_queue << Message::ProcessReaped.new(status)
       rescue Errno::ECHILD
         break
       end
@@ -640,11 +647,7 @@ module Pitchfork
       @children.hard_kill(@timeout_signal.call(child.pid), child) # take no prisoners for hard timeout violations
     end
 
-    def trigger_restart
-      # We must handle all the Message instances in the sig queue, as they could contain sockets or
-      # other FD we can't marshal down to the next process.
-      # It is OK to handle them out of order as they don't have any dependency with regular signals.
-      # Signals will be handled by the new monitor.
+    def handle_queued_messages
       @sig_queue.reject! do |message|
         if message.is_a?(Message)
           monitor_handle_message(message)
@@ -653,6 +656,12 @@ module Pitchfork
           false
         end
       end
+    end
+
+    def trigger_restart
+      # Handle messages containing file descriptors before marshalling the queue.
+      # Signals are left for the new monitor.
+      handle_queued_messages
 
       with_unbundled_env do
         SharedMemory.close_on_exec = false
