@@ -236,6 +236,7 @@ module Pitchfork
         SharedMemory.current_version = @version
         mold = Worker.new(nil, pid: $$).promoted!(@spawn_timeout)
         after_mold_fork&.call(self, mold)
+        mold.ready_mold!
         safe_run_callback(@after_child_ready, "after_child_ready", self, mold)
       end
 
@@ -1264,7 +1265,6 @@ module Pitchfork
       ready = readers.dup
 
       mold.finish_promotion(@control_socket[1])
-      mold.ready = true
       proc_name status: "ready"
 
       while readers[0]

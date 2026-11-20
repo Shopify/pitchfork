@@ -71,6 +71,97 @@ class TestBoot < Pitchfork::IntegrationTest
     assert_clean_shutdown(pid)
   end
 
+  def test_mold_ready_callback_without_reforking
+    addr, port = unused_port
+    pid = spawn_server(app: APP, config: <<~RUBY)
+      Pitchfork.send(:remove_const, :REFORKING_AVAILABLE)
+      Pitchfork.const_set(:REFORKING_AVAILABLE, false)
+      listen "#{addr}:#{port}"
+      worker_processes 1
+      after_child_ready do |_server, child|
+        if child.mold?
+          $stderr.puts "[mold] ready=\#{child.ready?} promotion_ready=\#{Pitchfork::SharedMemory.mold_promotion_state.ready?}"
+        end
+      end
+    RUBY
+
+    assert_stderr("[mold] ready=true promotion_ready=false")
+    assert_healthy("http://#{addr}:#{port}")
+    assert_clean_shutdown(pid)
+  end
+
+  def test_initial_and_promoted_molds_are_ready_in_callback
+    skip("Missing refork support") unless Pitchfork::REFORKING_AVAILABLE
+
+    addr, port = unused_port
+    pid = spawn_server(app: APP, config: <<~RUBY)
+      listen "#{addr}:#{port}"
+      worker_processes 1
+      refork_after [2, 2]
+
+      module PauseAfterMoldReady
+        def finish_promotion(control_socket)
+          Pitchfork::SharedMemory.mold_state.ready = false
+          super
+          deadline = Pitchfork.time_now + 5
+          until File.exist?("mold-ready-\#{generation}")
+            raise "monitor did not observe mold readiness" if Pitchfork.time_now >= deadline
+            sleep 0.01
+          end
+        end
+      end
+      Pitchfork::Worker.prepend(PauseAfterMoldReady)
+
+      after_child_ready do |_server, child|
+        if child.mold?
+          $stderr.puts "[mold \#{child.generation}] ready=\#{child.ready?}"
+          File.write("mold-ready-\#{child.generation}", "")
+        end
+      end
+    RUBY
+
+    assert_stderr("[mold 0] ready=true")
+    5.times { assert_healthy("http://#{addr}:#{port}") }
+    assert_stderr("[mold 1] ready=true", timeout: 5)
+    assert_clean_shutdown(pid)
+  end
+
+  def test_legacy_mold_is_ready_in_callback
+    skip("Missing refork support") unless Pitchfork::REFORKING_AVAILABLE
+
+    addr, port = unused_port
+    pid = spawn_server(app: APP, config: <<~RUBY)
+      listen "#{addr}:#{port}"
+      worker_processes 1
+
+      module LegacyMoldReady
+        def finish_promotion(control_socket)
+          Pitchfork::SharedMemory.mold_state.ready = false
+          control_socket.sendmsg(Pitchfork::Message::MoldReady.new(pid))
+          deadline = Pitchfork.time_now + 5
+          until File.exist?("legacy-mold-observed")
+            raise "monitor did not observe mold readiness" if Pitchfork.time_now >= deadline
+            sleep 0.01
+          end
+          @state_drop = Pitchfork::SharedMemory.mold_state
+          self.ready = true
+        end
+      end
+      Pitchfork::Worker.prepend(LegacyMoldReady)
+
+      after_child_ready do |_server, child|
+        if child.mold?
+          $stderr.puts "[legacy mold] ready=\#{child.ready?}"
+          File.write("legacy-mold-observed", "")
+        end
+      end
+    RUBY
+
+    assert_stderr("[legacy mold] ready=true")
+    assert_healthy("http://#{addr}:#{port}")
+    assert_clean_shutdown(pid)
+  end
+
   def test_boot_broken_after_mold_fork
     addr, port = unused_port
 

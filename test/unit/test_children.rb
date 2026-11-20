@@ -122,6 +122,31 @@ module Pitchfork
       assert_equal 0, @children.workers_count
     end
 
+    def test_legacy_mold_ready_message_marks_shared_mold_state
+      mold_state = SharedMemory.mold_state
+      promotion_state = SharedMemory.mold_promotion_state
+      mold_state.reset!
+      promotion_state.reset!
+      mold_state.deadline = 123
+      mold_state.busy = true
+      promotion_state.deadline = 456
+      pipe = IO.pipe.last
+      @children.update(Message::MoldSpawned.new(nil, 42, 1, 0, pipe))
+
+      # Older mold processes send MoldReady before updating the shared flag.
+      mold = @children.update(Message::MoldReady.new(42))
+      assert_predicate mold, :ready?
+      assert_predicate mold, :ready_mold?
+      assert_equal 123, mold_state.deadline
+      assert_predicate mold_state, :busy?
+      assert_equal 456, promotion_state.deadline
+      refute_predicate promotion_state, :ready?
+    ensure
+      pipe&.close
+      mold_state&.reset!
+      promotion_state&.reset!
+    end
+
     def test_message_mold_ready_race
       pipe = IO.pipe.last
       assert_nil @children.mold
