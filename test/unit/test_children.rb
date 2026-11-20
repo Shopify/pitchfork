@@ -100,7 +100,7 @@ module Pitchfork
     def test_message_mold_spawned
       pipe = IO.pipe.last
       assert_nil @children.mold
-      @children.update(Message::MoldSpawned.new(nil, 42, 1, 0, pipe))
+      @children.update(Message::MoldSpawned.new(nil, 42, 1, 0, pipe, nil))
 
       assert_nil @children.mold
       assert_equal 0, @children.molds.size
@@ -112,7 +112,7 @@ module Pitchfork
     def test_message_mold_ready
       pipe = IO.pipe.last
       assert_nil @children.mold
-      @children.update(Message::MoldSpawned.new(nil, 42, 1, 0, pipe))
+      @children.update(Message::MoldSpawned.new(nil, 42, 1, 0, pipe, nil))
       mold = @children.update(Message::MoldReady.new(42))
 
       assert_equal mold, @children.mold
@@ -125,14 +125,14 @@ module Pitchfork
     def test_message_mold_ready_race
       pipe = IO.pipe.last
       assert_nil @children.mold
-      @children.update(Message::MoldSpawned.new(nil, 42, 0, 0, pipe))
+      @children.update(Message::MoldSpawned.new(nil, 42, 0, 0, pipe, nil))
       mold = @children.update(Message::MoldReady.new(42))
 
       assert_equal mold, @children.mold
       assert_equal "0.0", [@children.mold.version, @children.mold.generation].join('.')
 
-      new_generation = Message::MoldSpawned.new(nil, 43, 1, 0, pipe)
-      new_version = Message::MoldSpawned.new(nil, 44, 0, 1, pipe)
+      new_generation = Message::MoldSpawned.new(nil, 43, 1, 0, pipe, nil)
+      new_version = Message::MoldSpawned.new(nil, 44, 0, 1, pipe, nil)
       @children.update(new_generation)
       @children.update(new_version)
 
@@ -181,14 +181,14 @@ module Pitchfork
     def test_reap_old_molds
       pipe = IO.pipe.last
       assert_nil @children.mold
-      @children.update(Message::MoldSpawned.new(nil, 24, 0, 0, pipe))
+      @children.update(Message::MoldSpawned.new(nil, 24, 0, 0, pipe, nil))
       @children.update(Message::MoldReady.new(24))
 
       first_mold = @children.mold
       refute_nil first_mold
       assert_equal 24, first_mold.pid
 
-      @children.update(Message::MoldSpawned.new(nil, 42, 1, 0, pipe))
+      @children.update(Message::MoldSpawned.new(nil, 42, 1, 0, pipe, nil))
       @children.update(Message::MoldReady.new(42))
       second_mold = @children.mold
       refute_nil second_mold
@@ -216,7 +216,7 @@ module Pitchfork
 
     def test_mold_ready_after_reap
       pipe = IO.pipe.last
-      @children.update(Message::MoldSpawned.new(nil, 42, 1, 0, pipe))
+      @children.update(Message::MoldSpawned.new(nil, 42, 1, 0, pipe, nil))
       @children.reap(42)
 
       assert_nil @children.update(Message::MoldReady.new(42))
@@ -272,7 +272,7 @@ module Pitchfork
       assert_equal [worker], @children.workers
 
       pipe = Pitchfork.socketpair.last
-      @children.update(Message::MoldSpawned.new(nil, 44, 1, 0, pipe))
+      @children.update(Message::MoldSpawned.new(nil, 44, 1, 0, pipe, nil))
       @children.update(Message::MoldReady.new(44))
 
       assert_not_nil @children.mold
@@ -296,13 +296,68 @@ module Pitchfork
       spawned_at = mold.spawned_at
       @children.register_mold(mold)
 
-      returned_mold = @children.update(Message::MoldSpawned.new(nil, 42, 0, 0, pipe))
+      returned_mold = @children.update(Message::MoldSpawned.new(nil, 42, 0, 0, pipe, nil))
       assert_same mold, returned_mold
       assert_same spawned_at, returned_mold.spawned_at
 
       returned_mold = @children.update(Message::MoldReady.new(42))
       assert_same mold, returned_mold
       assert_same spawned_at, returned_mold.spawned_at
+    end
+
+    def test_promoted_mold_spawned_at_survives_monitor_delivery_and_restart
+      receiver, sender = Pitchfork.socketpair
+      promoted_mold = Worker.new(nil, pid: 42, generation: 1)
+      promoted_mold.start_promotion(sender)
+
+      assert receiver.wait(1)
+      message = receiver.recvmsg_nonblock
+      mold = @children.update(message)
+      assert_equal promoted_mold.spawned_at, mold.spawned_at
+      assert_equal promoted_mold.spawned_at, @children.update(Message::MoldReady.new(42)).spawned_at
+
+      restored_mold = Worker.load(mold.dump.merge(monitor_fd: nil))
+      assert_equal promoted_mold.spawned_at, restored_mold.spawned_at
+    ensure
+      mold&.close
+      promoted_mold&.close
+      receiver&.close
+      sender&.close
+    end
+
+    def test_legacy_mold_spawned_preserves_known_timestamp
+      receiver, sender = Pitchfork.socketpair
+      peer, pipe = Pitchfork.socketpair
+      mold = Worker.new(nil, pid: 42)
+      spawned_at = mold.spawned_at
+      @children.register_mold(mold)
+      payload = Marshal.dump([Message::MoldSpawned, nil, 42, 0, 0, MessageSocket::FD.new(0)])
+      sender.to_io.sendmsg(payload, 0, nil, Socket::AncillaryData.unix_rights(pipe.to_io))
+
+      assert receiver.wait(1)
+      message = receiver.recvmsg_nonblock
+      assert_nil message.spawned_at
+      assert_same mold, @children.update(message)
+      assert_equal spawned_at, mold.spawned_at
+    ensure
+      mold&.close
+      peer&.close
+      pipe&.close
+      receiver&.close
+      sender&.close
+    end
+
+    def test_legacy_mold_spawned_without_known_timestamp_uses_monitor_time
+      peer, pipe = Pitchfork.socketpair
+      before = Pitchfork.time_now
+      mold = @children.update(Message::MoldSpawned.new(nil, 42, 1, 0, pipe, nil))
+      after = Pitchfork.time_now
+
+      assert_operator mold.spawned_at, :>=, before
+      assert_operator mold.spawned_at, :<=, after
+    ensure
+      mold ? mold.close : pipe&.close
+      peer&.close
     end
 
     private

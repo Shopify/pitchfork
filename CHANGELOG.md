@@ -9,6 +9,7 @@
 - Preserve worker spawn deadlines when the mold starts workers.
 - Fix the monitor raising `NoMethodError` when a mold exits before its `MoldReady` message is handled.
 - Allow future versions to add optional trailing message fields during hot restarts.
+- Preserve promoted molds' original spawn time for measuring child boot time.
 
 # 0.18.4
 

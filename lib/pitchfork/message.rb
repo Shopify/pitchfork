@@ -189,7 +189,7 @@ module Pitchfork
     WorkerReady = new(:nr, :pid)
     PromoteWorker = new(:generation)
 
-    MoldSpawned = new(:nr, :pid, :generation, :version, :pipe)
+    MoldSpawned = new(:nr, :pid, :generation, :version, :pipe, :spawned_at)
     MoldReady = new(:pid)
 
     SpawnService = new
