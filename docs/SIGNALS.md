@@ -17,6 +17,16 @@ processes are documented here as well.
   If the config is invalid or for some other reasons the
   monitor fails to boot the process will crash.
 
+  Internal message schemas are append-only: new fields must be optional and
+  added at the end, without changing existing fields. Receivers ignore unknown
+  trailing fields and treat missing trailing fields as `nil`; code using new
+  fields must handle `nil` from older senders.
+
+  Before deploying a version that sends new fields, first upgrade all running
+  processes to a version that supports extensible messages. Earlier versions
+  cannot receive additional fields. Stop the server before rolling back to a
+  version without extensible messages.
+
 * `USR2` - trigger a manual refork. A worker is promoted as
   a new mold, and existing workers progressively replaced
   by fresh ones.

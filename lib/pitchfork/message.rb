@@ -120,9 +120,22 @@ module Pitchfork
       end
 
       klass, *args = Marshal.load(payload)
+      field_count = klass.members.length
+      fds = data&.unix_rights
+
+      # Only append optional fields: old receivers ignore them, and new
+      # receivers default missing fields to nil.
+      if args.length > field_count
+        args.slice!(field_count, args.length).each do |arg|
+          fds.fetch(arg.index).close if arg.is_a?(FD)
+        end
+      else
+        args.fill(nil, args.length, field_count - args.length)
+      end
+
       args.map! do |arg|
         if arg.is_a?(FD)
-          data.unix_rights.fetch(arg.index)
+          fds.fetch(arg.index)
         else
           arg
         end
