@@ -232,9 +232,10 @@ module Pitchfork
           raise BootFailure, "The initial mold failed to boot"
         end
       else
+        mold = Worker.new(nil, pid: $$)
         build_app!
         SharedMemory.current_version = @version
-        mold = Worker.new(nil, pid: $$).promoted!(@spawn_timeout)
+        mold.promoted!(@spawn_timeout)
         after_mold_fork&.call(self, mold)
         safe_run_callback(@after_child_ready, "after_child_ready", self, mold)
       end

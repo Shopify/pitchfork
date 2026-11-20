@@ -1,5 +1,6 @@
 # Unreleased
 
+- Fix mold boot duration calculated from `spawned_at` excluding application boot when reforking is unavailable.
 - Fix the monitor using a full CPU core while it waits for workers during a graceful shutdown.
 - Fix a second `QUIT` or `TERM` during a graceful shutdown making the monitor exit before pending or running workers.
 - Fix `TTIN` during a graceful shutdown spawning new workers.
