@@ -1,5 +1,6 @@
 # Unreleased
 
+- Fix `after_child_ready` observing a mold as not ready.
 - Fix the monitor using a full CPU core while it waits for workers during a graceful shutdown.
 - Fix a second `QUIT` or `TERM` during a graceful shutdown making the monitor exit before pending or running workers.
 - Fix `TTIN` during a graceful shutdown spawning new workers.

@@ -117,8 +117,7 @@ module Pitchfork
       when Message::MoldSpawned
         @state_drop = SharedMemory.mold_promotion_state
       when Message::MoldReady
-        @mold_ready = true
-        @state_drop = SharedMemory.mold_state
+        ready_mold!
       end
     end
 
@@ -145,9 +144,14 @@ module Pitchfork
     end
 
     def finish_promotion(control_socket)
-      message = Message::MoldReady.new(@pid)
-      control_socket.sendmsg(message)
+      ready_mold!
+      control_socket.sendmsg(Message::MoldReady.new(@pid))
+    end
+
+    def ready_mold!
+      @mold_ready = true
       @state_drop = SharedMemory.mold_state
+      self.ready = true
     end
 
     def notify_ready(control_socket)
