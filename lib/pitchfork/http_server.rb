@@ -431,7 +431,10 @@ module Pitchfork
           message.pipe.close
         end
       when Message::MoldReady
-        new_mold = @children.update(message)
+        unless new_mold = @children.update(message)
+          logger.info("mold pid=#{message.pid} ready but already reaped, ignoring")
+          return
+        end
 
         # current_mold may not be new_mold if there was a race
         # between refork and restart.

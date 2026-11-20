@@ -7,6 +7,7 @@
 - Honor shutdown signals while the server is starting.
 - Fix `max_consecutive_spawn_errors` counting a timed out spawn twice.
 - Preserve worker spawn deadlines when the mold starts workers.
+- Fix the monitor raising `NoMethodError` when a mold exits before its `MoldReady` message is handled.
 
 # 0.18.4
 

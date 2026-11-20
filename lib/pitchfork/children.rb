@@ -99,7 +99,7 @@ module Pitchfork
         return service
       end
 
-      if child = @children[message.pid] || (message.nr && @workers[message.nr])
+      if child = @children[message.pid] || (message.respond_to?(:nr) && message.nr && @workers[message.nr])
         if child.pid && child.pid != message.pid
           # An abandoned spawn may still come up late: never rebind a slot that already has a process.
           return

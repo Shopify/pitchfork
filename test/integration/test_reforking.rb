@@ -153,6 +153,48 @@ class ReforkingTest < Pitchfork::IntegrationTest
       assert_clean_shutdown(pid)
     end
 
+    def test_mold_reaped_before_ready_message
+      addr, port = unused_port
+
+      pid = spawn_server(app: File.join(ROOT, "test/integration/env.ru"), config: <<~CONFIG)
+        listen "#{addr}:#{port}"
+        worker_processes 2
+        refork_after [5, 5]
+
+        monitor_pid = Process.pid
+        after_mold_fork do |_server, mold|
+          if mold.generation > 0 && !File.exist?("exited-once.txt")
+            File.write("exited-once.txt", "1")
+            sleep 0.01 until File.read("stderr.log").include?("pid=\#{Process.pid} spawned")
+            # Pause the monitor so it reaps this mold before reading its MoldReady message.
+            Process.kill(:STOP, monitor_pid)
+            def mold.finish_promotion(control_socket)
+              super
+              $stderr.puts "[mold exiting]"
+              exit!(0)
+            end
+          end
+        end
+      CONFIG
+
+      assert_healthy("http://#{addr}:#{port}")
+      assert_stderr(/worker=1 gen=0.0 pid=\d+ ready/, timeout: 5)
+
+      7.times do
+        assert_equal true, healthy?("http://#{addr}:#{port}")
+      end
+
+      assert_stderr("[mold exiting]", timeout: 3)
+      mold_pid = Integer(read_stderr[/mold gen=0\.1 pid=(\d+) spawned/, 1])
+      sleep 0.01 until File.read("/proc/#{mold_pid}/stat").rpartition(")").last.split.first == "Z"
+      Process.kill(:CONT, pid)
+
+      assert_stderr("mold pid=#{mold_pid} ready but already reaped, ignoring")
+      refute_stderr(/monitor loop error/)
+
+      assert_clean_shutdown(pid)
+    end
+
     def test_stuck_mold
       addr, port = unused_port
 
