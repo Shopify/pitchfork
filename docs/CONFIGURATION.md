@@ -404,9 +404,16 @@ spawned later. e.g. you can check `Socket.getaddrinfo` still works, etc.
 Called by the monitor process when a worker, service or mold reports
 ready. Outdated molds discarded by the monitor don't trigger it.
 
+`child.spawned_at` is the time Pitchfork created the child, measured using
+the monotonic clock. Subtract it from the current monotonic time to measure
+the time until the monitor observes readiness, including message delivery delay.
+After a hot restart, newly discovered molds spawned by older processes without
+this timestamp are timed from when the new monitor receives their spawn message.
+
 ```ruby
 after_child_ready do |server, child|
-  server.logger.info("#{child.to_log} ready")
+  boot_time = Process.clock_gettime(Process::CLOCK_MONOTONIC) - child.spawned_at
+  server.logger.info("#{child.to_log} ready after #{boot_time}s")
 end
 ```
 

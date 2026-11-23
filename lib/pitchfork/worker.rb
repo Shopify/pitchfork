@@ -108,6 +108,11 @@ module Pitchfork
       SharedMemory.current_generation != @generation || SharedMemory.current_version != @version
     end
 
+    def spawned_at=(time)
+      @spawned_at = time unless time.nil?
+    end
+    private :spawned_at=
+
     def update(message)
       message.class.members.each do |member|
         send("#{member}=", message.public_send(member))
@@ -138,7 +143,7 @@ module Pitchfork
 
     def start_promotion(control_socket)
       create_socketpair!
-      message = Message::MoldSpawned.new(@nr, @pid, generation, version, @monitor)
+      message = Message::MoldSpawned.new(@nr, @pid, generation, version, @monitor, @spawned_at)
       control_socket.sendmsg(message)
       @monitor.close
       @monitor = nil

@@ -81,7 +81,7 @@ module Pitchfork
       cases = [
         [Message::WorkerReady, [7, 42, "future", nil], [7, 42]],
         [Message::PromoteWorker, [3, "future"], [3]],
-        [Message::MoldSpawned, [nil, 44, 1, 0, nil, 123.5, "future"], [nil, 44, 1, 0, nil]],
+        [Message::MoldSpawned, [nil, 44, 1, 0, nil, 123.5, "future"], [nil, 44, 1, 0, nil, 123.5]],
       ]
 
       cases.each do |klass, fields, expected|
@@ -102,7 +102,7 @@ module Pitchfork
       extra_reader, extra_writer = IO.pipe
       payload = Marshal.dump([
         Message::MoldSpawned, nil, 44, 1, 0, MessageSocket::FD.new(0),
-        "future", MessageSocket::FD.new(1)
+        123.5, "future", MessageSocket::FD.new(1)
       ])
 
       rights = Socket::AncillaryData.unix_rights(pipe_writer, extra_writer)
@@ -110,6 +110,7 @@ module Pitchfork
       extra_writer.close
       assert receiver.wait(1)
       received = receiver.recvmsg_nonblock
+      assert_equal 123.5, received.spawned_at
       assert_equal 44, received.pid
       received.pipe.write_nonblock("x")
       assert_equal "x", pipe_reader.read_nonblock(1)
@@ -125,15 +126,25 @@ module Pitchfork
       extra_writer&.close unless extra_writer&.closed?
     end
 
-    def test_mold_spawned_sender_keeps_five_fields
+    def test_mold_spawned_timestamp_round_trip
       receiver, sender = Pitchfork.socketpair
-      message = Message::MoldSpawned.new(nil, 42, 1, 0, nil)
+      pipe_reader, pipe_writer = IO.pipe
+      message = Message::MoldSpawned.new(nil, 42, 1, 0, pipe_writer, 123.5)
 
-      payload, = sender.send(:dump_message, message)
-      assert_equal [Message::MoldSpawned, nil, 42, 1, 0, nil], Marshal.load(payload)
+      sender.sendmsg(message)
+      assert receiver.wait(1)
+      received = receiver.recvmsg_nonblock
+      assert_instance_of Message::MoldSpawned, received
+      assert_equal 123.5, received.spawned_at
+      assert_equal 42, received.pid
+      received.pipe.write_nonblock("x")
+      assert_equal "x", pipe_reader.read_nonblock(1)
     ensure
+      received&.pipe&.close
       receiver&.close
       sender&.close
+      pipe_reader&.close
+      pipe_writer&.close
     end
   end
 end
