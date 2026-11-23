@@ -120,9 +120,20 @@ module Pitchfork
       end
 
       klass, *args = Marshal.load(payload)
+      field_count = klass.members.length
+      fds = data&.unix_rights
+
+      if args.length > field_count
+        args.slice!(field_count, args.length).each do |arg|
+          fds.fetch(arg.index).close if arg.is_a?(FD)
+        end
+      else
+        args.fill(nil, args.length, field_count - args.length)
+      end
+
       args.map! do |arg|
         if arg.is_a?(FD)
-          data.unix_rights.fetch(arg.index)
+          fds.fetch(arg.index)
         else
           arg
         end
@@ -170,6 +181,16 @@ module Pitchfork
         end
       end
     end
+
+    # Message schemas are append-only: new fields must be optional and added at
+    # the end, without changing existing fields. Receivers ignore unknown
+    # trailing fields and treat missing trailing fields as nil; code using new
+    # fields must handle nil from older senders.
+    #
+    # Before deploying a version that sends new fields, first upgrade all running
+    # processes to a version that supports extensible messages. Earlier versions
+    # cannot receive additional fields. Stop the server before rolling back to a
+    # version without extensible messages.
 
     SpawnWorkers = new(:nrs)
     WorkerSpawned = new(:nr, :pid, :generation, :version, :pipe)

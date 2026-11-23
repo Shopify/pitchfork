@@ -9,6 +9,7 @@
 - Fix `max_consecutive_spawn_errors` counting a timed out spawn twice.
 - Preserve worker spawn deadlines when the mold starts workers.
 - Fix the monitor raising `NoMethodError` when a mold exits before its `MoldReady` message is handled.
+- Allow future versions to add optional trailing message fields during hot restarts.
 
 # 0.18.4
 
