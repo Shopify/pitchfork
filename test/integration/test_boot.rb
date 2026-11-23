@@ -71,6 +71,32 @@ class TestBoot < Pitchfork::IntegrationTest
     assert_clean_shutdown(pid)
   end
 
+  def test_mold_spawned_at_before_application_boot_without_reforking
+    addr, port = unused_port
+
+    File.write("app.ru", <<~RUBY)
+      File.write("boot-start", Pitchfork.time_now.to_s)
+      run lambda { |_env| [200, { "content-type" => "text/plain" }, ["OK"]] }
+    RUBY
+
+    pid = spawn_server(app: "app.ru", config: <<~RUBY)
+      Pitchfork.send(:remove_const, :REFORKING_AVAILABLE)
+      Pitchfork.const_set(:REFORKING_AVAILABLE, false)
+      listen "#{addr}:#{port}"
+      worker_processes 1
+
+      after_child_ready do |_server, child|
+        if child.mold?
+          $stderr.puts "[mold] started_before_app=\#{child.spawned_at <= Float(File.read('boot-start'))}"
+        end
+      end
+    RUBY
+
+    assert_stderr("[mold] started_before_app=true")
+    assert_healthy("http://#{addr}:#{port}")
+    assert_clean_shutdown(pid)
+  end
+
   def test_boot_broken_after_mold_fork
     addr, port = unused_port
 
