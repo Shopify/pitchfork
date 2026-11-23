@@ -117,7 +117,8 @@ module Pitchfork
       when Message::MoldSpawned
         @state_drop = SharedMemory.mold_promotion_state
       when Message::MoldReady
-        ready_mold!
+        @mold_ready = true
+        @state_drop = SharedMemory.mold_state
       end
     end
 

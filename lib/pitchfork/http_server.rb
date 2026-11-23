@@ -236,6 +236,7 @@ module Pitchfork
         SharedMemory.current_version = @version
         mold = Worker.new(nil, pid: $$).promoted!(@spawn_timeout)
         after_mold_fork&.call(self, mold)
+        # Without reforking, the monitor is the mold and owns its state.
         mold.ready_mold!
         safe_run_callback(@after_child_ready, "after_child_ready", self, mold)
       end

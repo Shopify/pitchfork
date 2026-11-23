@@ -122,7 +122,7 @@ module Pitchfork
       assert_equal 0, @children.workers_count
     end
 
-    def test_legacy_mold_ready_message_marks_shared_mold_state
+    def test_legacy_mold_ready_message_does_not_write_shared_state
       mold_state = SharedMemory.mold_state
       promotion_state = SharedMemory.mold_promotion_state
       mold_state.reset!
@@ -135,7 +135,8 @@ module Pitchfork
 
       # Older mold processes send MoldReady before updating the shared flag.
       mold = @children.update(Message::MoldReady.new(42))
-      assert_predicate mold, :ready?
+      refute_predicate mold, :ready?
+      refute_predicate mold_state, :ready?
       assert_predicate mold, :ready_mold?
       assert_equal 123, mold_state.deadline
       assert_predicate mold_state, :busy?

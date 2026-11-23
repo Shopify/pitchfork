@@ -126,7 +126,7 @@ class TestBoot < Pitchfork::IntegrationTest
     assert_clean_shutdown(pid)
   end
 
-  def test_legacy_mold_is_ready_in_callback
+  def test_legacy_mold_updates_readiness_after_callback
     skip("Missing refork support") unless Pitchfork::REFORKING_AVAILABLE
 
     addr, port = unused_port
@@ -157,7 +157,7 @@ class TestBoot < Pitchfork::IntegrationTest
       end
     RUBY
 
-    assert_stderr("[legacy mold] ready=true")
+    assert_stderr("[legacy mold] ready=false")
     assert_healthy("http://#{addr}:#{port}")
     assert_clean_shutdown(pid)
   end
